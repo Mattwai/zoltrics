@@ -1,9 +1,8 @@
-import React from "react";
 import { cn, extractUUIDFromString, getMonthName } from "@/lib/utils";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { Avatar, AvatarFallback } from "../ui/avatar";
 
 type Props = {
   message: {
@@ -27,10 +26,14 @@ const Bubble = ({ message, createdAt }: Props) => {
       )}
     >
       {message.role == "assistant" ? (
-        <Avatar className="w-5 h-5">
-          <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-          <AvatarFallback>CN</AvatarFallback>
-        </Avatar>
+        <div className="w-5 h-5">
+          <Image
+            src="/images/bot-icon"
+            alt="bot-avatar"
+            width={20}
+            height={20}
+          />
+        </div>
       ) : (
         <Avatar className="w-5 h-5">
           <AvatarFallback>
@@ -63,11 +66,7 @@ const Bubble = ({ message, createdAt }: Props) => {
             }`}
           </p>
         )}
-        {image ? (
-          <div className="relative aspect-square">
-            <Image src={`https://ucarecdn.com/${image[0]}/`} fill alt="image" />
-          </div>
-        ) : (
+        {
           <p className="text-sm">
             {message.content.replace("(complete)", " ")}
             {message.link && (
@@ -80,7 +79,7 @@ const Bubble = ({ message, createdAt }: Props) => {
               </Link>
             )}
           </p>
-        )}
+        }
       </div>
     </div>
   );

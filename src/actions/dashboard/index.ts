@@ -42,16 +42,18 @@ export const getUserBalance = async () => {
         stripeId: true,
       },
     });
-    if (connectedStripe) {
-      const transactions = await stripe.balance.retrieve({
-        stripeAccount: connectedStripe.stripeId!,
-      });
-      const sales = transactions.pending.reduce((total, next) => {
-        return total + next.amount;
-      }, 0);
-
-      return sales / 100;
+    if (!connectedStripe || !connectedStripe.stripeId) {
+      console.warn("No Stripe ID found for user.");
+      return null;
     }
+    const transactions = await stripe.balance.retrieve({
+      stripeAccount: connectedStripe.stripeId!,
+    });
+    const sales = transactions.pending.reduce((total, next) => {
+      return total + next.amount;
+    }, 0);
+
+    return sales / 100;
   } catch (error) {
     console.error("Error fetching user balance:", error);
     return null; // or handle error as needed
@@ -136,13 +138,15 @@ export const getUserTransactions = async () => {
         stripeId: true,
       },
     });
-    if (connectedStripe) {
-      const transactions = await stripe.charges.list({
-        stripeAccount: connectedStripe.stripeId!,
-      });
-      if (transactions) {
-        return transactions;
-      }
+    if (!connectedStripe || !connectedStripe.stripeId) {
+      console.warn("No Stripe ID found for user.");
+      return null;
+    }
+    const transactions = await stripe.charges.list({
+      stripeAccount: connectedStripe.stripeId!,
+    });
+    if (transactions) {
+      return transactions;
     }
   } catch (error) {
     console.error("Error fetching user transactions:", error);

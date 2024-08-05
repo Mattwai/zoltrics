@@ -1,18 +1,22 @@
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+"use client";
+import { useAvatar } from "@/context/avatar-context";
+import Image from "next/image";
 import BreadCrumb from "./bread-crumb";
 
-type Props = {};
+const InfoBar = () => {
+  const { avatarSrc } = useAvatar();
 
-const InfoBar = (props: Props) => {
   return (
     <div className="flex w-full justify-between items-center py-1 mb-8 pr-4">
       <BreadCrumb />
       <div className="flex gap-3 items-center">
-        <div></div>
-        <Avatar>
-          <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-          <AvatarFallback>CN</AvatarFallback>
-        </Avatar>
+        <Image
+          src={avatarSrc}
+          alt="Avatar"
+          className="rounded-full w-12 h-12"
+          width={20}
+          height={20}
+        />
       </div>
     </div>
   );

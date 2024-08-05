@@ -1,16 +1,14 @@
 import { BOT_TABS_MENU } from "@/constants/menu";
 import { ChatBotMessageProps } from "@/schemas/conversation-schema";
-import { Paperclip, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import Image from "next/image";
 import React, { forwardRef } from "react";
 import { UseFormRegister } from "react-hook-form";
 import Accordion from "../accordian";
 import TabsMenu from "../tabs/index";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { CardDescription, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
-import { Label } from "../ui/label";
 import { Separator } from "../ui/separator";
 import { TabsContent } from "../ui/tabs";
 import Bubble from "./bubble";
@@ -73,13 +71,15 @@ export const BotWindow = forwardRef<HTMLDivElement, Props>(
       <div className="h-[670px] w-[450px] flex flex-col bg-white rounded-xl mr-[80px] border-[1px] overflow-hidden">
         <div className="flex justify-between px-4 pt-4">
           <div className="flex gap-2">
-            <Avatar className="w-20 h-20">
-              <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-              <AvatarFallback>CN</AvatarFallback>
-            </Avatar>
+            <Image
+              src="/images/logo.png"
+              alt="profile"
+              width={20}
+              height={20}
+            />
             <div className="flex items-start flex-col">
               <h3 className="text-lg font-bold leading-none">
-                Sales Rep - Web Prodigies
+                Sales Rep - Zoltrics
               </h3>
               <p className="text-sm">{domainName.split(".com")[0]}</p>
               {realtimeMode?.mode && (
@@ -92,7 +92,7 @@ export const BotWindow = forwardRef<HTMLDivElement, Props>(
           </div>
           <div className="relative w-16 h-16">
             <Image
-              src="https://ucarecdn.com/019dd17d-b69b-4dea-a16b-60e0f25de1e9/propuser.png"
+              src="/images/prop-users.png"
               fill
               alt="users"
               objectFit="contain"
@@ -133,15 +133,6 @@ export const BotWindow = forwardRef<HTMLDivElement, Props>(
                     <Send />
                   </Button>
                 </div>
-                <Label htmlFor="bot-image">
-                  <Paperclip />
-                  <Input
-                    {...register("image")}
-                    type="file"
-                    id="bot-image"
-                    className="hidden"
-                  />
-                </Label>
               </form>
             </div>
           </TabsContent>
@@ -167,7 +158,7 @@ export const BotWindow = forwardRef<HTMLDivElement, Props>(
           </TabsContent>
         </TabsMenu>
         <div className="flex justify-center ">
-          <p className="text-gray-400 text-xs">Powered By Web Prodigies</p>
+          <p className="text-gray-400 text-xs">Powered By Zoltrics</p>
         </div>
       </div>
     );

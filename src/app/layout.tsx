@@ -1,5 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
+import { AvatarProvider } from "@/context/avatar-context";
 import { ThemeProvider } from "@/context/theme-provider";
+import { UserProvider } from "@/context/user-context";
 import { NextAuthProvider } from "@/providers/auth-provider";
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
@@ -27,7 +29,10 @@ export default function RootLayout({
             defaultTheme="light"
             disableTransitionOnChange
           >
-            {children}
+            <UserProvider>
+              <AvatarProvider>{children}</AvatarProvider>
+            </UserProvider>
+
             <Toaster />
           </ThemeProvider>
         </body>

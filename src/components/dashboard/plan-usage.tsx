@@ -1,7 +1,7 @@
 import { ProgressBar } from "../progress";
 
 type PlanUsageProps = {
-  plan: "STANDARD" | "PRO" | "ULTIMATE";
+  plan: "FREE" | "STANDARD" | "PROFESSIONAL";
   credits: number;
   domains: number;
   clients: number;
@@ -13,21 +13,20 @@ export const PlanUsage = ({
   domains,
   clients,
 }: PlanUsageProps) => {
-  console.log(credits);
   return (
-    <div className="flex flex-col gap-5 py-5">
+    <div className="flex flex-col gap-5 py-3">
       <ProgressBar
-        end={plan == "STANDARD" ? 10 : plan == "PRO" ? 50 : 500}
+        end={plan == "FREE" ? 10 : plan == "STANDARD" ? 50 : 500}
         label="Email Credits"
         credits={credits}
       />
       <ProgressBar
-        end={plan == "STANDARD" ? 1 : plan == "PRO" ? 2 : 100}
+        end={plan == "FREE" ? 1 : plan == "STANDARD" ? 2 : 100}
         label="Domains"
         credits={domains}
       />
       <ProgressBar
-        end={plan == "STANDARD" ? 10 : plan == "PRO" ? 50 : 500}
+        end={plan == "FREE" ? 10 : plan == "STANDARD" ? 50 : 500}
         label="Contacts"
         credits={clients}
       />

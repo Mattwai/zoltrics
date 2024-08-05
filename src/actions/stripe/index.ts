@@ -35,7 +35,7 @@ export const onCreateCustomerPaymentIntentSecret = async (
 };
 
 export const onUpdateSubscription = async (
-  plan: "STANDARD" | "PRO" | "ULTIMATE"
+  plan: "FREE" | "STANDARD" | "PROFESSIONAL"
 ) => {
   try {
     const session = await getServerSession(authConfig);
@@ -49,7 +49,8 @@ export const onUpdateSubscription = async (
           update: {
             data: {
               plan,
-              credits: plan == "PRO" ? 50 : plan == "ULTIMATE" ? 500 : 10,
+              credits:
+                plan == "STANDARD" ? 100 : plan == "PROFESSIONAL" ? 1000 : 10,
             },
           },
         },
@@ -74,18 +75,19 @@ export const onUpdateSubscription = async (
   }
 };
 
-const setPlanAmount = (item: "STANDARD" | "PRO" | "ULTIMATE") => {
-  if (item == "PRO") {
-    return 1500;
+const setPlanAmount = (item: "FREE" | "STANDARD" | "PROFESSIONAL") => {
+  // price charged for billing plan
+  if (item == "STANDARD") {
+    return 5900;
   }
-  if (item == "ULTIMATE") {
-    return 3500;
+  if (item == "PROFESSIONAL") {
+    return 12900;
   }
   return 0;
 };
 
 export const onGetStripeClientSecret = async (
-  item: "STANDARD" | "PRO" | "ULTIMATE"
+  item: "FREE" | "STANDARD" | "PROFESSIONAL"
 ) => {
   try {
     const amount = setPlanAmount(item);

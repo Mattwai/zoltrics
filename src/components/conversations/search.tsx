@@ -1,14 +1,9 @@
+import { Domains } from "@/types/types";
 import { FieldValues, UseFormRegister } from "react-hook-form";
 
 type Props = {
   register: UseFormRegister<FieldValues>;
-  domains?:
-    | {
-        name: string;
-        id: string;
-        icon: string;
-      }[]
-    | undefined;
+  domains?: Domains;
 };
 
 const ConversationSearch = ({ register, domains }: Props) => {

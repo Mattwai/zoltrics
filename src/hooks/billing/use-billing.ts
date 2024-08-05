@@ -106,15 +106,19 @@ export const useCompleteCustomerPayment = (onNext: () => void) => {
   return { processing, onMakePayment };
 };
 
-export const useSubscriptions = (plan: "STANDARD" | "PRO" | "ULTIMATE") => {
+export const useSubscriptions = (
+  plan: "FREE" | "STANDARD" | "PROFESSIONAL"
+) => {
   const [loading, setLoading] = useState<boolean>(false);
-  const [payment, setPayment] = useState<"STANDARD" | "PRO" | "ULTIMATE">(plan);
+  const [payment, setPayment] = useState<"FREE" | "STANDARD" | "PROFESSIONAL">(
+    plan
+  );
   const { toast } = useToast();
   const router = useRouter();
   const onUpdatetToFreTier = async () => {
     try {
       setLoading(true);
-      const free = await onUpdateSubscription("STANDARD");
+      const free = await onUpdateSubscription("FREE");
       if (free) {
         setLoading(false);
         toast({
@@ -128,7 +132,7 @@ export const useSubscriptions = (plan: "STANDARD" | "PRO" | "ULTIMATE") => {
     }
   };
 
-  const onSetPayment = (payment: "STANDARD" | "PRO" | "ULTIMATE") =>
+  const onSetPayment = (payment: "FREE" | "STANDARD" | "PROFESSIONAL") =>
     setPayment(payment);
 
   return {
@@ -139,11 +143,15 @@ export const useSubscriptions = (plan: "STANDARD" | "PRO" | "ULTIMATE") => {
   };
 };
 
-export const useStripeElements = (payment: "STANDARD" | "PRO" | "ULTIMATE") => {
+export const useStripeElements = (
+  payment: "FREE" | "STANDARD" | "PROFESSIONAL"
+) => {
   const [stripeSecret, setStripeSecret] = useState<string>("");
   const [loadForm, setLoadForm] = useState<boolean>(false);
 
-  const onGetBillingIntent = async (plans: "STANDARD" | "PRO" | "ULTIMATE") => {
+  const onGetBillingIntent = async (
+    plans: "FREE" | "STANDARD" | "PROFESSIONAL"
+  ) => {
     try {
       setLoadForm(true);
       const intent = await onGetStripeClientSecret(plans);
@@ -164,7 +172,7 @@ export const useStripeElements = (payment: "STANDARD" | "PRO" | "ULTIMATE") => {
 };
 
 export const useCompletePayment = (
-  payment: "STANDARD" | "PRO" | "ULTIMATE"
+  payment: "FREE" | "STANDARD" | "PROFESSIONAL"
 ) => {
   const [processing, setProcessing] = useState<boolean>(false);
   const router = useRouter();

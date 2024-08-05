@@ -2,9 +2,9 @@
 
 import { signIn } from "next-auth/react";
 import Image from "next/image";
-import googleLogo from "../../../public/images/google.png";
 
 export function GoogleSignInButton() {
+  const googleLogo = "/images/google.png";
   const handleClick = () => {
     signIn("google", { callbackUrl: "/dashboard" });
   };

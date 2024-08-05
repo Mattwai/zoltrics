@@ -1,31 +1,31 @@
+// WIP
 export const pricingCards = [
   {
-    title: "Standard",
-    description: "Perfect for trying out Corinna AI",
+    title: "Free",
+    description: "Perfect for trying out Zoltrics",
     price: "$0",
     duration: "",
     highlight: "Key features",
     features: [" 1 domain ", "10 contacts", "10 Emails per month"],
-    priceId: "",
+    // priceId: "",
   },
   {
-    title: "Ultimate",
-    description: "The ultimate agency kit",
-    price: "$97",
-    duration: "month",
-    highlight: "Key features",
-    features: [" Unlimited domain ", "500 Contacts", "500 Emails"],
-
-    priceId: "price_1OYxkqFj9oKEERu1KfJGWxgN",
-  },
-  {
-    title: "Plus",
-    description: "For serious agency owners",
-    price: "$67",
+    title: "Standard",
+    description: "For small business owners",
+    price: "$59",
     duration: "month",
     highlight: "Everything in Starter, plus",
-    features: [" 2 domain ", "50 contacts", "50 Emails per month"],
-    priceId: "price_1OYxkqFj9oKEERu1NbKUxXxN",
+    features: [" 2 domains ", "100 contacts", "100 Emails per month"],
+    // priceId: "price_1OYxkqFj9oKEERu1NbKUxXxN",
+  },
+  {
+    title: "PROFESSIONAL",
+    description: "The ultimate agency kit",
+    price: "$129",
+    duration: "month",
+    highlight: "Key features",
+    features: [" 10 domains ", "1000 Contacts", "1000 Emails"],
+    // priceId: "price_1OYxkqFj9oKEERu1KfJGWxgN",
   },
 ];
 

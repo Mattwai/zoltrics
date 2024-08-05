@@ -19,16 +19,12 @@ const Layout: React.FC<Props> = ({ children }) => {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (status === "unauthenticated") {
-        router.push("/auth/sign-in");
-      } else if (status === "authenticated") {
-        try {
-          const domainsData = await onGetAllAccountDomains(); // Assuming this function fetches domains
-          setDomains(domainsData);
-        } catch (error) {
-          console.error("Error fetching domains:", error);
-          // Handle error (e.g., setDomains(null) or display an error message)
-        }
+      try {
+        const domainsData = await onGetAllAccountDomains(); // Assuming this function fetches domains
+        setDomains(domainsData);
+      } catch (error) {
+        console.error("Error fetching domains:", error);
+        // Handle error (e.g., setDomains(null) or display an error message)
       }
     };
 

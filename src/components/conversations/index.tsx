@@ -1,6 +1,7 @@
 "use client";
 import { TABS_MENU } from "@/constants/menu";
 import { useConversation } from "@/hooks/conversation/use-conversation";
+import { Domains } from "@/types/types";
 import { Loader } from "../loader";
 import TabsMenu from "../tabs/index";
 import { CardDescription } from "../ui/card";
@@ -10,13 +11,7 @@ import ChatCard from "./chat-card";
 import ConversationSearch from "./search";
 
 type Props = {
-  domains?:
-    | {
-        name: string;
-        id: string;
-        icon: string;
-      }[]
-    | undefined;
+  domains?: Domains;
 };
 
 const ConversationMenu = ({ domains }: Props) => {

@@ -30,7 +30,6 @@ type Props = {
   products?:
     | {
         name: string;
-        image: string;
         price: number;
       }[]
     | undefined;

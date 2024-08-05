@@ -2,13 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-
 import { Loader } from "@/components/loader";
 import { useProducts } from "@/hooks/settings/use-settings";
-import { ErrorMessage } from "@hookform/error-message";
-import { UploadIcon } from "lucide-react";
 import FormGenerator from "../forms/form-generator";
 
 type CreateProductFormProps = {
@@ -31,30 +26,6 @@ export const CreateProductForm = ({ id }: CreateProductFormProps) => {
         placeholder="Your product name"
         type="text"
       />
-      <div className="flex flex-col items-start">
-        <Label
-          htmlFor="upload-product"
-          className="flex gap-2 p-3 rounded-lg bg-peach text-gray-600 cursor-pointer font-semibold text-sm items-center"
-        >
-          <Input
-            {...register("image")}
-            className="hidden"
-            type="file"
-            id="upload-product"
-          />
-          <UploadIcon />
-          Upload
-        </Label>
-        <ErrorMessage
-          errors={errors}
-          name="image"
-          render={({ message }) => (
-            <p className="text-red-400 mt-2">
-              {message === "Required" ? "" : message}
-            </p>
-          )}
-        />
-      </div>
       <FormGenerator
         inputType="input"
         register={register}

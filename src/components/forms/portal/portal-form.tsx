@@ -23,7 +23,6 @@ type PortalFormProps = {
   products?:
     | {
         name: string;
-        image: string;
         price: number;
       }[]
     | undefined;

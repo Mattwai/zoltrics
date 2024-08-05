@@ -5,9 +5,7 @@ import { client } from "@/lib/prisma";
 export const onGetDomainProductsAndConnectedAccountId = async (id: string) => {
   try {
     const connectedAccount = await client.domain.findUnique({
-      where: {
-        id,
-      },
+      where: { id },
       select: {
         User: {
           select: {
@@ -18,37 +16,30 @@ export const onGetDomainProductsAndConnectedAccountId = async (id: string) => {
     });
 
     const products = await client.product.findMany({
-      where: {
-        domainId: id,
-      },
+      where: { domainId: id },
       select: {
         price: true,
         name: true,
-        image: true,
       },
     });
 
-    if (products) {
-      const totalAmount = products.reduce(
-        (current: number, next: { price: number }) => {
-          return current + next.price;
-        },
-        0
-      );
-      return {
-        products: products,
-        amount: totalAmount,
-        stripeId: connectedAccount?.User?.stripeId ?? null,
-      };
-    } else {
-      return {
-        products: [],
-        amount: 0,
-        stripeId: connectedAccount?.User?.stripeId ?? null,
-      };
-    }
+    const totalAmount = products.reduce(
+      (current: number, next: { price: number }) => {
+        return current + next.price;
+      },
+      0
+    );
+
+    return {
+      products,
+      amount: totalAmount,
+      stripeId: connectedAccount?.User?.stripeId ?? null,
+    };
   } catch (error) {
-    console.log(error);
+    console.error(
+      "Error fetching domain products and connected account ID:",
+      error
+    );
     return {
       products: [],
       amount: 0,

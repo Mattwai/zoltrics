@@ -157,3 +157,9 @@ body {
   width: 100% !important;
   border-radius: 20px;
 }
+
+.subscript {
+  font-size: 0.5em;
+  color: grey;
+  vertical-align: sub;
+}

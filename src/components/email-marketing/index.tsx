@@ -29,7 +29,7 @@ type Props = {
     createdAt: Date;
   }[];
   subscription: {
-    plan: "STANDARD" | "PRO" | "ULTIMATE";
+    plan: "FREE" | "STANDARD" | "PROFESSIONAL";
     credits: number;
   } | null;
 };

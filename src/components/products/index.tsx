@@ -1,6 +1,5 @@
 import { getMonthName } from "@/lib/utils";
 import { Plus } from "lucide-react";
-import Image from "next/image";
 import { SideSheet } from "../sheet";
 import { DataTable } from "../table";
 import TabsMenu from "../tabs/index";
@@ -13,7 +12,6 @@ type Props = {
     id: string;
     name: string;
     price: number;
-    image: string;
     createdAt: Date;
     domainId: string | null;
   }[];
@@ -59,17 +57,9 @@ const ProductTable = ({ id, products }: Props) => {
         }
       >
         <TabsContent value="All products">
-          <DataTable headers={["Featured Image", "Name", "Pricing", "Created"]}>
+          <DataTable headers={["Name", "Pricing", "Created"]}>
             {products.map((product) => (
               <TableRow key={product.id}>
-                <TableCell>
-                  <Image
-                    src={`https://ucarecdn.com/${product.image}/`}
-                    width={50}
-                    height={50}
-                    alt="image"
-                  />
-                </TableCell>
                 <TableCell>${product.name}</TableCell>
                 <TableCell>{product.price}</TableCell>
                 <TableCell className="text-right">

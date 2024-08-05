@@ -56,6 +56,7 @@ const DashboardPage = async () => {
           <div>
             <div>
               <h2 className="font-bold text-2xl">Plan Usage</h2>
+              <h2 className="font text py-1">[{plan?.plan!}]</h2>
               <p className="text-sm font-light">
                 A detailed overview of your metrics, usage, customers and more
               </p>

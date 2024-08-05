@@ -13,7 +13,6 @@ export interface Domain {
   customer: Customer[];
   id: string;
   name: string;
-  icon: string;
 }
 
 export type Domains = Domain[] | null;

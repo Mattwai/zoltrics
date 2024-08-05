@@ -1,9 +1,10 @@
 "use server";
 import { authConfig } from "@/lib/auth";
 import { client } from "@/lib/prisma";
+import { User } from "@prisma/client";
 import { getServerSession } from "next-auth";
 
-export const onIntegrateDomain = async (domain: string, icon: string) => {
+export const onIntegrateDomain = async (domain: string) => {
   const session = await getServerSession(authConfig);
   if (!session || !session.user) return;
   try {
@@ -36,12 +37,13 @@ export const onIntegrateDomain = async (domain: string, icon: string) => {
     });
 
     if (!domainExists) {
+      // WIP
       if (
-        (subscription?.subscription?.plan == "STANDARD" &&
+        (subscription?.subscription?.plan == "FREE" &&
           subscription._count.domains < 1) ||
-        (subscription?.subscription?.plan == "PRO" &&
-          subscription._count.domains < 5) ||
-        (subscription?.subscription?.plan == "ULTIMATE" &&
+        (subscription?.subscription?.plan == "STANDARD" &&
+          subscription._count.domains < 2) ||
+        (subscription?.subscription?.plan == "PROFESSIONAL" &&
           subscription._count.domains < 10)
       ) {
         const newDomain = await client.user.update({
@@ -52,7 +54,6 @@ export const onIntegrateDomain = async (domain: string, icon: string) => {
             domains: {
               create: {
                 name: domain,
-                icon,
                 chatBot: {
                   create: {
                     welcomeMessage: "Hey there, have  a question? Text us here",
@@ -119,7 +120,6 @@ export const onGetAllAccountDomains = async () => {
         domains: {
           select: {
             name: true,
-            icon: true,
             id: true,
             customer: {
               select: {
@@ -171,14 +171,12 @@ export const onGetCurrentDomainInfo = async (domain: string) => {
           select: {
             id: true,
             name: true,
-            icon: true,
             userId: true,
             products: true,
             chatBot: {
               select: {
                 id: true,
                 welcomeMessage: true,
-                icon: true,
               },
             },
           },
@@ -230,42 +228,6 @@ export const onUpdateDomain = async (id: string, name: string) => {
     return {
       status: 400,
       message: "Domain with this name already exists",
-    };
-  } catch (error) {
-    console.log(error);
-  }
-};
-
-export const onChatBotImageUpdate = async (id: string, icon: string) => {
-  const session = await getServerSession(authConfig);
-  if (!session || !session.user) return;
-
-  try {
-    const domain = await client.domain.update({
-      where: {
-        id,
-      },
-      data: {
-        chatBot: {
-          update: {
-            data: {
-              icon,
-            },
-          },
-        },
-      },
-    });
-
-    if (domain) {
-      return {
-        status: 200,
-        message: "Domain updated",
-      };
-    }
-
-    return {
-      status: 400,
-      message: "Oops something went wrong!",
     };
   } catch (error) {
     console.log(error);
@@ -474,30 +436,33 @@ export const onGetAllFilterQuestions = async (id: string) => {
 
 export const onGetPaymentConnected = async () => {
   const session = await getServerSession(authConfig);
-  if (!session || !session.user) return;
+  if (!session || !session.user) return null;
+
   try {
-    if (session) {
-      const connected = await client.user.findUnique({
-        where: {
-          id: session.user.id,
-        },
-        select: {
-          stripeId: true,
-        },
-      });
-      if (connected) {
-        return connected.stripeId;
-      }
+    const connected = await client.user.findUnique({
+      where: {
+        id: session.user.id,
+      },
+      select: {
+        stripeId: true,
+      },
+    });
+
+    if (connected) {
+      return connected.stripeId;
+    } else {
+      console.warn("No Stripe ID found for user.");
+      return null;
     }
   } catch (error) {
-    console.log(error);
+    console.error("Error fetching Stripe ID:", error);
+    return null;
   }
 };
 
 export const onCreateNewDomainProduct = async (
   id: string,
   name: string,
-  image: string,
   price: string
 ) => {
   try {
@@ -509,7 +474,6 @@ export const onCreateNewDomainProduct = async (
         products: {
           create: {
             name,
-            image,
             price: parseInt(price),
           },
         },
@@ -524,5 +488,64 @@ export const onCreateNewDomainProduct = async (
     }
   } catch (error) {
     console.log(error);
+  }
+};
+
+export const onUpdateProfileIcon = async (profileIcon: string) => {
+  const session = await getServerSession(authConfig);
+  if (!session || !session.user)
+    return { status: 401, message: "Unauthorized" };
+  try {
+    const update = await client.user.update({
+      where: {
+        id: session.user.id,
+      },
+      data: {
+        profileIcon: profileIcon,
+      },
+    });
+
+    if (update) {
+      return { status: 200, message: "Profile icon updated" };
+    }
+  } catch (error) {
+    console.error("Error updating profile icon:", error);
+    return { status: 500, message: "Internal server error" };
+  }
+};
+export const onGetProfileIcon = async (): Promise<string | undefined> => {
+  const session = await getServerSession(authConfig);
+  if (!session || !session.user) return;
+  try {
+    const user = await client.user.findUnique({
+      where: {
+        id: session.user.id,
+      },
+      select: {
+        profileIcon: true,
+      },
+    });
+    if (!user) throw new Error("User not found");
+    return user.profileIcon;
+  } catch (error) {
+    console.error("Error fetching profile icon:", error);
+    return;
+  }
+};
+
+export const onGetUser = async (): Promise<User | null> => {
+  const session = await getServerSession(authConfig);
+  if (!session || !session.user) return null;
+  try {
+    const user = await client.user.findUnique({
+      where: {
+        id: session.user.id,
+      },
+    });
+    if (!user) throw new Error("User not found");
+    return user;
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    return null;
   }
 };

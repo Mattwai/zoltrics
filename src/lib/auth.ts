@@ -29,10 +29,21 @@ export const authConfig: NextAuthOptions = {
 
       // If the user does not exist, create a new one
       if (!existingUser) {
+        const freePlan = await prisma.billings.create({
+          data: {
+            plan: "FREE",
+            credits: 10,
+          },
+        });
+
         await prisma.user.create({
           data: {
             email: profile.email,
             name: profile.name || profile.email,
+            profileIcon: "avatar-1.png",
+            subscription: {
+              connect: { id: freePlan.id },
+            },
           },
         });
       }
@@ -68,6 +79,10 @@ export const authConfig: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
+    maxAge: 24 * 60 * 60, // 24 hours (adjust as needed)
+  },
+  pages: {
+    signIn: "/auth/sign-in",
   },
 };
 

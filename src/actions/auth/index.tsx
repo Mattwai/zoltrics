@@ -9,7 +9,8 @@ import { onGetAllAccountDomains } from "../settings";
 export const onCompleteUserRegistration = async (
   name: string,
   id: string,
-  email: string
+  email: string,
+  profileIcon: string
 ) => {
   try {
     const registered = await client.user.create({
@@ -17,6 +18,7 @@ export const onCompleteUserRegistration = async (
         name,
         id,
         email,
+        profileIcon,
         subscription: {
           create: {},
         },
