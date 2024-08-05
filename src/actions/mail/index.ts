@@ -1,8 +1,7 @@
 "use server";
 
-import { authConfig } from "@/lib/auth";
 import { client } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
+import { currentUser } from "@clerk/nextjs";
 import nodemailer from "nodemailer";
 
 export const onGetAllCustomers = async (id: string) => {
@@ -70,11 +69,11 @@ export const onGetAllCampaigns = async (id: string) => {
 
 export const onCreateMarketingCampaign = async (name: string) => {
   try {
-    const session = await getServerSession(authConfig);
-    if (!session || !session.user) return null;
+    const user = await currentUser();
+    if (!user) return null;
     const campaign = await client.user.update({
       where: {
-        id: session.user.id,
+        clerkId: user.id,
       },
       data: {
         campaign: {
@@ -136,8 +135,8 @@ export const onAddCustomersToEmail = async (
 
 export const onBulkMailer = async (email: string[], campaignId: string) => {
   try {
-    const session = await getServerSession(authConfig);
-    if (!session || !session.user) return null;
+    const user = await currentUser();
+    if (!user) return null;
 
     //get the template for this campaign
     const template = await client.campaign.findUnique({
@@ -177,7 +176,7 @@ export const onBulkMailer = async (email: string[], campaignId: string) => {
 
       const creditsUsed = await client.user.update({
         where: {
-          id: session.user.id,
+          clerkId: user.id,
         },
         data: {
           subscription: {
@@ -198,11 +197,11 @@ export const onBulkMailer = async (email: string[], campaignId: string) => {
 
 export const onGetAllCustomerResponses = async (id: string) => {
   try {
-    const session = await getServerSession(authConfig);
-    if (!session || !session.user) return null;
+    const user = await currentUser();
+    if (!user) return null;
     const answers = await client.user.findUnique({
       where: {
-        id: session.user.id,
+        clerkId: user.id,
       },
       select: {
         domains: {

@@ -1,13 +1,12 @@
 "use server";
 
-import { authConfig } from "@/lib/auth";
 import { client } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
+import { currentUser } from "@clerk/nextjs";
 import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET!, {
   typescript: true,
-  apiVersion: "2024-04-10",
+  apiVersion: "2024-06-20",
 });
 
 export const onCreateCustomerPaymentIntentSecret = async (
@@ -38,11 +37,11 @@ export const onUpdateSubscription = async (
   plan: "FREE" | "STANDARD" | "PROFESSIONAL"
 ) => {
   try {
-    const session = await getServerSession(authConfig);
-    if (!session || !session.user) return;
+    const user = await currentUser();
+    if (!user) return null;
     const update = await client.user.update({
       where: {
-        id: session.user.id,
+        clerkId: user.id,
       },
       data: {
         subscription: {

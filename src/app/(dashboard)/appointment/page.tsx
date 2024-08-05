@@ -5,8 +5,7 @@ import Section from "@/components/section-label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { authConfig } from "@/lib/auth";
-import { getServerSession } from "next-auth";
+import { currentUser } from "@clerk/nextjs";
 
 type Props = {};
 
@@ -25,10 +24,10 @@ interface Booking {
 }
 
 const Page = async (props: Props) => {
-  const session = await getServerSession(authConfig);
-  if (!session || !session.user) return null;
+  const user = await currentUser();
+  if (!user) return null;
 
-  const domainBookings = await onGetAllBookingsForCurrentUser(session.user.id);
+  const domainBookings = await onGetAllBookingsForCurrentUser(user.id);
   const today = new Date();
 
   if (!domainBookings)

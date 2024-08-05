@@ -1,10 +1,9 @@
 "use client";
-import { useAvatar } from "@/context/avatar-context";
 import Image from "next/image";
 import BreadCrumb from "./bread-crumb";
 
 const InfoBar = () => {
-  const { avatarSrc } = useAvatar();
+  const avatarSrc = "@images/avatar/avatar-1";
 
   return (
     <div className="flex w-full justify-between items-center py-1 mb-8 pr-4">

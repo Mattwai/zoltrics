@@ -1,24 +1,47 @@
 "use client";
 import useSideBar from "@/context/sidebar-context";
 import { cn } from "@/lib/utils";
-import { Domains } from "@/types/types";
 import MaxMenu from "./maximised-menu";
+import { MinMenu } from "./minimised-menu";
 
 type Props = {
-  domains: Domains;
+  domains:
+    | {
+        id: string;
+        name: string;
+      }[]
+    | null
+    | undefined;
 };
 
 const SideBar = ({ domains }: Props) => {
-  const { page, onSignOut } = useSideBar();
+  const { expand, onExpand, page, onSignOut } = useSideBar();
 
   return (
     <div
       className={cn(
         "bg-cream dark:bg-neutral-950 h-full w-[60px] fill-mode-forwards fixed md:relative",
-        "animate-open-sidebar"
+        expand == undefined && "",
+        expand == true
+          ? "animate-open-sidebar"
+          : expand == false && "animate-close-sidebar"
       )}
     >
-      <MaxMenu domains={domains} current={page!} onSignOut={onSignOut} />
+      {expand ? (
+        <MaxMenu
+          domains={domains}
+          current={page!}
+          onExpand={onExpand}
+          onSignOut={onSignOut}
+        />
+      ) : (
+        <MinMenu
+          domains={domains}
+          onShrink={onExpand}
+          current={page!}
+          onSignOut={onSignOut}
+        />
+      )}
     </div>
   );
 };

@@ -4,7 +4,7 @@ import {
   onToggleRealtime,
 } from "@/actions/conversation";
 import { useToast } from "@/components/ui/use-toast";
-import { signOut, useSession } from "next-auth/react";
+import { useClerk } from "@clerk/nextjs";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useChatContext } from "./chat-context";
@@ -17,7 +17,6 @@ const useSideBar = () => {
   const [realtime, setRealtime] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const { data: session } = useSession();
   const { chatRoom } = useChatContext();
 
   const onActivateRealtime = async (e: any) => {
@@ -54,14 +53,8 @@ const useSideBar = () => {
   }, [chatRoom, onGetCurrentMode]);
 
   const page = pathname.split("/").pop();
-  const onSignOut = async () => {
-    try {
-      await signOut();
-      router.push("/"); // Redirect after sign-out
-    } catch (error) {
-      console.error("Sign out error:", error);
-    }
-  };
+  const { signOut } = useClerk();
+  const onSignOut = () => signOut(() => router.push("/"));
 
   const onExpand = () => setExpand((prev) => !prev);
 

@@ -1,31 +1,28 @@
 "use server";
 
-import { authConfig } from "@/lib/auth";
 import { client } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
+import { currentUser, redirectToSignIn } from "@clerk/nextjs";
 import { onGetAllAccountDomains } from "../settings";
 
 export const onCompleteUserRegistration = async (
-  name: string,
-  id: string,
-  email: string,
-  profileIcon: string
+  fullname: string,
+  clerkId: string,
+  type: string
 ) => {
   try {
     const registered = await client.user.create({
       data: {
-        name,
-        id,
-        email,
-        profileIcon,
+        fullname,
+        clerkId,
+        type,
         subscription: {
           create: {},
         },
       },
       select: {
-        name: true,
+        fullname: true,
         id: true,
+        type: true,
       },
     });
 
@@ -38,22 +35,23 @@ export const onCompleteUserRegistration = async (
 };
 
 export const onLoginUser = async () => {
-  const session = await getServerSession(authConfig);
-  if (!session || !session.user) redirect("/auth/sign-in");
+  const user = await currentUser();
+  if (!user) redirectToSignIn();
   else {
     try {
       const authenticated = await client.user.findUnique({
         where: {
-          id: session.user.id,
+          clerkId: user.id,
         },
         select: {
-          name: true,
+          fullname: true,
           id: true,
+          type: true,
         },
       });
       if (authenticated) {
         const domains = await onGetAllAccountDomains();
-        return { status: 200, user: authenticated, domain: domains };
+        return { status: 200, user: authenticated, domain: domains?.domains };
       }
     } catch (error) {
       return { status: 400 };

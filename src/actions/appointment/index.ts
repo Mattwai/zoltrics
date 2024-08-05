@@ -1,8 +1,7 @@
 "use server";
 
-import { authConfig } from "@/lib/auth";
 import { client } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
+import { currentUser } from "@clerk/nextjs";
 
 export const onDomainCustomerResponses = async (customerId: string) => {
   try {
@@ -155,16 +154,15 @@ export const onGetAllBookingsForCurrentUser = async (id: string) => {
 };
 
 export const getUserAppointments = async () => {
-  const session = await getServerSession(authConfig);
-  if (!session || !session.user) return;
   try {
-    if (session) {
+    const user = await currentUser();
+    if (user) {
       const bookings = await client.bookings.count({
         where: {
           Customer: {
             Domain: {
               User: {
-                id: session.user.id,
+                clerkId: user.id,
               },
             },
           },

@@ -1,7 +1,6 @@
-import { authConfig } from "@/lib/auth";
 import { client } from "@/lib/prisma";
 import { extractEmailsFromString, extractURLfromString } from "@/lib/utils";
-import { getServerSession } from "next-auth";
+import { clerkClient } from "@clerk/nextjs";
 import OpenAi from "openai";
 import { onRealTimeChat } from "../conversation";
 import { onMailer } from "../mailer";
@@ -69,22 +68,6 @@ export const onAiChatBotAssistant = async (
   message: string
 ) => {
   try {
-    const session = await getServerSession(authConfig);
-    if (!session || !session.user) {
-      throw new Error("User not authenticated"); // Handle unauthorized access
-    }
-
-    //Fetch user details using NextAuth.js session
-    const userId = session.user.id;
-    const user = await client.user.findUnique({
-      where: { id: userId },
-      select: { email: true }, // Adjust as per your schema
-    });
-
-    if (!user) {
-      throw new Error("User not found"); // Handle case where user is null or undefined
-    }
-
     const chatBotDomain = await client.domain.findUnique({
       where: {
         id,
@@ -121,7 +104,7 @@ export const onAiChatBotAssistant = async (
         select: {
           User: {
             select: {
-              id: true,
+              clerkId: true,
             },
           },
           name: true,
@@ -196,10 +179,10 @@ export const onAiChatBotAssistant = async (
         );
 
         if (!checkCustomer.customer[0].chatRoom[0].mailed) {
-          // Fetch user email from session or user object obtained from client.user.findUnique
-          const userEmail = user.email; // Adjust as per your schema
-
-          onMailer(userEmail);
+          const user = await clerkClient.users.getUser(
+            checkCustomer.User?.clerkId!
+          );
+          onMailer(user.emailAddresses[0].emailAddress);
 
           // Update mail status to prevent spamming
           const updatedChatRoom = await client.chatRoom.update({

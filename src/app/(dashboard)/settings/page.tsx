@@ -1,7 +1,6 @@
 import InfoBar from "@/components/infobar";
 import BillingSettings from "@/components/settings/billing-settings";
 import DarkModetoggle from "@/components/settings/dark-mode";
-import ProfileIconSettings from "@/components/settings/profile-icon-settings";
 import UserInfoSettings from "@/components/settings/user-info-settings";
 
 type Props = {};
@@ -14,7 +13,6 @@ const Page = (props: Props) => {
         <UserInfoSettings />
         <BillingSettings />
         <DarkModetoggle />
-        <ProfileIconSettings />
       </div>
     </>
   );

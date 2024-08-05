@@ -1,6 +1,5 @@
 import { useDomain } from "@/hooks/sidebar/use-domain";
 import { cn } from "@/lib/utils";
-import { Domains } from "@/types/types";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import AppDrawer from "../drawer";
@@ -10,16 +9,22 @@ import { Button } from "../ui/button";
 
 type Props = {
   min?: boolean;
-  domains: Domains;
+  domains:
+    | {
+        id: string;
+        name: string;
+      }[]
+    | null
+    | undefined;
 };
 
 const DomainMenu = ({ domains, min }: Props) => {
   const { register, onAddDomain, loading, errors, isDomain } = useDomain();
 
   return (
-    <div className={cn("flex flex-col gap-3 mt-3")}>
+    <div className={cn("flex flex-col gap-3", min ? "mt-6" : "mt-3")}>
       <div className="flex justify-between w-full items-center">
-        <p className="text-xs text-gray-500">DOMAINS</p>
+        {!min && <p className="text-xs text-gray-500">DOMAINS</p>}
         <AppDrawer
           description="add in your domain address to integrate your chatbot"
           title="Add your business domain"
@@ -40,7 +45,7 @@ const DomainMenu = ({ domains, min }: Props) => {
                 label="Domain"
                 name="domain"
                 errors={errors}
-                placeholder="domain_name.com"
+                placeholder="mydomain.com"
                 type="text"
               />
               <Button type="submit" className="w-full">
@@ -57,11 +62,12 @@ const DomainMenu = ({ domains, min }: Props) => {
               href={`/settings/${domain.name.split(".")[0]}`}
               key={domain.id}
               className={cn(
-                "flex gap-3 hover:bg-white rounded-full transition duration-100 ease-in-out cursor-pointer px-2 py-1",
+                "flex gap-3 hover:bg-white rounded-full transition duration-100 ease-in-out cursor-pointer ",
+                !min ? "p-2" : "py-2",
                 domain.name.split(".")[0] == isDomain && "bg-white"
               )}
             >
-              <p className="text-sm">{domain.name}</p>
+              {!min && <p className="text-sm">{domain.name}</p>}
             </Link>
           ))}
       </div>

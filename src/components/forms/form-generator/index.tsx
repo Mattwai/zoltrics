@@ -5,7 +5,7 @@ import { ErrorMessage } from "@hookform/error-message";
 import { FieldErrors, FieldValues, UseFormRegister } from "react-hook-form";
 
 type Props = {
-  type: "text" | "email";
+  type: "text" | "email" | "password";
   inputType: "select" | "input" | "textarea";
   options?: { value: string; label: string; id: string }[];
   label?: string;

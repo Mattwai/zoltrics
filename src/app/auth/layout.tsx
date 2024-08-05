@@ -1,51 +1,32 @@
 "use client";
-import { getSession } from "next-auth/react";
+import { currentUser } from "@clerk/nextjs";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import React, { useEffect } from "react";
+import { redirect } from "next/navigation";
+import React from "react";
 
 type Props = {
   children: React.ReactNode;
 };
 
-const Layout = ({ children }: Props) => {
-  const router = useRouter(); // Use useRouter to get router object
+const Layout = async ({ children }: Props) => {
+  const user = await currentUser();
 
-  useEffect(() => {
-    const checkSession = async () => {
-      const session = await getSession();
-      if (session) {
-        const callbackUrl =
-          typeof window !== "undefined"
-            ? localStorage.getItem("callbackUrl")
-            : null; // Retrieve callback URL from localStorage
+  if (user) redirect("/");
 
-        if (callbackUrl) {
-          router.push(callbackUrl); // Redirect to callback URL if it exists
-        } else {
-          router.push("/dashboard"); // Otherwise, redirect to dashboard
-        }
-      }
-    };
-
-    checkSession();
-  }, [router]);
-
-  const returnHome = () => {
-    router.push("/");
-  };
   return (
     <div className="h-screen flex w-full justify-center">
       <div className="w-[600px] ld:w-full flex flex-col items-start p-6">
-        <button onClick={returnHome} className="focus:outline-none">
-          <Image
-            src="/images/logo.png"
-            alt="LOGO"
-            width={80}
-            height={80}
-            className="cursor-pointer"
-          />
-        </button>
+        <Image
+          src="/images/logo.png"
+          alt="LOGO"
+          sizes="100vw"
+          style={{
+            width: "20%",
+            height: "auto",
+          }}
+          width={0}
+          height={0}
+        />
         {children}
       </div>
       <div className="hidden lg:flex flex-1 w-full max-h-full max-w-4000px overflow-hidden relative bg-cream  flex-col pt-10 pl-24 gap-3">

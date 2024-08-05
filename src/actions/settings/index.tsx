@@ -1,16 +1,14 @@
 "use server";
-import { authConfig } from "@/lib/auth";
 import { client } from "@/lib/prisma";
-import { User } from "@prisma/client";
-import { getServerSession } from "next-auth";
+import { clerkClient, currentUser } from "@clerk/nextjs";
 
 export const onIntegrateDomain = async (domain: string) => {
-  const session = await getServerSession(authConfig);
-  if (!session || !session.user) return;
+  const user = await currentUser();
+  if (!user) return;
   try {
     const subscription = await client.user.findUnique({
       where: {
-        id: session.user.id,
+        clerkId: user.id,
       },
       select: {
         _count: {
@@ -27,7 +25,7 @@ export const onIntegrateDomain = async (domain: string) => {
     });
     const domainExists = await client.user.findFirst({
       where: {
-        id: session.user.id,
+        clerkId: user.id,
         domains: {
           some: {
             name: domain,
@@ -48,7 +46,7 @@ export const onIntegrateDomain = async (domain: string) => {
       ) {
         const newDomain = await client.user.update({
           where: {
-            id: session.user.id,
+            clerkId: user.id,
           },
           data: {
             domains: {
@@ -84,12 +82,12 @@ export const onIntegrateDomain = async (domain: string) => {
 };
 
 export const onGetSubscriptionPlan = async () => {
-  const session = await getServerSession(authConfig);
-  if (!session || !session.user) return;
   try {
+    const user = await currentUser();
+    if (!user) return;
     const plan = await client.user.findUnique({
       where: {
-        id: session.user.id,
+        clerkId: user.id,
       },
       select: {
         subscription: {
@@ -108,12 +106,12 @@ export const onGetSubscriptionPlan = async () => {
 };
 
 export const onGetAllAccountDomains = async () => {
-  const session = await getServerSession(authConfig);
-  if (!session || !session.user) return null;
   try {
-    const userWithDomains = await client.user.findUnique({
+    const user = await currentUser();
+    if (!user) return;
+    const domains = await client.user.findUnique({
       where: {
-        id: session.user.id,
+        clerkId: user.id,
       },
       select: {
         id: true,
@@ -135,26 +133,32 @@ export const onGetAllAccountDomains = async () => {
         },
       },
     });
-    // Return the domains data if found
-    if (userWithDomains) {
-      return userWithDomains.domains;
-    } else {
-      return null;
+    return { ...domains };
+  } catch (error) {
+    console.log(error);
+  }
+};
+export const onUpdatePassword = async (password: string) => {
+  try {
+    const user = await currentUser();
+
+    if (!user) return null;
+    const update = await clerkClient.users.updateUser(user.id, { password });
+    if (update) {
+      return { status: 200, message: "Password updated" };
     }
   } catch (error) {
-    console.error("Error fetching domains:", error);
-    return null;
+    console.log(error);
   }
 };
 
 export const onGetCurrentDomainInfo = async (domain: string) => {
-  const session = await getServerSession(authConfig);
-  if (!session || !session.user) return;
-  if (!session) return;
   try {
+    const user = await currentUser();
+    if (!user) return;
     const userDomain = await client.user.findUnique({
       where: {
-        id: session.user.id,
+        clerkId: user.id,
       },
       select: {
         subscription: {
@@ -263,14 +267,13 @@ export const onUpdateWelcomeMessage = async (
 };
 
 export const onDeleteUserDomain = async (id: string) => {
-  const session = await getServerSession(authConfig);
-  if (!session || !session.user) return;
-
+  const user = await currentUser();
+  if (!user) return;
   try {
     //first verify that domain belongs to user
     const validUser = await client.user.findUnique({
       where: {
-        id: session.user.id,
+        clerkId: user.id,
       },
       select: {
         id: true,
@@ -435,13 +438,13 @@ export const onGetAllFilterQuestions = async (id: string) => {
 };
 
 export const onGetPaymentConnected = async () => {
-  const session = await getServerSession(authConfig);
-  if (!session || !session.user) return null;
+  const user = await currentUser();
+  if (!user) return;
 
   try {
     const connected = await client.user.findUnique({
       where: {
-        id: session.user.id,
+        clerkId: user.id,
       },
       select: {
         stripeId: true,
@@ -488,64 +491,5 @@ export const onCreateNewDomainProduct = async (
     }
   } catch (error) {
     console.log(error);
-  }
-};
-
-export const onUpdateProfileIcon = async (profileIcon: string) => {
-  const session = await getServerSession(authConfig);
-  if (!session || !session.user)
-    return { status: 401, message: "Unauthorized" };
-  try {
-    const update = await client.user.update({
-      where: {
-        id: session.user.id,
-      },
-      data: {
-        profileIcon: profileIcon,
-      },
-    });
-
-    if (update) {
-      return { status: 200, message: "Profile icon updated" };
-    }
-  } catch (error) {
-    console.error("Error updating profile icon:", error);
-    return { status: 500, message: "Internal server error" };
-  }
-};
-export const onGetProfileIcon = async (): Promise<string | undefined> => {
-  const session = await getServerSession(authConfig);
-  if (!session || !session.user) return;
-  try {
-    const user = await client.user.findUnique({
-      where: {
-        id: session.user.id,
-      },
-      select: {
-        profileIcon: true,
-      },
-    });
-    if (!user) throw new Error("User not found");
-    return user.profileIcon;
-  } catch (error) {
-    console.error("Error fetching profile icon:", error);
-    return;
-  }
-};
-
-export const onGetUser = async (): Promise<User | null> => {
-  const session = await getServerSession(authConfig);
-  if (!session || !session.user) return null;
-  try {
-    const user = await client.user.findUnique({
-      where: {
-        id: session.user.id,
-      },
-    });
-    if (!user) throw new Error("User not found");
-    return user;
-  } catch (error) {
-    console.error("Error fetching user:", error);
-    return null;
   }
 };

@@ -15,6 +15,14 @@ import CalIcon from "@/icons/cal-icon";
 import PersonIcon from "@/icons/person-icon";
 import { TransactionsIcon } from "@/icons/transactions-icon";
 import { DollarSign } from "lucide-react";
+import {
+  AwaitedReactNode,
+  JSXElementConstructor,
+  Key,
+  ReactElement,
+  ReactNode,
+  ReactPortal,
+} from "react";
 
 const DashboardPage = async () => {
   const clients = await getUserClients();
@@ -78,19 +86,35 @@ const DashboardPage = async () => {
             </div>
             <Separator orientation="horizontal" />
             {transactions &&
-              transactions.data.map((transaction) => (
-                <div
-                  className="flex gap-3 w-full justify-between items-center border-b-2 py-5"
-                  key={transaction.id}
-                >
-                  <p className="font-bold">
-                    {transaction.calculated_statement_descriptor}
-                  </p>
-                  <p className="font-bold text-xl">
-                    ${transaction.amount / 100}
-                  </p>
-                </div>
-              ))}
+              transactions.data.map(
+                (transaction: {
+                  id: Key | null | undefined;
+                  calculated_statement_descriptor:
+                    | string
+                    | number
+                    | bigint
+                    | boolean
+                    | ReactElement<any, string | JSXElementConstructor<any>>
+                    | Iterable<ReactNode>
+                    | ReactPortal
+                    | Promise<AwaitedReactNode>
+                    | null
+                    | undefined;
+                  amount: number;
+                }) => (
+                  <div
+                    className="flex gap-3 w-full justify-between items-center border-b-2 py-5"
+                    key={transaction.id}
+                  >
+                    <p className="font-bold">
+                      {transaction.calculated_statement_descriptor}
+                    </p>
+                    <p className="font-bold text-xl">
+                      ${transaction.amount / 100}
+                    </p>
+                  </div>
+                )
+              )}
           </div>
         </div>
       </div>
