@@ -12,7 +12,7 @@ import {
   ConversationSearchSchema,
 } from "@/schemas/conversation-schema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 
 export const useConversation = () => {
@@ -78,40 +78,40 @@ export const useChatTime = (createdAt: Date, roomId: string) => {
   const [messageSentAt, setMessageSentAt] = useState<string>();
   const [urgent, setUrgent] = useState<boolean>(false);
 
-  useEffect(() => {
-    const onSetMessageRecievedDate = () => {
-      const dt = new Date(createdAt);
-      const current = new Date();
-      const currentDate = current.getDate();
-      const hr = dt.getHours();
-      const min = dt.getMinutes();
-      const date = dt.getDate();
-      const month = dt.getMonth();
-      const difference = currentDate - date;
+  const onSetMessageRecievedDate = () => {
+    const dt = new Date(createdAt);
+    const current = new Date();
+    const currentDate = current.getDate();
+    const hr = dt.getHours();
+    const min = dt.getMinutes();
+    const date = dt.getDate();
+    const month = dt.getMonth();
+    const difference = currentDate - date;
 
-      if (difference <= 0) {
-        setMessageSentAt(`${hr}:${min}${hr > 12 ? "PM" : "AM"}`);
-        if (current.getHours() - dt.getHours() < 2) {
-          setUrgent(true);
-        }
-      } else {
-        setMessageSentAt(`${date} ${getMonthName(month)}`);
+    if (difference <= 0) {
+      setMessageSentAt(`${hr}:${min}${hr > 12 ? "PM" : "AM"}`);
+      if (current.getHours() - dt.getHours() < 2) {
+        setUrgent(true);
       }
-    };
+    } else {
+      setMessageSentAt(`${date} ${getMonthName(month)}`);
+    }
+  };
 
-    onSetMessageRecievedDate(); // Call the function immediately
-  }, [createdAt]); // Include createdAt as a dependency if it's used inside onSetMessageRecievedDate
-
-  const onSeenChat = useCallback(async () => {
-    if (chatRoom === roomId && urgent) {
+  const onSeenChat = async () => {
+    if (chatRoom == roomId && urgent) {
       await onViewUnReadMessages(roomId);
       setUrgent(false);
     }
-  }, [chatRoom, roomId, urgent]);
+  };
 
   useEffect(() => {
     onSeenChat();
-  }, [onSeenChat]);
+  }, [chatRoom]);
+
+  useEffect(() => {
+    onSetMessageRecievedDate();
+  }, []);
 
   return { messageSentAt, urgent, onSeenChat };
 };
@@ -147,7 +147,7 @@ export const useChatWindow = () => {
         pusherClient.unsubscribe(chatRoom);
       };
     }
-  }, [chatRoom, setChats]);
+  }, [chatRoom]);
 
   const onHandleSentMessage = handleSubmit(async (values) => {
     try {

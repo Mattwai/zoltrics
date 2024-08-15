@@ -1,11 +1,13 @@
 import { useDomain } from "@/hooks/sidebar/use-domain";
 import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import AppDrawer from "../drawer";
 import FormGenerator from "../forms/form-generator";
 import { Loader } from "../loader";
 import { Button } from "../ui/button";
+import UploadButton from "../upload-button";
 
 type Props = {
   min?: boolean;
@@ -13,6 +15,7 @@ type Props = {
     | {
         id: string;
         name: string;
+        icon: string | null;
       }[]
     | null
     | undefined;
@@ -48,6 +51,11 @@ const DomainMenu = ({ domains, min }: Props) => {
                 placeholder="mydomain.com"
                 type="text"
               />
+              <UploadButton
+                register={register}
+                label="Upload Icon"
+                errors={errors}
+              />
               <Button type="submit" className="w-full">
                 Add Domain
               </Button>
@@ -67,6 +75,12 @@ const DomainMenu = ({ domains, min }: Props) => {
                 domain.name.split(".")[0] == isDomain && "bg-white"
               )}
             >
+              <Image
+                src={`https://ucarecdn.com/${domain.icon}/`}
+                alt="logo"
+                width={20}
+                height={20}
+              />
               {!min && <p className="text-sm">{domain.name}</p>}
             </Link>
           ))}

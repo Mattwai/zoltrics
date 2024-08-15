@@ -7,8 +7,8 @@ type Props = {};
 
 const Page = async (props: Props) => {
   const user = await currentUser();
-  if (!user) return null;
 
+  if (!user) return null;
   const customers = await onGetAllCustomers(user.id);
   const campaigns = await onGetAllCampaigns(user.id);
 

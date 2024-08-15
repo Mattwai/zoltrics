@@ -13,7 +13,7 @@ import {
 } from "@/schemas/marketing-schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 export const useEmailMarketing = () => {
@@ -158,7 +158,7 @@ export const useAnswers = (id: string) => {
   >([]);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const onGetCustomerAnswers = useCallback(async () => {
+  const onGetCustomerAnswers = async () => {
     try {
       setLoading(true);
       const answer = await onGetAllCustomerResponses(id);
@@ -169,11 +169,11 @@ export const useAnswers = (id: string) => {
     } catch (error) {
       console.log(error);
     }
-  }, [id]);
+  };
 
   useEffect(() => {
     onGetCustomerAnswers();
-  }, [onGetCustomerAnswers]);
+  }, []);
 
   return { answers, loading };
 };
@@ -197,7 +197,7 @@ export const useEditEmail = (id: string) => {
 
   useEffect(() => {
     onGetTemplate(id);
-  }, [id]);
+  }, []);
 
   return { loading, template };
 };

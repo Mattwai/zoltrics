@@ -32,14 +32,25 @@ const Modal = ({
       return (
         <Dialog>
           <DialogTrigger asChild>{trigger}</DialogTrigger>
-          <DialogContent className="overflow-y-auto max-h-screen">
+          <DialogContent>
             <div className="flex justify-center gap-3">
+              <div className="w-12 h-12 relative">
+                <Image
+                  src={`https://ucarecdn.com/2c9bd4ab-1f00-41df-bad2-df668f65a232/`}
+                  fill
+                  alt="Zoltrics"
+                />
+              </div>
               <div className="text-gray-400">
                 <ArrowLeft size={20} />
                 <ArrowRight size={20} />
               </div>
               <div className="w-12 h-12 relative">
-                <Image src={`/images/${logo}`} fill alt="Stripe" />
+                <Image
+                  src={`https://ucarecdn.com/${logo}/`}
+                  fill
+                  alt="Stripe"
+                />
               </div>
             </div>
             <DialogHeader className="flex items-center">
@@ -56,7 +67,7 @@ const Modal = ({
       return (
         <Dialog>
           <DialogTrigger asChild>{trigger}</DialogTrigger>
-          <DialogContent className="overflow-y-auto max-h-screen">
+          <DialogContent>
             <DialogHeader>
               <DialogTitle className="text-xl">{title}</DialogTitle>
               <DialogDescription>{description}</DialogDescription>

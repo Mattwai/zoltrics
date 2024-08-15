@@ -112,14 +112,14 @@ export const saveAnswers = async (
   }
 };
 
-export const onGetAllBookingsForCurrentUser = async (id: string) => {
+export const onGetAllBookingsForCurrentUser = async (clerkId: string) => {
   try {
     const bookings = await client.bookings.findMany({
       where: {
         Customer: {
           Domain: {
             User: {
-              id,
+              clerkId,
             },
           },
         },

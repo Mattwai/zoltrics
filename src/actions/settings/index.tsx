@@ -2,7 +2,7 @@
 import { client } from "@/lib/prisma";
 import { clerkClient, currentUser } from "@clerk/nextjs";
 
-export const onIntegrateDomain = async (domain: string) => {
+export const onIntegrateDomain = async (domain: string, icon: string) => {
   const user = await currentUser();
   if (!user) return;
   try {
@@ -35,13 +35,12 @@ export const onIntegrateDomain = async (domain: string) => {
     });
 
     if (!domainExists) {
-      // WIP
       if (
-        (subscription?.subscription?.plan == "FREE" &&
-          subscription._count.domains < 1) ||
         (subscription?.subscription?.plan == "STANDARD" &&
-          subscription._count.domains < 2) ||
-        (subscription?.subscription?.plan == "PROFESSIONAL" &&
+          subscription._count.domains < 1) ||
+        (subscription?.subscription?.plan == "PRO" &&
+          subscription._count.domains < 5) ||
+        (subscription?.subscription?.plan == "ULTIMATE" &&
           subscription._count.domains < 10)
       ) {
         const newDomain = await client.user.update({
@@ -52,6 +51,7 @@ export const onIntegrateDomain = async (domain: string) => {
             domains: {
               create: {
                 name: domain,
+                icon,
                 chatBot: {
                   create: {
                     welcomeMessage: "Hey there, have  a question? Text us here",
@@ -106,9 +106,9 @@ export const onGetSubscriptionPlan = async () => {
 };
 
 export const onGetAllAccountDomains = async () => {
+  const user = await currentUser();
+  if (!user) return;
   try {
-    const user = await currentUser();
-    if (!user) return;
     const domains = await client.user.findUnique({
       where: {
         clerkId: user.id,
@@ -118,6 +118,7 @@ export const onGetAllAccountDomains = async () => {
         domains: {
           select: {
             name: true,
+            icon: true,
             id: true,
             customer: {
               select: {
@@ -153,9 +154,9 @@ export const onUpdatePassword = async (password: string) => {
 };
 
 export const onGetCurrentDomainInfo = async (domain: string) => {
+  const user = await currentUser();
+  if (!user) return;
   try {
-    const user = await currentUser();
-    if (!user) return;
     const userDomain = await client.user.findUnique({
       where: {
         clerkId: user.id,
@@ -175,12 +176,14 @@ export const onGetCurrentDomainInfo = async (domain: string) => {
           select: {
             id: true,
             name: true,
+            icon: true,
             userId: true,
             products: true,
             chatBot: {
               select: {
                 id: true,
                 welcomeMessage: true,
+                icon: true,
               },
             },
           },
@@ -238,6 +241,43 @@ export const onUpdateDomain = async (id: string, name: string) => {
   }
 };
 
+export const onChatBotImageUpdate = async (id: string, icon: string) => {
+  const user = await currentUser();
+
+  if (!user) return;
+
+  try {
+    const domain = await client.domain.update({
+      where: {
+        id,
+      },
+      data: {
+        chatBot: {
+          update: {
+            data: {
+              icon,
+            },
+          },
+        },
+      },
+    });
+
+    if (domain) {
+      return {
+        status: 200,
+        message: "Domain updated",
+      };
+    }
+
+    return {
+      status: 400,
+      message: "Oops something went wrong!",
+    };
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 export const onUpdateWelcomeMessage = async (
   message: string,
   domainId: string
@@ -268,7 +308,9 @@ export const onUpdateWelcomeMessage = async (
 
 export const onDeleteUserDomain = async (id: string) => {
   const user = await currentUser();
+
   if (!user) return;
+
   try {
     //first verify that domain belongs to user
     const validUser = await client.user.findUnique({
@@ -438,34 +480,30 @@ export const onGetAllFilterQuestions = async (id: string) => {
 };
 
 export const onGetPaymentConnected = async () => {
-  const user = await currentUser();
-  if (!user) return;
-
   try {
-    const connected = await client.user.findUnique({
-      where: {
-        clerkId: user.id,
-      },
-      select: {
-        stripeId: true,
-      },
-    });
-
-    if (connected) {
-      return connected.stripeId;
-    } else {
-      console.warn("No Stripe ID found for user.");
-      return null;
+    const user = await currentUser();
+    if (user) {
+      const connected = await client.user.findUnique({
+        where: {
+          clerkId: user.id,
+        },
+        select: {
+          stripeId: true,
+        },
+      });
+      if (connected) {
+        return connected.stripeId;
+      }
     }
   } catch (error) {
-    console.error("Error fetching Stripe ID:", error);
-    return null;
+    console.log(error);
   }
 };
 
 export const onCreateNewDomainProduct = async (
   id: string,
   name: string,
+  image: string,
   price: string
 ) => {
   try {
@@ -477,6 +515,7 @@ export const onCreateNewDomainProduct = async (
         products: {
           create: {
             name,
+            image,
             price: parseInt(price),
           },
         },

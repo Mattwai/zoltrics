@@ -25,8 +25,8 @@ interface Booking {
 
 const Page = async (props: Props) => {
   const user = await currentUser();
-  if (!user) return null;
 
+  if (!user) return null;
   const domainBookings = await onGetAllBookingsForCurrentUser(user.id);
   const today = new Date();
 

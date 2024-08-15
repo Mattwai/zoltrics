@@ -6,7 +6,7 @@ import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET!, {
   typescript: true,
-  apiVersion: "2024-06-20",
+  apiVersion: "2024-04-10",
 });
 
 export const onCreateCustomerPaymentIntentSecret = async (
@@ -34,11 +34,11 @@ export const onCreateCustomerPaymentIntentSecret = async (
 };
 
 export const onUpdateSubscription = async (
-  plan: "FREE" | "STANDARD" | "PROFESSIONAL"
+  plan: "STANDARD" | "PRO" | "ULTIMATE"
 ) => {
   try {
     const user = await currentUser();
-    if (!user) return null;
+    if (!user) return;
     const update = await client.user.update({
       where: {
         clerkId: user.id,
@@ -48,8 +48,7 @@ export const onUpdateSubscription = async (
           update: {
             data: {
               plan,
-              credits:
-                plan == "STANDARD" ? 100 : plan == "PROFESSIONAL" ? 1000 : 10,
+              credits: plan == "PRO" ? 50 : plan == "ULTIMATE" ? 500 : 10,
             },
           },
         },
@@ -74,19 +73,18 @@ export const onUpdateSubscription = async (
   }
 };
 
-const setPlanAmount = (item: "FREE" | "STANDARD" | "PROFESSIONAL") => {
-  // price charged for billing plan
-  if (item == "STANDARD") {
-    return 5900;
+const setPlanAmount = (item: "STANDARD" | "PRO" | "ULTIMATE") => {
+  if (item == "PRO") {
+    return 1500;
   }
-  if (item == "PROFESSIONAL") {
-    return 12900;
+  if (item == "ULTIMATE") {
+    return 3500;
   }
   return 0;
 };
 
 export const onGetStripeClientSecret = async (
-  item: "FREE" | "STANDARD" | "PROFESSIONAL"
+  item: "STANDARD" | "PRO" | "ULTIMATE"
 ) => {
   try {
     const amount = setPlanAmount(item);

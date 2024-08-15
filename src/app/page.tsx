@@ -80,8 +80,7 @@ export default async function Home() {
             <CardContent>
               <span className="text-4xl font-bold">{card.price}</span>
               <span className="text-muted-foreground">
-                <sub className="subscript">USD </sub>
-                <span> / month</span>
+                <span>/ month</span>
               </span>
             </CardContent>
             <CardFooter className="flex flex-col items-start gap-4">

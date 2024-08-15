@@ -23,6 +23,7 @@ type PortalFormProps = {
   products?:
     | {
         name: string;
+        image: string;
         price: number;
       }[]
     | undefined;
@@ -59,7 +60,7 @@ const PortalForm = ({
     if (questions.every((question) => question.answered)) {
       onNext();
     }
-  }, [onNext, questions]);
+  }, []);
 
   return (
     <form

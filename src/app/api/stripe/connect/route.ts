@@ -1,4 +1,3 @@
-// src/app/api/stripe/connect/route.ts
 import { client } from "@/lib/prisma";
 import { currentUser } from "@clerk/nextjs";
 import { NextResponse } from "next/server";
@@ -6,13 +5,13 @@ import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET!, {
   typescript: true,
-  apiVersion: "2024-06-20",
+  apiVersion: "2024-04-10",
 });
 
 export async function GET() {
+  const user = await currentUser();
+  if (!user) return new NextResponse("User not authenticated");
   try {
-    const user = await currentUser();
-    if (!user) return new NextResponse("User not authenticated");
     const account = await stripe.accounts.create({
       type: "express",
     });

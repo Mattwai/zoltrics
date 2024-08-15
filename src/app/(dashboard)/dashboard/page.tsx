@@ -1,4 +1,3 @@
-// src/app/(dashboard)/dashboard/page.tsx
 import { getUserAppointments } from "@/actions/appointment";
 import {
   getUserBalance,
@@ -15,16 +14,10 @@ import CalIcon from "@/icons/cal-icon";
 import PersonIcon from "@/icons/person-icon";
 import { TransactionsIcon } from "@/icons/transactions-icon";
 import { DollarSign } from "lucide-react";
-import {
-  AwaitedReactNode,
-  JSXElementConstructor,
-  Key,
-  ReactElement,
-  ReactNode,
-  ReactPortal,
-} from "react";
 
-const DashboardPage = async () => {
+type Props = {};
+
+const Page = async (props: Props) => {
   const clients = await getUserClients();
   const sales = await getUserBalance();
   const bookings = await getUserAppointments();
@@ -64,7 +57,6 @@ const DashboardPage = async () => {
           <div>
             <div>
               <h2 className="font-bold text-2xl">Plan Usage</h2>
-              <h2 className="font text py-1">[{plan?.plan!}]</h2>
               <p className="text-sm font-light">
                 A detailed overview of your metrics, usage, customers and more
               </p>
@@ -86,35 +78,19 @@ const DashboardPage = async () => {
             </div>
             <Separator orientation="horizontal" />
             {transactions &&
-              transactions.data.map(
-                (transaction: {
-                  id: Key | null | undefined;
-                  calculated_statement_descriptor:
-                    | string
-                    | number
-                    | bigint
-                    | boolean
-                    | ReactElement<any, string | JSXElementConstructor<any>>
-                    | Iterable<ReactNode>
-                    | ReactPortal
-                    | Promise<AwaitedReactNode>
-                    | null
-                    | undefined;
-                  amount: number;
-                }) => (
-                  <div
-                    className="flex gap-3 w-full justify-between items-center border-b-2 py-5"
-                    key={transaction.id}
-                  >
-                    <p className="font-bold">
-                      {transaction.calculated_statement_descriptor}
-                    </p>
-                    <p className="font-bold text-xl">
-                      ${transaction.amount / 100}
-                    </p>
-                  </div>
-                )
-              )}
+              transactions.data.map((transaction) => (
+                <div
+                  className="flex gap-3 w-full justify-between items-center border-b-2 py-5"
+                  key={transaction.id}
+                >
+                  <p className="font-bold">
+                    {transaction.calculated_statement_descriptor}
+                  </p>
+                  <p className="font-bold text-xl">
+                    ${transaction.amount / 100}
+                  </p>
+                </div>
+              ))}
           </div>
         </div>
       </div>
@@ -122,4 +98,4 @@ const DashboardPage = async () => {
   );
 };
 
-export default DashboardPage;
+export default Page;

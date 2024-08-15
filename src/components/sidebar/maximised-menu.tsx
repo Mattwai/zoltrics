@@ -1,5 +1,6 @@
 import { SIDE_BAR_MENU } from "@/constants/menu";
-import { LogOut, Menu, MonitorSmartphone } from "lucide-react";
+import SettingsIcon from "@/icons/settings-icon";
+import { LogOut, Menu } from "lucide-react";
 import Image from "next/image";
 import DomainMenu from "./domain-menu";
 import MenuItem from "./menu-item";
@@ -12,6 +13,7 @@ type Props = {
     | {
         id: string;
         name: string;
+        icon: string | null;
       }[]
     | null
     | undefined;
@@ -50,14 +52,15 @@ const MaxMenu = ({ current, domains, onExpand, onSignOut }: Props) => {
           <p className="text-xs text-gray-500 mb-3">OPTIONS</p>
           <MenuItem
             size="max"
-            label="Sign out"
-            icon={<LogOut />}
-            onSignOut={onSignOut}
+            label="Settings"
+            icon={<SettingsIcon />}
+            path="settings"
           />
           <MenuItem
             size="max"
-            label="Mobile App"
-            icon={<MonitorSmartphone />}
+            label="Sign out"
+            icon={<LogOut />}
+            onSignOut={onSignOut}
           />
         </div>
       </div>

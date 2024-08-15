@@ -13,6 +13,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
 model User {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   fullname  String
@@ -33,10 +34,13 @@ model User {
 model Domain {
   id   String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name String
+  icon String
+
   chatBot         ChatBot?
   helpdesk        HelpDesk[]
   filterQuestions FilterQuestions[]
   products        Product[]
+
   customer   Customer[]
   User       User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId     String?    @db.Uuid
@@ -47,6 +51,7 @@ model Domain {
 model ChatBot {
   id             String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   welcomeMessage String?
+  icon           String?
   background     String?
   textColor      String?
   helpdesk       Boolean @default(false)
@@ -56,7 +61,7 @@ model ChatBot {
 
 model Billings {
   id      String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  plan    Plans   @default(FREE)
+  plan    Plans   @default(STANDARD)
   credits Int     @default(10)
   User    User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId  String? @unique @db.Uuid
@@ -91,9 +96,13 @@ model CustomerResponses {
 model Customer {
   id    String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email String? 
+
   questions CustomerResponses[]
+
   chatRoom ChatRoom[]
+
   booking Bookings[]
+
   Domain   Domain? @relation(fields: [domainId], references: [id], onDelete: Cascade)
   domainId String? @db.Uuid
 }
@@ -147,15 +156,16 @@ model Product {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String
   price     Int
+  image     String
   createdAt DateTime @default(now())
   Domain    Domain?  @relation(fields: [domainId], references: [id], onDelete: Cascade)
   domainId  String?  @db.Uuid
 }
 
 enum Plans {
-  FREE
   STANDARD
-  PROFESSIONAL
+  PRO
+  ULTIMATE
 }
 
 enum Role {

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useSubscriptions } from "@/hooks/billing/use-billing";
 
 type Props = {
-  plan: "FREE" | "STANDARD" | "PROFESSIONAL";
+  plan: "STANDARD" | "PRO" | "ULTIMATE";
 };
 
 const SubscriptionForm = ({ plan }: Props) => {
@@ -18,34 +18,34 @@ const SubscriptionForm = ({ plan }: Props) => {
       <div className="flex flex-col gap-5">
         <div className="flex flex-col gap-3">
           <SubscriptionCard
-            title="FREE"
-            description="Get started with our free AI CRM, perfect for individuals and small businesses"
-            price="0"
-            payment={payment}
-            onPayment={onSetPayment}
-            id="FREE"
-          />
-
-          <SubscriptionCard
             title="STANDARD"
-            description="Unlock the tools and support for growing and managing businesses and customers"
-            price="59"
+            description="Perfect if you’re just getting started with Zoltrics"
+            price="0"
             payment={payment}
             onPayment={onSetPayment}
             id="STANDARD"
           />
 
           <SubscriptionCard
-            title="PROFESSIONAL"
-            description="Full access to premium features to support maximum performance and scalability"
-            price="129"
+            title="PRO"
+            description="Perfect if you’re just getting started with Zoltrics"
+            price="15"
             payment={payment}
             onPayment={onSetPayment}
-            id="PROFESSIONAL"
+            id="PRO"
+          />
+
+          <SubscriptionCard
+            title="ULTIMATE"
+            description="Perfect if you’re just getting started with Zoltrics"
+            price="35"
+            payment={payment}
+            onPayment={onSetPayment}
+            id="ULTIMATE"
           />
         </div>
         <StripeElements payment={payment} />
-        {payment === "FREE" && (
+        {payment === "STANDARD" && (
           <Button onClick={onUpdatetToFreTier}>
             <Loader loading={loading}>Confirm</Loader>
           </Button>

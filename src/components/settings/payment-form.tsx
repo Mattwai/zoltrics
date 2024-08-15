@@ -6,7 +6,7 @@ import { Button } from "../ui/button";
 import { CardDescription } from "../ui/card";
 
 type PaymentFormProps = {
-  plan: "FREE" | "STANDARD" | "PROFESSIONAL";
+  plan: "STANDARD" | "PRO" | "ULTIMATE";
 };
 
 export const PaymentForm = ({ plan }: PaymentFormProps) => {

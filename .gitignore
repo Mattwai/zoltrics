@@ -6,6 +6,9 @@
 .pnp.js
 .yarn/install-state.gz
 
+# using yarn so can ignore npm dependencies lock file
+.package-lock.json
+
 # testing
 /coverage
 
@@ -27,6 +30,7 @@ yarn-error.log*
 
 # local env files
 .env*.local
+.env
 
 # vercel
 .vercel
@@ -34,3 +38,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.env
+.env

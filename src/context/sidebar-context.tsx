@@ -6,7 +6,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { useClerk } from "@clerk/nextjs";
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useChatContext } from "./chat-context";
 
 const useSideBar = () => {
@@ -37,23 +37,24 @@ const useSideBar = () => {
     }
   };
 
-  const onGetCurrentMode = useCallback(async () => {
+  const onGetCurrentMode = async () => {
     setLoading(true);
     const mode = await onGetConversationMode(chatRoom!);
     if (mode) {
       setRealtime(mode.live);
       setLoading(false);
     }
-  }, [chatRoom]);
+  };
 
   useEffect(() => {
     if (chatRoom) {
       onGetCurrentMode();
     }
-  }, [chatRoom, onGetCurrentMode]);
+  }, [chatRoom]);
 
   const page = pathname.split("/").pop();
   const { signOut } = useClerk();
+
   const onSignOut = () => signOut(() => router.push("/"));
 
   const onExpand = () => setExpand((prev) => !prev);

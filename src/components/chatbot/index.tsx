@@ -1,8 +1,10 @@
 "use client";
 import { useChatBot } from "@/hooks/chatbot/use-chatbot";
-import { BotIcon } from "@/icons/bot-icon";
-import { cn } from "@/lib/utils";
+import React from "react";
 import { BotWindow } from "./window";
+import { cn } from "@/lib/utils";
+import Image from "next/image";
+import { BotIcon } from "@/icons/bot-icon";
 
 type Props = {};
 
@@ -48,7 +50,15 @@ const AiChatBot = (props: Props) => {
         )}
         onClick={onOpenChatBot}
       >
-        <BotIcon />
+        {currentBot?.chatBot?.icon ? (
+          <Image
+            src={`https://ucarecdn.com/${currentBot.chatBot.icon}/`}
+            alt="bot"
+            fill
+          />
+        ) : (
+          <BotIcon />
+        )}
       </div>
     </div>
   );

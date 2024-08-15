@@ -7,7 +7,7 @@ type Props = {
   children: React.ReactNode;
 };
 
-const OwnerLayout = async ({ children }: Props) => {
+const Layout = async ({ children }: Props) => {
   const authenticated = await onLoginUser();
   if (!authenticated) return null;
 
@@ -23,4 +23,4 @@ const OwnerLayout = async ({ children }: Props) => {
   );
 };
 
-export default OwnerLayout;
+export default Layout;

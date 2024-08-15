@@ -1,4 +1,5 @@
 import {
+  onChatBotImageUpdate,
   onCreateFilterQuestions,
   onCreateHelpDeskQuestion,
   onCreateNewDomainProduct,
@@ -6,9 +7,14 @@ import {
   onGetAllFilterQuestions,
   onGetAllHelpDeskQuestions,
   onUpdateDomain,
+  onUpdatePassword,
   onUpdateWelcomeMessage,
 } from "@/actions/settings";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  ChangePasswordProps,
+  ChangePasswordSchema,
+} from "@/schemas/auth-schema";
 import {
   AddProductProps,
   AddProductSchema,
@@ -20,16 +26,55 @@ import {
   HelpDeskQuestionsSchema,
 } from "@/schemas/settings-schema";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { UploadClient } from "@uploadcare/upload-client";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+
+const upload = new UploadClient({
+  publicKey: process.env.NEXT_PUBLIC_UPLOAD_CARE_PUBLIC_KEY as string,
+});
 
 export const useThemeMode = () => {
   const { setTheme, theme } = useTheme();
   return {
     setTheme,
     theme,
+  };
+};
+
+export const useChangePassword = () => {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<ChangePasswordProps>({
+    resolver: zodResolver(ChangePasswordSchema),
+    mode: "onChange",
+  });
+  const { toast } = useToast();
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const onChangePassword = handleSubmit(async (values) => {
+    try {
+      setLoading(true);
+      const updated = await onUpdatePassword(values.password);
+      if (updated) {
+        reset();
+        setLoading(false);
+        toast({ title: "Success", description: updated.message });
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  });
+  return {
+    register,
+    errors,
+    onChangePassword,
+    loading,
   };
 };
 
@@ -56,6 +101,17 @@ export const useSettings = (id: string) => {
           title: "Success",
           description: domain.message,
         });
+      }
+    }
+    if (values.image[0]) {
+      const uploaded = await upload.uploadFile(values.image[0]);
+      const image = await onChatBotImageUpdate(id, uploaded.uuid);
+      if (image) {
+        toast({
+          title: image.status == 200 ? "Success" : "Error",
+          description: image.message,
+        });
+        setLoading(false);
       }
     }
     if (values.welcomeMessage) {
@@ -127,18 +183,18 @@ export const useHelpDesk = (id: string) => {
     }
   });
 
-  const onGetQuestions = useCallback(async () => {
+  const onGetQuestions = async () => {
     setLoading(true);
     const questions = await onGetAllHelpDeskQuestions(id);
     if (questions) {
       setIsQuestions(questions.questions);
       setLoading(false);
     }
-  }, [id]);
+  };
 
   useEffect(() => {
     onGetQuestions();
-  }, [onGetQuestions]);
+  }, []);
 
   return {
     register,
@@ -178,18 +234,18 @@ export const useFilterQuestions = (id: string) => {
     }
   });
 
-  const onGetQuestions = useCallback(async () => {
+  const onGetQuestions = async () => {
     setLoading(true);
     const questions = await onGetAllFilterQuestions(id);
     if (questions) {
       setIsQuestions(questions.questions);
       setLoading(false);
     }
-  }, [id]);
+  };
 
   useEffect(() => {
     onGetQuestions();
-  }, [onGetQuestions]);
+  }, []);
 
   return {
     loading,
@@ -215,9 +271,11 @@ export const useProducts = (domainId: string) => {
   const onCreateNewProduct = handleSubmit(async (values) => {
     try {
       setLoading(true);
+      const uploaded = await upload.uploadFile(values.image[0]);
       const product = await onCreateNewDomainProduct(
         domainId,
         values.name,
+        uploaded.uuid,
         values.price
       );
       if (product) {

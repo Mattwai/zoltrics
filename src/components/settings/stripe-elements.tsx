@@ -7,7 +7,7 @@ import { Loader } from "../loader";
 import { PaymentForm } from "./payment-form";
 
 type StripeElementsProps = {
-  payment: "FREE" | "STANDARD" | "PROFESSIONAL";
+  payment: "STANDARD" | "PRO" | "ULTIMATE";
 };
 
 export const StripeElements = ({ payment }: StripeElementsProps) => {
@@ -16,7 +16,7 @@ export const StripeElements = ({ payment }: StripeElementsProps) => {
   return (
     stripeSecret &&
     StripePromise &&
-    (payment == "STANDARD" || payment == "PROFESSIONAL") && (
+    (payment == "PRO" || payment == "ULTIMATE") && (
       <Loader loading={loadForm}>
         <Elements
           stripe={StripePromise}

@@ -8,7 +8,7 @@ export const onGetAllCustomers = async (id: string) => {
   try {
     const customers = await client.user.findUnique({
       where: {
-        id,
+        clerkId: id,
       },
       select: {
         subscription: {
@@ -45,7 +45,7 @@ export const onGetAllCampaigns = async (id: string) => {
   try {
     const campaigns = await client.user.findUnique({
       where: {
-        id,
+        clerkId: id,
       },
       select: {
         campaign: {
@@ -71,6 +71,7 @@ export const onCreateMarketingCampaign = async (name: string) => {
   try {
     const user = await currentUser();
     if (!user) return null;
+
     const campaign = await client.user.update({
       where: {
         clerkId: user.id,

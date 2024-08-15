@@ -21,7 +21,7 @@ const BillingSettings = async (props: Props) => {
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
       <div className="lg:col-span-1">
         <Section
-          label="Billing Settings"
+          label="Billing settings"
           message="Add payment information, upgrade and modify your plan."
         />
       </div>
@@ -30,7 +30,7 @@ const BillingSettings = async (props: Props) => {
           title="Choose A Plan"
           description="Tell us about yourself! What do you do? Let’s tailor your experience so it best suits you."
           trigger={
-            plan && plan === "FREE" ? (
+            plan && plan === "STANDARD" ? (
               <Card className="border-dashed bg-cream border-gray-400 w-full cursor-pointer h-[270px] flex justify-center items-center">
                 <CardContent className="flex gap-2 items-center">
                   <div className="rounded-full border-2 p-1">

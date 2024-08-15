@@ -25,8 +25,9 @@ export const UserRegistrationSchema: ZodType<UserRegistrationProps> = z
         message: "Your password can not be longer then 64 characters long",
       })
       .refine(
-        (value) => /^[a-zA-Z0-9_.-]*$/.test(value ?? ""),
-        "password should contain only alphabets and numbers"
+        (value) =>
+          /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]*$/.test(value ?? ""),
+        "Password should contain alphabets, numbers, and symbols"
       ),
     confirmPassword: z.string(),
     otp: z.string().min(6, { message: "You must enter a 6 digit code" }),
