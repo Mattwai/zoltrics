@@ -57,19 +57,4 @@ export const products = [
     link: "/",
     thumbnail: "/images/p3.png",
   },
-  {
-    title: "Blog Post 1",
-    link: "/",
-    thumbnail: "/images/p1.png",
-  },
-  {
-    title: "Blog Post 2",
-    link: "/",
-    thumbnail: "/images/p2.png",
-  },
-  {
-    title: "Blog Post 3",
-    link: "/",
-    thumbnail: "/images/p3.png",
-  },
 ];

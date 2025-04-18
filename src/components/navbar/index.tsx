@@ -29,12 +29,6 @@ function NavBar() {
             <Link href="#">Features</Link>
           </li>
           <li>
-            <Link href="/blog">Blog</Link>
-          </li>
-          <li>
-            <Link href="#">Enterprise</Link>
-          </li>
-          <li>
             <Link href="#">Contact Us</Link>
           </li>
         </ul>
