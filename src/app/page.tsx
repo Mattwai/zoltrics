@@ -1,7 +1,6 @@
 import { HeroParallax } from "@/components/global/connect-parallax";
 import { ContainerScroll } from "@/components/global/container-scroll-animation";
 import NavBar from "@/components/navbar";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -37,14 +36,14 @@ export default async function Home() {
                 <h1 className="text-5xl md:text-8xl  bg-clip-text text-transparent bg-gradient-to-b from-white to-neutral-600 font-sans font-bold">
                   An AI powered sales assistant chatbot and CRM
                 </h1>
-                <Button
-                  size={"lg"}
-                  className="p-8 mt-4 mb-8 md:mb-0 text-2xl w-full sm:w-fit border-t-2 rounded-full border-[#4D4D4D] bg-[#1F1F1F] hover:bg-white group transition-all flex items-center justify-center gap-4 hover:shadow-xl hover:shadow-neutral-500 duration-500"
+                <Link
+                  href="/dashboard"
+                  className="px-8 py-3 mt-8 mb-8 md:mb-0 text-2xl w-full sm:w-fit border-t-2 rounded-full border-[#4D4D4D] bg-[#1F1F1F] hover:bg-white group transition-all flex items-center justify-center gap-4 hover:shadow-xl hover:shadow-neutral-500 duration-500"
                 >
                   <span className="bg-clip-text text-transparent bg-gradient-to-r from-neutral-500 to-neutral-600  md:text-center font-sans group-hover:bg-gradient-to-r group-hover:from-black goup-hover:to-black">
                     Start For Free
                   </span>
-                </Button>
+                </Link>
               </div>
             }
           />
