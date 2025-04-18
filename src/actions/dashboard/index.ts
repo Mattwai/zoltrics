@@ -1,7 +1,8 @@
 "use server";
 
+import { authConfig } from "@/lib/auth";
 import { client } from "@/lib/prisma";
-import { currentUser } from "@clerk/nextjs";
+import { getServerSession } from "next-auth";
 import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET!, {
@@ -10,150 +11,145 @@ const stripe = new Stripe(process.env.STRIPE_SECRET!, {
 });
 
 export const getUserClients = async () => {
+  const session = await getServerSession(authConfig);
+  if (!session || !session.user) return;
   try {
-    const user = await currentUser();
-    if (user) {
-      const clients = await client.customer.count({
-        where: {
-          Domain: {
-            User: {
-              clerkId: user.id,
-            },
+    const clients = await client.customer.count({
+      where: {
+        Domain: {
+          User: {
+            id: session.user.id,
           },
         },
-      });
-      if (clients) {
-        return clients;
-      }
-    }
+      },
+    });
+    return clients;
   } catch (error) {
     console.log(error);
   }
 };
 
 export const getUserBalance = async () => {
+  const session = await getServerSession(authConfig);
+  if (!session || !session.user) return;
+
   try {
-    const user = await currentUser();
-    if (user) {
-      const connectedStripe = await client.user.findUnique({
-        where: {
-          clerkId: user.id,
-        },
-        select: {
-          stripeId: true,
-        },
-      });
-
-      if (connectedStripe) {
-        const transactions = await stripe.balance.retrieve({
-          stripeAccount: connectedStripe.stripeId!,
-        });
-
-        if (transactions) {
-          const sales = transactions.pending.reduce((total, next) => {
-            return total + next.amount;
-          }, 0);
-
-          return sales / 100;
-        }
-      }
+    const connectedStripe = await client.user.findUnique({
+      where: {
+        id: session.user.id,
+      },
+      select: {
+        stripeId: true,
+      },
+    });
+    if (!connectedStripe || !connectedStripe.stripeId) {
+      console.warn("No Stripe ID found for user.");
+      return null;
     }
+    const transactions = await stripe.balance.retrieve({
+      stripeAccount: connectedStripe.stripeId!,
+    });
+    const sales = transactions.pending.reduce((total, next) => {
+      return total + next.amount;
+    }, 0);
+
+    return sales / 100;
   } catch (error) {
-    console.log(error);
+    console.error("Error fetching user balance:", error);
+    return null; // or handle error as needed
   }
 };
 
 export const getUserPlanInfo = async () => {
+  const session = await getServerSession(authConfig);
+  if (!session || !session.user) return;
+
   try {
-    const user = await currentUser();
-    if (user) {
-      const plan = await client.user.findUnique({
-        where: {
-          clerkId: user.id,
-        },
-        select: {
-          _count: {
-            select: {
-              domains: true,
-            },
-          },
-          subscription: {
-            select: {
-              plan: true,
-              credits: true,
-            },
+    const plan = await client.user.findUnique({
+      where: {
+        id: session.user.id,
+      },
+      select: {
+        _count: {
+          select: {
+            domains: true,
           },
         },
-      });
-      if (plan) {
-        return {
-          plan: plan.subscription?.plan,
-          credits: plan.subscription?.credits,
-          domains: plan._count.domains,
-        };
-      }
+        subscription: {
+          select: {
+            plan: true,
+            credits: true,
+          },
+        },
+      },
+    });
+    if (plan) {
+      return {
+        plan: plan.subscription?.plan,
+        credits: plan.subscription?.credits,
+        domains: plan._count.domains,
+      };
     }
   } catch (error) {
-    console.log(error);
+    console.error("Error fetching user plan info:", error);
+    return null; // or handle error as needed
   }
 };
 
 export const getUserTotalProductPrices = async () => {
+  const session = await getServerSession(authConfig);
+  if (!session || !session.user) return;
+
   try {
-    const user = await currentUser();
-    if (user) {
-      const products = await client.product.findMany({
-        where: {
-          Domain: {
-            User: {
-              clerkId: user.id,
-            },
+    const products = await client.product.findMany({
+      where: {
+        Domain: {
+          User: {
+            id: session.user.id,
           },
         },
-        select: {
-          price: true,
-        },
-      });
+      },
+      select: {
+        price: true,
+      },
+    });
 
-      if (products) {
-        const total = products.reduce(
-          (total: number, next: { price: number }) => {
-            return total + next.price;
-          },
-          0
-        );
+    const total = products.reduce((total: number, next: { price: number }) => {
+      return total + next.price;
+    }, 0);
 
-        return total;
-      }
-    }
+    return total;
   } catch (error) {
-    console.log(error);
+    console.error("Error fetching total product prices:", error);
+    return null; // or handle error as needed
   }
 };
 
 export const getUserTransactions = async () => {
-  try {
-    const user = await currentUser();
-    if (user) {
-      const connectedStripe = await client.user.findUnique({
-        where: {
-          clerkId: user.id,
-        },
-        select: {
-          stripeId: true,
-        },
-      });
+  const session = await getServerSession(authConfig);
+  if (!session || !session.user) return;
 
-      if (connectedStripe) {
-        const transactions = await stripe.charges.list({
-          stripeAccount: connectedStripe.stripeId!,
-        });
-        if (transactions) {
-          return transactions;
-        }
-      }
+  try {
+    const connectedStripe = await client.user.findUnique({
+      where: {
+        id: session.user.id,
+      },
+      select: {
+        stripeId: true,
+      },
+    });
+    if (!connectedStripe || !connectedStripe.stripeId) {
+      console.warn("No Stripe ID found for user.");
+      return null;
+    }
+    const transactions = await stripe.charges.list({
+      stripeAccount: connectedStripe.stripeId!,
+    });
+    if (transactions) {
+      return transactions;
     }
   } catch (error) {
-    console.log(error);
+    console.error("Error fetching user transactions:", error);
+    return null; // or handle error as needed
   }
 };

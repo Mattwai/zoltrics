@@ -14,7 +14,6 @@ type Props = {
     | {
         name: string;
         id: string;
-        icon: string;
       }[]
     | undefined;
 };

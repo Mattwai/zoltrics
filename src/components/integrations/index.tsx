@@ -1,6 +1,5 @@
 "use client";
 import { INTEGRATION_LIST_ITEMS } from "@/constants/integrations";
-import Image from "next/image";
 import { Card, CardContent, CardDescription } from "../ui/card";
 import IntegrationTrigger from "./integration-trigger";
 
@@ -18,14 +17,6 @@ const IntegrationsList = ({ connections }: Props) => {
           <CardContent className="flex flex-col p-5 gap-2">
             <div className="flex w-full justify-between items-start gap-x-20">
               <div className="">
-                <div className="w-10 h-10 relative">
-                  <Image
-                    sizes="100vw"
-                    src={`https://ucarecdn.com/${item.logo}/`}
-                    alt="Logo"
-                    fill
-                  />
-                </div>
                 <h2 className="font-bold capitalize">{item.name}</h2>
               </div>
               <IntegrationTrigger

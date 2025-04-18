@@ -1,8 +1,6 @@
 "use client";
 import { useChatTime } from "@/hooks/conversation/use-conversation";
 import { UrgentIcon } from "@/icons/urgent-icon";
-import { User } from "lucide-react";
-import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Card, CardContent, CardDescription } from "../ui/card";
 
 type Props = {
@@ -30,13 +28,6 @@ const ChatCard = ({
       className="rounded-none border-r-0 hover:bg-muted cursor-pointer transition duration-150 ease-in-out"
     >
       <CardContent className="py-4 flex gap-3">
-        <div>
-          <Avatar>
-            <AvatarFallback className="bg-muted">
-              <User />
-            </AvatarFallback>
-          </Avatar>
-        </div>
         <div className="flex justify-between w-full">
           <div>
             <div className="flex gap-5 items-center">

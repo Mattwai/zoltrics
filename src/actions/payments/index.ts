@@ -24,7 +24,6 @@ export const onGetDomainProductsAndConnectedAccountId = async (id: string) => {
       select: {
         price: true,
         name: true,
-        image: true,
       },
     });
 

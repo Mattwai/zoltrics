@@ -4,7 +4,6 @@ import { Card } from "@/components/ui/card";
 import { useStripeCustomer } from "@/hooks/billing/use-billing";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-import Image from "next/image";
 import { CustomerPaymentForm } from "./payment-form";
 
 type Props = {
@@ -48,13 +47,6 @@ const PaymentCheckout = ({
             {products &&
               products.map((product, key) => (
                 <Card key={key} className="w-full flex gap-2 p-3">
-                  <div className="w-2/12 aspect-square relative">
-                    <Image
-                      src={`https://ucarecdn.com/${product.image}/`}
-                      alt="product"
-                      fill
-                    />
-                  </div>
                   <div className="flex-1 flex justify-between">
                     <p className="text-xl font-semibold">{product.name}</p>
                     <p className="text-2xl font-bold">${product.price}</p>

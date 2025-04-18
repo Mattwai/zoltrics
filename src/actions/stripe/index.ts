@@ -1,7 +1,8 @@
 "use server";
 
+import { authConfig } from "@/lib/auth";
 import { client } from "@/lib/prisma";
-import { currentUser } from "@clerk/nextjs";
+import { getServerSession } from "next-auth";
 import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET!, {
@@ -34,21 +35,22 @@ export const onCreateCustomerPaymentIntentSecret = async (
 };
 
 export const onUpdateSubscription = async (
-  plan: "STANDARD" | "PRO" | "ULTIMATE"
+  plan: "STANDARD" | "PROFESSIONAL" | "BUSINESS"
 ) => {
   try {
-    const user = await currentUser();
-    if (!user) return;
+    const session = await getServerSession(authConfig);
+    if (!session || !session.user) return;
     const update = await client.user.update({
       where: {
-        clerkId: user.id,
+        id: session.user.id,
       },
       data: {
         subscription: {
           update: {
             data: {
               plan,
-              credits: plan == "PRO" ? 50 : plan == "ULTIMATE" ? 500 : 10,
+              credits:
+                plan == "PROFESSIONAL" ? 100 : plan == "BUSINESS" ? 1000 : 10,
             },
           },
         },
@@ -73,18 +75,19 @@ export const onUpdateSubscription = async (
   }
 };
 
-const setPlanAmount = (item: "STANDARD" | "PRO" | "ULTIMATE") => {
-  if (item == "PRO") {
-    return 1500;
+const setPlanAmount = (item: "STANDARD" | "PROFESSIONAL" | "BUSINESS") => {
+  // price charged for billing plan
+  if (item == "PROFESSIONAL") {
+    return 5900;
   }
-  if (item == "ULTIMATE") {
-    return 3500;
+  if (item == "BUSINESS") {
+    return 12900;
   }
   return 0;
 };
 
 export const onGetStripeClientSecret = async (
-  item: "STANDARD" | "PRO" | "ULTIMATE"
+  item: "STANDARD" | "PROFESSIONAL" | "BUSINESS"
 ) => {
   try {
     const amount = setPlanAmount(item);

@@ -1,5 +1,8 @@
+// src/app/api/stripe/connect/route.ts
+
+import { authConfig } from "@/lib/auth";
 import { client } from "@/lib/prisma";
-import { currentUser } from "@clerk/nextjs";
+import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
@@ -9,8 +12,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET!, {
 });
 
 export async function GET() {
-  const user = await currentUser();
-  if (!user) return new NextResponse("User not authenticated");
+  const session = await getServerSession(authConfig);
+  if (!session || !session.user) {
+    return NextResponse.json(
+      { error: "User not authenticated" },
+      { status: 401 }
+    );
+  }
   try {
     const account = await stripe.accounts.create({
       type: "express",
@@ -25,7 +33,7 @@ export async function GET() {
 
     // Save the account ID to your database for future reference
     await client.user.update({
-      where: { clerkId: user.id },
+      where: { id: session.user.id },
       data: { stripeId: account.id },
     });
 

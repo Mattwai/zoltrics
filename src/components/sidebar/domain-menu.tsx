@@ -1,7 +1,6 @@
 import { useDomain } from "@/hooks/sidebar/use-domain";
 import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import AppDrawer from "../drawer";
 import FormGenerator from "../forms/form-generator";
@@ -75,12 +74,6 @@ const DomainMenu = ({ domains, min }: Props) => {
                 domain.name.split(".")[0] == isDomain && "bg-white"
               )}
             >
-              <Image
-                src={`https://ucarecdn.com/${domain.icon}/`}
-                alt="logo"
-                width={20}
-                height={20}
-              />
               {!min && <p className="text-sm">{domain.name}</p>}
             </Link>
           ))}

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useSubscriptions } from "@/hooks/billing/use-billing";
 
 type Props = {
-  plan: "STANDARD" | "PRO" | "ULTIMATE";
+  plan: "STANDARD" | "PROFESSIONAL" | "BUSINESS";
 };
 
 const SubscriptionForm = ({ plan }: Props) => {
@@ -36,12 +36,12 @@ const SubscriptionForm = ({ plan }: Props) => {
           />
 
           <SubscriptionCard
-            title="ULTIMATE"
+            title="BUSINESS"
             description="Perfect if you’re just getting started with Zoltrics"
             price="35"
             payment={payment}
             onPayment={onSetPayment}
-            id="ULTIMATE"
+            id="BUSINESS"
           />
         </div>
         <StripeElements payment={payment} />

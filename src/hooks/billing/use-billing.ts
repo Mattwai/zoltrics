@@ -106,9 +106,13 @@ export const useCompleteCustomerPayment = (onNext: () => void) => {
   return { processing, onMakePayment };
 };
 
-export const useSubscriptions = (plan: "STANDARD" | "PRO" | "ULTIMATE") => {
+export const useSubscriptions = (
+  plan: "STANDARD" | "PROFESSIONAL" | "BUSINESS"
+) => {
   const [loading, setLoading] = useState<boolean>(false);
-  const [payment, setPayment] = useState<"STANDARD" | "PRO" | "ULTIMATE">(plan);
+  const [payment, setPayment] = useState<
+    "STANDARD" | "PROFESSIONAL" | "BUSINESS"
+  >(plan);
   const { toast } = useToast();
   const router = useRouter();
   const onUpdatetToFreTier = async () => {
@@ -128,7 +132,7 @@ export const useSubscriptions = (plan: "STANDARD" | "PRO" | "ULTIMATE") => {
     }
   };
 
-  const onSetPayment = (payment: "STANDARD" | "PRO" | "ULTIMATE") =>
+  const onSetPayment = (payment: "STANDARD" | "PROFESSIONAL" | "BUSINESS") =>
     setPayment(payment);
 
   return {
@@ -139,11 +143,15 @@ export const useSubscriptions = (plan: "STANDARD" | "PRO" | "ULTIMATE") => {
   };
 };
 
-export const useStripeElements = (payment: "STANDARD" | "PRO" | "ULTIMATE") => {
+export const useStripeElements = (
+  payment: "STANDARD" | "PROFESSIONAL" | "BUSINESS"
+) => {
   const [stripeSecret, setStripeSecret] = useState<string>("");
   const [loadForm, setLoadForm] = useState<boolean>(false);
 
-  const onGetBillingIntent = async (plans: "STANDARD" | "PRO" | "ULTIMATE") => {
+  const onGetBillingIntent = async (
+    plans: "STANDARD" | "PROFESSIONAL" | "BUSINESS"
+  ) => {
     try {
       setLoadForm(true);
       const intent = await onGetStripeClientSecret(plans);
@@ -164,7 +172,7 @@ export const useStripeElements = (payment: "STANDARD" | "PRO" | "ULTIMATE") => {
 };
 
 export const useCompletePayment = (
-  payment: "STANDARD" | "PRO" | "ULTIMATE"
+  payment: "STANDARD" | "PROFESSIONAL" | "BUSINESS"
 ) => {
   const [processing, setProcessing] = useState<boolean>(false);
   const router = useRouter();

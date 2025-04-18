@@ -2,10 +2,10 @@ import { onGetAllBookingsForCurrentUser } from "@/actions/appointment";
 import AllAppointments from "@/components/appointment/all-appointment";
 import InfoBar from "@/components/infobar";
 import Section from "@/components/section-label";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { currentUser } from "@clerk/nextjs";
+import { authConfig } from "@/lib/auth";
+import { getServerSession } from "next-auth";
 
 type Props = {};
 
@@ -24,10 +24,10 @@ interface Booking {
 }
 
 const Page = async (props: Props) => {
-  const user = await currentUser();
+  const session = await getServerSession(authConfig);
+  if (!session || !session.user) return null;
 
-  if (!user) return null;
-  const domainBookings = await onGetAllBookingsForCurrentUser(user.id);
+  const domainBookings = await onGetAllBookingsForCurrentUser(session.user.id);
   const today = new Date();
 
   if (!domainBookings)
@@ -79,9 +79,6 @@ const Page = async (props: Props) => {
                     </div>
                     <Separator orientation="horizontal" />
                     <div className="w-full flex items-center p-3 gap-2">
-                      <Avatar>
-                        <AvatarFallback>{booking.email[0]}</AvatarFallback>
-                      </Avatar>
                       <p className="text-sm">{booking.email}</p>
                     </div>
                   </div>

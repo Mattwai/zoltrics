@@ -13,14 +13,42 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Account {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String    @db.Uuid
+  providerType       String
+  providerId         String
+  providerAccountId  String
+  refreshToken       String?
+  accessToken        String?
+  accessTokenExpires DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  user               User      @relation(fields: [userId], references: [id])
+
+  @@unique([providerId, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String   @db.Uuid
+  expires      DateTime
+  sessionToken String   @unique
+  accessToken  String   @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id])
+}
 
 model User {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  fullname  String
-  clerkId   String   @unique
-  type      String
+  name      String?
+  email     String    @unique
+  emailVerified DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  accounts      Account[]
+  sessions      Session[]
 
   stripeId String?
 
@@ -31,16 +59,24 @@ model User {
   subscription Billings?
 }
 
+model VerificationRequest {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([identifier, token])
+}
+
 model Domain {
   id   String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name String
-  icon String
-
   chatBot         ChatBot?
   helpdesk        HelpDesk[]
   filterQuestions FilterQuestions[]
   products        Product[]
-
   customer   Customer[]
   User       User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId     String?    @db.Uuid
@@ -48,10 +84,10 @@ model Domain {
   campaignId String?    @db.Uuid
 }
 
+
 model ChatBot {
   id             String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   welcomeMessage String?
-  icon           String?
   background     String?
   textColor      String?
   helpdesk       Boolean @default(false)
@@ -96,13 +132,9 @@ model CustomerResponses {
 model Customer {
   id    String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email String? 
-
   questions CustomerResponses[]
-
   chatRoom ChatRoom[]
-
   booking Bookings[]
-
   Domain   Domain? @relation(fields: [domainId], references: [id], onDelete: Cascade)
   domainId String? @db.Uuid
 }
@@ -118,6 +150,7 @@ model ChatRoom {
 
   message ChatMessage[]
 }
+
 
 model ChatMessage {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -156,7 +189,6 @@ model Product {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String
   price     Int
-  image     String
   createdAt DateTime @default(now())
   Domain    Domain?  @relation(fields: [domainId], references: [id], onDelete: Cascade)
   domainId  String?  @db.Uuid
@@ -164,8 +196,8 @@ model Product {
 
 enum Plans {
   STANDARD
-  PRO
-  ULTIMATE
+  PROFESSIONAL
+  BUSINESS
 }
 
 enum Role {

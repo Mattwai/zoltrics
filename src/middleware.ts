@@ -1,10 +1,19 @@
-import { authMiddleware } from "@clerk/nextjs";
+// middleware.ts
+import { withAuth } from "next-auth/middleware";
 
-export default authMiddleware({
-  publicRoutes: ["/", "/blog", "/auth(.*)", "/portal(.*)", "/images(.*)"],
-  ignoredRoutes: ["/chatbot"],
+export default withAuth({
+  pages: {
+    signIn: "/auth/sign-in",
+  },
 });
 
 export const config = {
-  matcher: ["/((?!.+.[w]+$|_next).*)", "/", "/(api|trpc)(.*)"],
+  matcher: [
+    "/dashboard/:path*",
+    "/email-marketing/:path*",
+    "/appointment/:path*",
+    "/integration/:path*",
+    "/conversation/:path*",
+    "/settings/:path*",
+  ],
 };

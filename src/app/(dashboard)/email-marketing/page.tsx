@@ -1,16 +1,17 @@
 import { onGetAllCampaigns, onGetAllCustomers } from "@/actions/mail";
 import EmailMarketing from "@/components/email-marketing";
 import InfoBar from "@/components/infobar";
-import { currentUser } from "@clerk/nextjs";
+import { authConfig } from "@/lib/auth";
+import { getServerSession } from "next-auth";
 
 type Props = {};
 
 const Page = async (props: Props) => {
-  const user = await currentUser();
+  const session = await getServerSession(authConfig);
+  if (!session || !session.user) return null;
 
-  if (!user) return null;
-  const customers = await onGetAllCustomers(user.id);
-  const campaigns = await onGetAllCampaigns(user.id);
+  const customers = await onGetAllCustomers(session.user.id);
+  const campaigns = await onGetAllCampaigns(session.user.id);
 
   return (
     <>

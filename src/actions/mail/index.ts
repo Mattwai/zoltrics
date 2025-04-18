@@ -1,14 +1,15 @@
 "use server";
 
+import { authConfig } from "@/lib/auth";
 import { client } from "@/lib/prisma";
-import { currentUser } from "@clerk/nextjs";
+import { getServerSession } from "next-auth";
 import nodemailer from "nodemailer";
 
 export const onGetAllCustomers = async (id: string) => {
   try {
     const customers = await client.user.findUnique({
       where: {
-        clerkId: id,
+        id,
       },
       select: {
         subscription: {
@@ -45,7 +46,7 @@ export const onGetAllCampaigns = async (id: string) => {
   try {
     const campaigns = await client.user.findUnique({
       where: {
-        clerkId: id,
+        id,
       },
       select: {
         campaign: {
@@ -69,12 +70,11 @@ export const onGetAllCampaigns = async (id: string) => {
 
 export const onCreateMarketingCampaign = async (name: string) => {
   try {
-    const user = await currentUser();
-    if (!user) return null;
-
+    const session = await getServerSession(authConfig);
+    if (!session || !session.user) return null;
     const campaign = await client.user.update({
       where: {
-        clerkId: user.id,
+        id: session.user.id,
       },
       data: {
         campaign: {
@@ -136,8 +136,8 @@ export const onAddCustomersToEmail = async (
 
 export const onBulkMailer = async (email: string[], campaignId: string) => {
   try {
-    const user = await currentUser();
-    if (!user) return null;
+    const session = await getServerSession(authConfig);
+    if (!session || !session.user) return null;
 
     //get the template for this campaign
     const template = await client.campaign.findUnique({
@@ -177,7 +177,7 @@ export const onBulkMailer = async (email: string[], campaignId: string) => {
 
       const creditsUsed = await client.user.update({
         where: {
-          clerkId: user.id,
+          id: session.user.id,
         },
         data: {
           subscription: {
@@ -198,11 +198,11 @@ export const onBulkMailer = async (email: string[], campaignId: string) => {
 
 export const onGetAllCustomerResponses = async (id: string) => {
   try {
-    const user = await currentUser();
-    if (!user) return null;
+    const session = await getServerSession(authConfig);
+    if (!session || !session.user) return null;
     const answers = await client.user.findUnique({
       where: {
-        clerkId: user.id,
+        id: session.user.id,
       },
       select: {
         domains: {

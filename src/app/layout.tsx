@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/context/theme-provider";
-import { ClerkProvider } from "@clerk/nextjs";
+import { UserProvider } from "@/context/user-context";
+import { NextAuthProvider } from "@/providers/auth-provider";
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
@@ -18,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <NextAuthProvider>
       <html lang="en" suppressHydrationWarning>
         <head></head>
         <body className={jakarta.className}>
@@ -27,11 +28,12 @@ export default function RootLayout({
             defaultTheme="light"
             disableTransitionOnChange
           >
-            {children}
+            <UserProvider>{children}</UserProvider>
+
             <Toaster />
           </ThemeProvider>
         </body>
       </html>
-    </ClerkProvider>
+    </NextAuthProvider>
   );
 }

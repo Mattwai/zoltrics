@@ -1,14 +1,16 @@
 "use server";
+import { authConfig } from "@/lib/auth";
 import { client } from "@/lib/prisma";
-import { clerkClient, currentUser } from "@clerk/nextjs";
+import { User } from "@prisma/client";
+import { getServerSession } from "next-auth";
 
-export const onIntegrateDomain = async (domain: string, icon: string) => {
-  const user = await currentUser();
-  if (!user) return;
+export const onIntegrateDomain = async (domain: string) => {
+  const session = await getServerSession(authConfig);
+  if (!session || !session.user) return;
   try {
     const subscription = await client.user.findUnique({
       where: {
-        clerkId: user.id,
+        id: session.user.id,
       },
       select: {
         _count: {
@@ -25,7 +27,7 @@ export const onIntegrateDomain = async (domain: string, icon: string) => {
     });
     const domainExists = await client.user.findFirst({
       where: {
-        clerkId: user.id,
+        id: session.user.id,
         domains: {
           some: {
             name: domain,
@@ -35,23 +37,23 @@ export const onIntegrateDomain = async (domain: string, icon: string) => {
     });
 
     if (!domainExists) {
+      // WIP
       if (
         (subscription?.subscription?.plan == "STANDARD" &&
           subscription._count.domains < 1) ||
-        (subscription?.subscription?.plan == "PRO" &&
-          subscription._count.domains < 5) ||
-        (subscription?.subscription?.plan == "ULTIMATE" &&
+        (subscription?.subscription?.plan == "PROFESSIONAL" &&
+          subscription._count.domains < 2) ||
+        (subscription?.subscription?.plan == "BUSINESS" &&
           subscription._count.domains < 10)
       ) {
         const newDomain = await client.user.update({
           where: {
-            clerkId: user.id,
+            id: session.user.id,
           },
           data: {
             domains: {
               create: {
                 name: domain,
-                icon,
                 chatBot: {
                   create: {
                     welcomeMessage: "Hey there, have  a question? Text us here",
@@ -82,12 +84,12 @@ export const onIntegrateDomain = async (domain: string, icon: string) => {
 };
 
 export const onGetSubscriptionPlan = async () => {
+  const session = await getServerSession(authConfig);
+  if (!session || !session.user) return;
   try {
-    const user = await currentUser();
-    if (!user) return;
     const plan = await client.user.findUnique({
       where: {
-        clerkId: user.id,
+        id: session.user.id,
       },
       select: {
         subscription: {
@@ -106,19 +108,18 @@ export const onGetSubscriptionPlan = async () => {
 };
 
 export const onGetAllAccountDomains = async () => {
-  const user = await currentUser();
-  if (!user) return;
+  const session = await getServerSession(authConfig);
+  if (!session || !session.user) return null;
   try {
-    const domains = await client.user.findUnique({
+    const userWithDomains = await client.user.findUnique({
       where: {
-        clerkId: user.id,
+        id: session.user.id,
       },
       select: {
         id: true,
         domains: {
           select: {
             name: true,
-            icon: true,
             id: true,
             customer: {
               select: {
@@ -134,32 +135,26 @@ export const onGetAllAccountDomains = async () => {
         },
       },
     });
-    return { ...domains };
-  } catch (error) {
-    console.log(error);
-  }
-};
-export const onUpdatePassword = async (password: string) => {
-  try {
-    const user = await currentUser();
-
-    if (!user) return null;
-    const update = await clerkClient.users.updateUser(user.id, { password });
-    if (update) {
-      return { status: 200, message: "Password updated" };
+    // Return the domains data if found
+    if (userWithDomains) {
+      return userWithDomains.domains;
+    } else {
+      return null;
     }
   } catch (error) {
-    console.log(error);
+    console.error("Error fetching domains:", error);
+    return null;
   }
 };
 
 export const onGetCurrentDomainInfo = async (domain: string) => {
-  const user = await currentUser();
-  if (!user) return;
+  const session = await getServerSession(authConfig);
+  if (!session || !session.user) return;
+  if (!session) return;
   try {
     const userDomain = await client.user.findUnique({
       where: {
-        clerkId: user.id,
+        id: session.user.id,
       },
       select: {
         subscription: {
@@ -176,14 +171,12 @@ export const onGetCurrentDomainInfo = async (domain: string) => {
           select: {
             id: true,
             name: true,
-            icon: true,
             userId: true,
             products: true,
             chatBot: {
               select: {
                 id: true,
                 welcomeMessage: true,
-                icon: true,
               },
             },
           },
@@ -241,43 +234,6 @@ export const onUpdateDomain = async (id: string, name: string) => {
   }
 };
 
-export const onChatBotImageUpdate = async (id: string, icon: string) => {
-  const user = await currentUser();
-
-  if (!user) return;
-
-  try {
-    const domain = await client.domain.update({
-      where: {
-        id,
-      },
-      data: {
-        chatBot: {
-          update: {
-            data: {
-              icon,
-            },
-          },
-        },
-      },
-    });
-
-    if (domain) {
-      return {
-        status: 200,
-        message: "Domain updated",
-      };
-    }
-
-    return {
-      status: 400,
-      message: "Oops something went wrong!",
-    };
-  } catch (error) {
-    console.log(error);
-  }
-};
-
 export const onUpdateWelcomeMessage = async (
   message: string,
   domainId: string
@@ -307,15 +263,14 @@ export const onUpdateWelcomeMessage = async (
 };
 
 export const onDeleteUserDomain = async (id: string) => {
-  const user = await currentUser();
-
-  if (!user) return;
+  const session = await getServerSession(authConfig);
+  if (!session || !session.user) return;
 
   try {
     //first verify that domain belongs to user
     const validUser = await client.user.findUnique({
       where: {
-        clerkId: user.id,
+        id: session.user.id,
       },
       select: {
         id: true,
@@ -480,30 +435,34 @@ export const onGetAllFilterQuestions = async (id: string) => {
 };
 
 export const onGetPaymentConnected = async () => {
+  const session = await getServerSession(authConfig);
+  if (!session || !session.user) return null;
+
   try {
-    const user = await currentUser();
-    if (user) {
-      const connected = await client.user.findUnique({
-        where: {
-          clerkId: user.id,
-        },
-        select: {
-          stripeId: true,
-        },
-      });
-      if (connected) {
-        return connected.stripeId;
-      }
+    const connected = await client.user.findUnique({
+      where: {
+        id: session.user.id,
+      },
+      select: {
+        stripeId: true,
+      },
+    });
+
+    if (connected) {
+      return connected.stripeId;
+    } else {
+      console.warn("No Stripe ID found for user.");
+      return null;
     }
   } catch (error) {
-    console.log(error);
+    console.error("Error fetching Stripe ID:", error);
+    return null;
   }
 };
 
 export const onCreateNewDomainProduct = async (
   id: string,
   name: string,
-  image: string,
   price: string
 ) => {
   try {
@@ -515,7 +474,6 @@ export const onCreateNewDomainProduct = async (
         products: {
           create: {
             name,
-            image,
             price: parseInt(price),
           },
         },
@@ -530,5 +488,22 @@ export const onCreateNewDomainProduct = async (
     }
   } catch (error) {
     console.log(error);
+  }
+};
+
+export const onGetUser = async (): Promise<User | null> => {
+  const session = await getServerSession(authConfig);
+  if (!session || !session.user) return null;
+  try {
+    const user = await client.user.findUnique({
+      where: {
+        id: session.user.id,
+      },
+    });
+    if (!user) throw new Error("User not found");
+    return user;
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    return null;
   }
 };

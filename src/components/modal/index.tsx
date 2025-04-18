@@ -10,6 +10,8 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import React from "react";
 
+const stripe_logo_path = "/images/stripe-logo";
+
 type Props = {
   trigger: React.ReactNode;
   children: React.ReactNode;
@@ -46,11 +48,7 @@ const Modal = ({
                 <ArrowRight size={20} />
               </div>
               <div className="w-12 h-12 relative">
-                <Image
-                  src={`https://ucarecdn.com/${logo}/`}
-                  fill
-                  alt="Stripe"
-                />
+                <Image src={`${stripe_logo_path}.png`} fill alt="Stripe" />
               </div>
             </div>
             <DialogHeader className="flex items-center">
