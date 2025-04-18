@@ -8,7 +8,6 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import CodeSnippet from "./code-snippet";
 import { DomainUpdate } from "./domain-update";
-import EditChatbotIcon from "./edit-chatbot-icon";
 
 const WelcomeMessage = dynamic(
   () => import("./greetings-message").then((props) => props.default),
@@ -56,11 +55,6 @@ const SettingsForm = ({ id, name, chatBot, plan }: Props) => {
         <Separator orientation="horizontal" />
         <div className="grid md:grid-cols-2">
           <div className="col-span-1 flex flex-col gap-5 order-last md:order-first">
-            <EditChatbotIcon
-              chatBot={chatBot}
-              register={register}
-              errors={errors}
-            />
             <WelcomeMessage
               message={chatBot?.welcomeMessage!}
               register={register}

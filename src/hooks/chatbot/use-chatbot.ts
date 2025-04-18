@@ -5,14 +5,8 @@ import {
   ChatBotMessageSchema,
 } from "@/schemas/conversation-schema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { UploadClient } from "@uploadcare/upload-client";
 import { useEffect, useRef, useState } from "react";
-
 import { useForm } from "react-hook-form";
-
-const upload = new UploadClient({
-  publicKey: process.env.NEXT_PUBLIC_UPLOAD_CARE_PUBLIC_KEY as string,
-});
 
 export const useChatBot = () => {
   const {
@@ -28,7 +22,6 @@ export const useChatBot = () => {
         name: string;
         chatBot: {
           id: string;
-          icon: string | null;
           welcomeMessage: string | null;
           background: string | null;
           textColor: string | null;
@@ -107,28 +100,23 @@ export const useChatBot = () => {
   }, []);
 
   const onStartChatting = handleSubmit(async (values) => {
-    console.log("ALL VALUES", values);
-
-    if (values.image.length) {
-      console.log("IMAGE fROM ", values.image[0]);
-      const uploaded = await upload.uploadFile(values.image[0]);
+    if (values.content) {
       if (!onRealTime?.mode) {
         setOnChats((prev: any) => [
           ...prev,
           {
             role: "user",
-            content: uploaded.uuid,
+            content: values.content,
           },
         ]);
       }
 
-      console.log("🟡 RESPONSE FROM UC", uploaded.uuid);
       setOnAiTyping(true);
       const response = await onAiChatBotAssistant(
         currentBotId!,
         onChats,
         "user",
-        uploaded.uuid
+        values.content
       );
 
       if (response) {

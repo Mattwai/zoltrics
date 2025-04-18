@@ -6,7 +6,6 @@ import AppDrawer from "../drawer";
 import FormGenerator from "../forms/form-generator";
 import { Loader } from "../loader";
 import { Button } from "../ui/button";
-import UploadButton from "../upload-button";
 
 type Props = {
   min?: boolean;
@@ -14,7 +13,6 @@ type Props = {
     | {
         id: string;
         name: string;
-        icon: string | null;
       }[]
     | null
     | undefined;
@@ -49,11 +47,6 @@ const DomainMenu = ({ domains, min }: Props) => {
                 errors={errors}
                 placeholder="mydomain.com"
                 type="text"
-              />
-              <UploadButton
-                register={register}
-                label="Upload Icon"
-                errors={errors}
               />
               <Button type="submit" className="w-full">
                 Add Domain
