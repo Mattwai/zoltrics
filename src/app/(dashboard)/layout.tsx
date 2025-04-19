@@ -11,10 +11,15 @@ const Layout = async ({ children }: Props) => {
   const authenticated = await onLoginUser();
   if (!authenticated) return null;
 
+  const domains = (authenticated.domain || []).map(domain => ({
+    ...domain,
+    icon: (domain as { icon?: string }).icon || 'default-icon.png',
+  }));
+
   return (
     <ChatProvider>
       <div className="flex h-screen w-full">
-        <SideBar domains={authenticated.domain} />
+        <SideBar domains={domains} />
         <div className="w-full h-screen flex flex-col pl-20 md:pl-4">
           {children}
         </div>
