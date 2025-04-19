@@ -6,6 +6,7 @@ import HelpDeskIcon from "@/icons/help-desk-icon";
 import IntegrationsIcon from "@/icons/integrations-icon";
 import StarIcon from "@/icons/star-icon";
 import TimerIcon from "@/icons/timer-icon";
+import { JSX } from "react";
 
 type SIDE_BAR_MENU_PROPS = {
   label: string;
@@ -76,7 +77,8 @@ export const HELP_DESK_TABS_MENU: TABS_MENU_PROPS[] = [
 
 export const APPOINTMENT_TABLE_HEADER = [
   "Name",
-  "RequestedTime",
+  "Email",
+  "Requested Time",
   "Added Time",
   "Domain",
 ];

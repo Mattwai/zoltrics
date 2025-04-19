@@ -26,8 +26,8 @@ export async function GET() {
 
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
-      refresh_url: `${process.env.BASE_URL}/api/stripe/connect`,
-      return_url: `${process.env.BASE_URL}/integration`,
+      refresh_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/stripe/connect`,
+      return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/integration`,
       type: "account_onboarding",
     });
 

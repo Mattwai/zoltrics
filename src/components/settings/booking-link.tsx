@@ -1,30 +1,56 @@
+"use client";
+
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { authConfig } from "@/lib/auth";
-import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 const generateBookingLink = () => {
   return Math.random().toString(36).substring(2, 15);
 };
 
-const BookingLink = async () => {
-  const session = await getServerSession(authConfig);
-  if (!session?.user) redirect("/auth/sign-in");
-
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { bookingLink: true },
+async function updateBookingLink(userId: string) {
+  const newLink = generateBookingLink();
+  
+  // Make API call to update the booking link
+  const response = await fetch("/api/user/booking-link", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ bookingLink: newLink }),
   });
+  
+  if (!response.ok) {
+    throw new Error("Failed to update booking link");
+  }
+  
+  const data = await response.json();
+  return data.bookingLink;
+}
 
-  const handleGenerateLink = async () => {
-    "use server";
-    const newLink = generateBookingLink();
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: { bookingLink: newLink },
-    });
+interface BookingLinkProps {
+  initialBookingLink: string | null;
+  userId: string;
+  baseUrl: string;
+}
+
+const BookingLink = ({ initialBookingLink, userId, baseUrl }: BookingLinkProps) => {
+  const [bookingLink, setBookingLink] = useState(initialBookingLink);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleGenerateLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    try {
+      const newLink = await updateBookingLink(userId);
+      setBookingLink(newLink);
+    } catch (error) {
+      console.error("Error generating booking link:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -36,15 +62,22 @@ const BookingLink = async () => {
       <div className="flex gap-2">
         <Input
           value={
-            user?.bookingLink
-              ? `${process.env.NEXT_PUBLIC_APP_URL}/booking/${user.bookingLink}`
+            bookingLink
+              ? `${baseUrl}/booking/${bookingLink}`
               : "No booking link generated yet"
           }
           readOnly
         />
-        <form action={handleGenerateLink}>
-          <Button type="submit">
-            {user?.bookingLink ? "Regenerate" : "Generate"}
+        <form onSubmit={handleGenerateLink}>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {bookingLink ? "Regenerating..." : "Generating..."}
+              </>
+            ) : (
+              bookingLink ? "Regenerate" : "Generate"
+            )}
           </Button>
         </form>
       </div>

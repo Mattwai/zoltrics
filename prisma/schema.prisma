@@ -165,6 +165,8 @@ model Bookings {
   date       DateTime
   slot       String
   email      String
+  name       String
+  source     String?   @default("direct_link") // Can be "domain_portal" or "direct_link"
   Customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
   customerId String?   @db.Uuid
   domainId   String?   @db.Uuid

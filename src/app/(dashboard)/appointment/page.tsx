@@ -1,21 +1,26 @@
 import { onGetAllBookingsForCurrentUser } from "@/actions/appointment";
 import AllAppointments from "@/components/appointment/all-appointment";
 import InfoBar from "@/components/infobar";
+import BookingLink from "@/components/settings/booking-link";
 import Section from "@/components/section-label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { authConfig } from "@/lib/auth";
 import { getServerSession } from "next-auth";
+import prisma from "@/lib/prisma";
 
 type Props = {};
 
 interface Booking {
   id: string;
+  name: string;
   slot: string;
   createdAt: Date;
   date: Date;
   email: string;
   domainId: string | null;
+  customerId: string | null;
+  source?: string;
   Customer: {
     Domain: {
       name: string;
@@ -30,6 +35,12 @@ const Page = async (props: Props) => {
   const domainBookings = await onGetAllBookingsForCurrentUser(session.user.id);
   const today = new Date();
 
+  // Fetch user details including booking link
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { bookingLink: true }
+  });
+
   if (!domainBookings)
     return (
       <div className="w-full flex justify-center">
@@ -37,8 +48,11 @@ const Page = async (props: Props) => {
       </div>
     );
 
-  const bookingsExistToday = domainBookings.bookings.filter(
-    (booking: Booking) => booking.date.getDate() === today.getDate()
+  // Type assertion to match the expected Booking interface
+  const typedBookings = domainBookings.bookings as unknown as Booking[];
+  
+  const bookingsExistToday = typedBookings.filter(
+    (booking) => booking.date.getDate() === today.getDate()
   );
 
   return (
@@ -46,15 +60,26 @@ const Page = async (props: Props) => {
       <InfoBar />
       <div className="grid grid-cols-1 lg:grid-cols-3 flex-1 h-0 gap-5">
         <div className="lg:col-span-2 overflow-y-auto">
-          <AllAppointments bookings={domainBookings?.bookings} />
+          <Section
+            label="Direct Booking Link" 
+            message="Create and share a unique booking link with your customers."
+          />
+          <div className="mb-6">
+            <BookingLink 
+              userId={session.user.id}
+              initialBookingLink={user?.bookingLink || null}
+              baseUrl={process.env.NEXT_PUBLIC_BASE_URL || ""}
+            />
+          </div>
+          <AllAppointments bookings={typedBookings} />
         </div>
         <div className="col-span-1">
           <Section
             label="Bookings For Today"
-            message="All your bookings for today are mentioned below."
+            message="All your bookings for today are below:"
           />
           {bookingsExistToday.length ? (
-            bookingsExistToday.map((booking: Booking) => (
+            bookingsExistToday.map((booking) => (
               <Card
                 key={booking.id}
                 className="rounded-xl overflow-hidden mt-4"
@@ -74,7 +99,7 @@ const Page = async (props: Props) => {
                       </p>
                       <p className="text-sm">
                         Domain <br />
-                        {booking.Customer?.Domain?.name}
+                        {booking.Customer?.Domain?.name || "Direct Booking"}
                       </p>
                     </div>
                     <Separator orientation="horizontal" />
@@ -86,7 +111,7 @@ const Page = async (props: Props) => {
               </Card>
             ))
           ) : (
-            <div className="w-full flex justify-center">
+            <div className="w-full flex justify-center py-2">
               <p>No Appointments For Today</p>
             </div>
           )}
