@@ -49,13 +49,10 @@ model User {
   updatedAt DateTime @updatedAt
   accounts      Account[]
   sessions      Session[]
-
   stripeId String?
-
+  bookingLink String? @unique
   domains Domain[]
-
   campaign Campaign[]
-
   subscription Billings?
 }
 
@@ -131,7 +128,7 @@ model CustomerResponses {
 
 model Customer {
   id    String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email String? 
+  email String? @unique
   questions CustomerResponses[]
   chatRoom ChatRoom[]
   booking Bookings[]
