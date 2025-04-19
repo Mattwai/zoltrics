@@ -46,7 +46,7 @@ const MaxMenu = ({ current, domains, onExpand, onSignOut }: Props) => {
           {SIDE_BAR_MENU.map((menu, key) => (
             <MenuItem size="max" {...menu} key={key} current={current} />
           ))}
-          <DomainMenu domains={domains} />
+          {/* <DomainMenu domains={domains} /> */}
         </div>
         <div className="flex flex-col">
           <p className="text-xs text-gray-500 mb-3">OPTIONS</p>
