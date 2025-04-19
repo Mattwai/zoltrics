@@ -26,14 +26,14 @@ export const SIDE_BAR_MENU: SIDE_BAR_MENU_PROPS[] = [
   //   path: "conversation",
   // },
   {
-    label: "Integrations",
-    icon: <IntegrationsIcon />,
-    path: "integration",
-  },
-  {
     label: "Appointments",
     icon: <CalIcon />,
     path: "appointment",
+  },
+  {
+    label: "Integrations",
+    icon: <IntegrationsIcon />,
+    path: "integration",
   },
   // {
   //   label: "Email Marketing",
@@ -80,7 +80,7 @@ export const APPOINTMENT_TABLE_HEADER = [
   "Email",
   "Requested Time",
   "Added Time",
-  "Domain",
+  "Booking Type",
   "Deposit Paid"
 ];
 

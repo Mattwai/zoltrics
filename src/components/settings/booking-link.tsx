@@ -54,11 +54,7 @@ const BookingLink = ({ initialBookingLink, userId, baseUrl }: BookingLinkProps) 
   };
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Booking Link</h2>
-      <p className="text-sm text-muted-foreground">
-        Share this link with your customers to allow them to book appointments directly.
-      </p>
+    <div className="space-y-1 pr-2">
       <div className="flex gap-2">
         <Input
           value={
@@ -68,7 +64,7 @@ const BookingLink = ({ initialBookingLink, userId, baseUrl }: BookingLinkProps) 
           }
           readOnly
         />
-        <form onSubmit={handleGenerateLink}>
+        {/* <form onSubmit={handleGenerateLink}>
           <Button type="submit" disabled={isLoading}>
             {isLoading ? (
               <>
@@ -79,8 +75,11 @@ const BookingLink = ({ initialBookingLink, userId, baseUrl }: BookingLinkProps) 
               bookingLink ? "Regenerate" : "Generate"
             )}
           </Button>
-        </form>
+        </form> */}
       </div>
+      <p className="text-sm text-muted-foreground">
+        Share this link with your customers to allow them to book appointments directly.
+      </p>
     </div>
   );
 };

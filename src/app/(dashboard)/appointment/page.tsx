@@ -59,7 +59,7 @@ const Page = async (props: Props) => {
   return (
     <>
       <InfoBar />
-      <div className="grid grid-cols-1 lg:grid-cols-3 flex-1 h-0 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 flex-1 h-0 gap-3">
         <div className="lg:col-span-2 overflow-y-auto">
           <Section
             label="Direct Booking Link" 
@@ -72,9 +72,10 @@ const Page = async (props: Props) => {
               baseUrl={process.env.NEXT_PUBLIC_BASE_URL || ""}
             />
           </div>
+          <h2 className="text-lg font-semibold">All Appointments</h2>
           <AllAppointments bookings={typedBookings} />
         </div>
-        <div className="col-span-1">
+        <div className="col-span-1 pr-5">
           <Section
             label="Bookings For Today"
             message="All your bookings for today are below:"
@@ -92,14 +93,12 @@ const Page = async (props: Props) => {
                   <div className="flex flex-col flex-1">
                     <div className="flex justify-between w-full p-3">
                       <p className="text-sm">
-                        created
+                        Name
                         <br />
-                        {String(booking.createdAt.getHours()).padStart(2, '0')}:
-                        {String(booking.createdAt.getMinutes()).padStart(2, '0')}{" "}
-                        {booking.createdAt.getHours() > 12 ? "PM" : "AM"}
+                        {booking.name}
                       </p>
                       <p className="text-sm">
-                        Domain <br />
+                        Booking Type <br />
                         {booking.Customer?.Domain?.name || "Direct Booking"}
                       </p>
                     </div>
