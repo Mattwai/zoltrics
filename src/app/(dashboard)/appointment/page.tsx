@@ -93,8 +93,8 @@ const Page = async (props: Props) => {
                       <p className="text-sm">
                         created
                         <br />
-                        {booking.createdAt.getHours()}{" "}
-                        {booking.createdAt.getMinutes()}{" "}
+                        {String(booking.createdAt.getHours()).padStart(2, '0')}:
+                        {String(booking.createdAt.getMinutes()).padStart(2, '0')}{" "}
                         {booking.createdAt.getHours() > 12 ? "PM" : "AM"}
                       </p>
                       <p className="text-sm">

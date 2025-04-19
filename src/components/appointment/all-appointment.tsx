@@ -46,7 +46,8 @@ const AllAppointments = ({ bookings }: Props) => {
                 {booking.createdAt.getDate()} {booking.createdAt.getFullYear()}
               </div>
               <div>
-                {booking.createdAt.getHours()} {booking.createdAt.getMinutes()}{" "}
+                {String(booking.createdAt.getHours()).padStart(2, '0')}:
+                {String(booking.createdAt.getMinutes()).padStart(2, '0')}{" "}
                 {booking.createdAt.getHours() > 12 ? "PM" : "AM"}
               </div>
             </TableCell>
