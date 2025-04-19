@@ -179,3 +179,17 @@ export const getUserAppointments = async () => {
     console.log(error);
   }
 };
+
+export const onGetUserByBookingLink = async (bookingLink: string) => {
+  try {
+    const user = await client.user.findUnique({
+      where: {
+        bookingLink,
+      },
+    });
+    return user;
+  } catch (error) {
+    console.error("Error getting user by booking link:", error);
+    return null;
+  }
+};

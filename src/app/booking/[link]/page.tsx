@@ -10,7 +10,7 @@ type Props = {
 
 const BookingPage = async ({ params }: Props) => {
   const user = await onGetUserByBookingLink(params.link);
-  
+
   if (!user) {
     redirect("/");
   }
@@ -18,11 +18,13 @@ const BookingPage = async ({ params }: Props) => {
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">Book an Appointment</h1>
+        <h1 className="text-2xl font-bold mb-6 text-center">
+          Book an Appointment
+        </h1>
         <BookingForm userId={user.id} />
       </div>
     </div>
   );
 };
 
-export default BookingPage; 
+export default BookingPage;
