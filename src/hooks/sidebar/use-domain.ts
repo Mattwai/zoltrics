@@ -3,9 +3,12 @@ import { useToast } from "@/components/ui/use-toast";
 import { AddDomainSchema } from "@/schemas/settings-schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { usePathname, useRouter } from "next/navigation";
+import { z } from "zod";
 
 import { useEffect, useState } from "react";
 import { FieldValues, useForm } from "react-hook-form";
+
+type AddDomainFormValues = z.infer<typeof AddDomainSchema>;
 
 export const useDomain = () => {
   const {
@@ -13,7 +16,7 @@ export const useDomain = () => {
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<FieldValues>({
+  } = useForm<AddDomainFormValues>({
     resolver: zodResolver(AddDomainSchema),
   });
 
@@ -29,15 +32,26 @@ export const useDomain = () => {
 
   const onAddDomain = handleSubmit(async (values: FieldValues) => {
     setLoading(true);
-    const domain = await onIntegrateDomain(values.domain);
-    if (domain) {
-      reset();
-      setLoading(false);
+    try {
+      const domain = await onIntegrateDomain(values.domain);
+  
       toast({
-        title: domain.status == 200 ? "Success" : "Error",
-        description: domain.message,
+        title: domain?.status === 200 ? "Success" : "Error",
+        description: domain?.message ?? "Something went wrong.",
       });
-      router.refresh();
+  
+      if (domain?.status === 200) {
+        reset();
+        router.refresh();
+      }
+    } catch (error) {
+      console.error("Domain integration failed", error);
+      toast({
+        title: "Error",
+        description: "Failed to add domain. Try again.",
+      });
+    } finally {
+      setLoading(false); // ✅ always turn off loading
     }
   });
 
