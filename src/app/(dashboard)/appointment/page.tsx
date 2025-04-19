@@ -21,6 +21,7 @@ interface Booking {
   domainId: string | null;
   customerId: string | null;
   source?: string;
+  deposit_paid: boolean;
   Customer: {
     Domain: {
       name: string;

@@ -81,6 +81,7 @@ export const APPOINTMENT_TABLE_HEADER = [
   "Requested Time",
   "Added Time",
   "Domain",
+  "Deposit Paid"
 ];
 
 export const EMAIL_MARKETING_HEADER = ["Id", "Email", "Answers", "Domain"];

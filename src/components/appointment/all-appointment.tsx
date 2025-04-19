@@ -21,6 +21,7 @@ type Props = {
         date: Date;
         slot: string;
         createdAt: Date;
+        deposit_paid: boolean;
       }[]
     | undefined;
 };
@@ -63,6 +64,7 @@ const AllAppointments = ({ bookings }: Props) => {
                 </span>
               )}
             </TableCell>
+            <TableCell>{booking.deposit_paid ? "Yes" : "No"}</TableCell>
           </TableRow>
         ))
       ) : (

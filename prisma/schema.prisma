@@ -171,6 +171,7 @@ model Bookings {
   customerId String?   @db.Uuid
   domainId   String?   @db.Uuid
   createdAt  DateTime  @default(now())
+  deposit_paid Boolean @default(false)
 }
 
 model Campaign {

@@ -23,7 +23,7 @@ jest.mock('@/components/ui/table', () => ({
 }));
 
 jest.mock('@/constants/menu', () => ({
-  APPOINTMENT_TABLE_HEADER: ['Name', 'Email', 'Date', 'Created At', 'Domain']
+  APPOINTMENT_TABLE_HEADER: ['Name', 'Email', 'Date', 'Created At', 'Domain', 'Deposit Paid']
 }));
 
 describe('AllAppointments Component', () => {
@@ -41,7 +41,8 @@ describe('AllAppointments Component', () => {
       Customer: {
         Domain: null
       },
-      source: 'direct_link'
+      source: 'direct_link',
+      deposit_paid: false
     },
     {
       id: '2',
@@ -55,7 +56,8 @@ describe('AllAppointments Component', () => {
         Domain: {
           name: 'Test Domain'
         }
-      }
+      },
+      deposit_paid: false
     }
   ];
 
