@@ -239,23 +239,6 @@ export const BookingCalendarSettings = ({ userId }: BookingCalendarSettingsProps
         </div>
 
         <div className="space-y-4">
-          <h3 className="font-semibold">Edit Time Slots By Day</h3>
-          
-          <div className="border-b mb-4">
-            <div className="flex flex-wrap">
-              {DAYS_OF_WEEK.map((day) => (
-                <Button
-                  key={day}
-                  variant={activeDay === day ? "default" : "ghost"}
-                  onClick={() => setActiveDay(day)}
-                  className={`rounded-none border-b-2 px-4 ${activeDay === day ? "border-indigo-600" : "border-transparent"} ${!availableDays.includes(day) ? "opacity-50" : ""}`}
-                  disabled={!availableDays.includes(day)}
-                >
-                  {day}
-                </Button>
-              ))}
-            </div>
-          </div>
           
           <div className="border rounded-md p-4">
             <h4 className="font-medium mb-4">
