@@ -265,7 +265,7 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
                   <Loader loading={true}>Loading slots...</Loader>
                 </div>
               ) : availableSlots.length > 0 ? (
-                <div className="space-y-3">
+                <div className={`space-y-3 ${availableSlots.length > 5 ? 'max-h-[300px] overflow-y-auto pr-2' : ''}`}>
                   {availableSlots.map((slot, index) => {
                     const originalSlot = customSlots.find(s => s.id === slot.id);
                     return (
