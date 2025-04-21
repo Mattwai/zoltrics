@@ -98,15 +98,6 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
   };
 
   const handleEditSlot = (slot: TimeSlot) => {
-    // Can only edit custom slots, not weekly defaults
-    if (!slot.isCustom) {
-      toast({
-        title: "Info",
-        description: "Weekly default slots cannot be edited here. Use the Booking Calendar page to modify weekly defaults.",
-      });
-      return;
-    }
-    
     setEditingSlot(slot);
     setNewSlot({
       id: slot.id,
@@ -125,14 +116,6 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
     const slotToRemove = customSlots.find(slot => slot.id === slotId);
     if (!slotToRemove) return;
     
-    // Check if it's a custom slot
-    if (!slotToRemove.isCustom) {
-      toast({
-        title: "Info",
-        description: "Weekly default slots cannot be removed here. Use the Booking Calendar page to modify weekly defaults.",
-      });
-      return;
-    }
     
     const formattedDate = format(selectedDate, "yyyy-MM-dd");
     const remainingSlots = customSlots.filter(slot => slot.id !== slotId);
@@ -249,7 +232,7 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
       <div className="lg:col-span-4 space-y-6">
         <div className="p-4 bg-blue-50 rounded-md mb-6">
           <p className="text-sm text-blue-800">
-            <strong>Important:</strong> Custom time slots are displayed alongside your weekly default slots.
+            <strong>Important:</strong> Custom time slots are displayed alongside your Regular Weekly slots.
             They do not override your weekly schedule - they add to it.
             Slots marked as "Custom" are specific to this date and can be edited or removed here.
           </p>
@@ -293,7 +276,7 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
                             {isCustomSlot ? (
                               <Badge variant="outline" className="bg-blue-50 text-blue-800">Custom</Badge>
                             ) : (
-                              <Badge variant="outline" className="bg-gray-100 text-gray-800">Weekly Default</Badge>
+                              <Badge variant="outline" className="bg-gray-100 text-gray-800">Regular</Badge>
                             )}
                           </div>
                           <div className="text-sm text-muted-foreground">
