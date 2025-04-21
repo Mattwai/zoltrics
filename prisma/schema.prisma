@@ -134,7 +134,10 @@ model Customer {
   booking Bookings[]
   Domain   Domain? @relation(fields: [domainId], references: [id], onDelete: Cascade)
   domainId String? @db.Uuid
+  createdAt DateTime @default(now()) 
+  updatedAt DateTime @updatedAt
 }
+
 
 model ChatRoom {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -170,8 +173,12 @@ model Bookings {
   Customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
   customerId String?   @db.Uuid
   domainId   String?   @db.Uuid
+  no_show Boolean @default(false) // Tracks if booking was cancelled/no-show
+  depositRequired Boolean @default(false) // Whether deposit is required
+  depositPaid Boolean @default(false) // Whether a required deposit has been paid
+  riskScore Float? // Cancellation risk score from model
   createdAt  DateTime  @default(now())
-  deposit_paid Boolean @default(false)
+  updatedAt DateTime @updatedAt
 }
 
 model Campaign {

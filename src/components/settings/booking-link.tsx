@@ -1,16 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
-
-const generateBookingLink = () => {
-  return Math.random().toString(36).substring(2, 15);
-};
 
 async function updateBookingLink(userId: string) {
-  const newLink = generateBookingLink();
+  const newLink = Math.random().toString(36).substring(2, 15);
   
   // Make API call to update the booking link
   const response = await fetch("/api/user/booking-link", {
@@ -18,7 +12,7 @@ async function updateBookingLink(userId: string) {
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ bookingLink: newLink }),
+    body: JSON.stringify({ bookingLink: newLink, userId }),
   });
   
   if (!response.ok) {
@@ -39,8 +33,7 @@ const BookingLink = ({ initialBookingLink, userId, baseUrl }: BookingLinkProps) 
   const [bookingLink, setBookingLink] = useState(initialBookingLink);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleGenerateLink = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleGenerateLink = async () => {
     setIsLoading(true);
     
     try {
@@ -53,29 +46,23 @@ const BookingLink = ({ initialBookingLink, userId, baseUrl }: BookingLinkProps) 
     }
   };
 
+  useEffect(() => {
+    if (!bookingLink) {
+      handleGenerateLink();
+    }
+  }, [bookingLink]);
+  
   return (
-    <div className="space-y-1 pr-2">
+    <div className="space-y-1">
       <div className="flex gap-2">
         <Input
           value={
             bookingLink
               ? `${baseUrl}/booking/${bookingLink}`
-              : "No booking link generated yet"
+              : "Generating booking link..."
           }
           readOnly
         />
-        {/* <form onSubmit={handleGenerateLink}>
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {bookingLink ? "Regenerating..." : "Generating..."}
-              </>
-            ) : (
-              bookingLink ? "Regenerate" : "Generate"
-            )}
-          </Button>
-        </form> */}
       </div>
       <p className="text-sm text-muted-foreground">
         Share this link with your customers to allow them to book appointments directly.

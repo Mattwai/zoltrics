@@ -41,6 +41,8 @@ type BookingFormProps = {
 const BookingForm = ({ userId }: BookingFormProps) => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [depositRequired, setDepositRequired] = useState<boolean>(false);
+  const [riskScore, setRiskScore] = useState<number | null>(null);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -67,7 +69,10 @@ const BookingForm = ({ userId }: BookingFormProps) => {
       });
 
       if (response.ok) {
+        const data = await response.json();
         setIsSubmitted(true);
+        setDepositRequired(data.depositRequired);
+        setRiskScore(data.riskScore);
       } else {
         console.error("Error creating booking:", await response.text());
       }
@@ -84,6 +89,11 @@ const BookingForm = ({ userId }: BookingFormProps) => {
         <p className="text-center">
           Thank you for booking your appointment. You will receive a confirmation email shortly.
         </p>
+        {depositRequired && (
+          <p className="text-center text-red-500">
+            Due to previous cancellations for this session, a deposit is required to confirm your booking.
+          </p>
+        )}
       </div>
     );
   }

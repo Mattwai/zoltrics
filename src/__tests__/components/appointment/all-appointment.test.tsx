@@ -42,7 +42,11 @@ describe('AllAppointments Component', () => {
         Domain: null
       },
       source: 'direct_link',
-      deposit_paid: false
+      depositRequired: false,
+      depositPaid: false,
+      no_show: false,
+      riskScore: 20,
+      updatedAt: mockDate
     },
     {
       id: '2',
@@ -57,7 +61,11 @@ describe('AllAppointments Component', () => {
           name: 'Test Domain'
         }
       },
-      deposit_paid: false
+      depositRequired: true,
+      depositPaid: true,
+      no_show: false,
+      riskScore: 60,
+      updatedAt: mockDate
     }
   ];
 

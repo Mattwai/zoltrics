@@ -147,7 +147,11 @@ export const onGetAllBookingsForCurrentUser = async (id: string) => {
             },
           },
         },
-        deposit_paid: true
+        depositRequired: true,
+        depositPaid: true,
+        no_show: true,
+        riskScore: true,
+        updatedAt: true
       },
     });
 
@@ -183,7 +187,11 @@ export const onGetAllBookingsForCurrentUser = async (id: string) => {
             },
           },
         },
-        deposit_paid: true,
+        depositRequired: true,
+        depositPaid: true,
+        no_show: true,
+        riskScore: true,
+        updatedAt: true
       },
     });
 

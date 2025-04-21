@@ -6,12 +6,29 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { onGetAllAccountDomains } from "../settings";
 
+const generateBookingLink = async () => {
+  let link;
+  let exists = true;
+
+  while (exists) {
+    link = Math.random().toString(36).substring(2, 15);
+    const user = await client.user.findUnique({
+      where: { bookingLink: link },
+    });
+    exists = !!user;
+  }
+
+  return link;
+};
+
 export const onCompleteUserRegistration = async (
   name: string,
   id: string,
   email: string
 ) => {
   try {
+    const uniqueBookingLink = await generateBookingLink();
+
     const registered = await client.user.create({
       data: {
         id,
@@ -20,6 +37,7 @@ export const onCompleteUserRegistration = async (
         subscription: {
           create: {},
         },
+        bookingLink: uniqueBookingLink,
       },
       select: {
         name: true,

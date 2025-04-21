@@ -21,7 +21,11 @@ interface Booking {
   domainId: string | null;
   customerId: string | null;
   source?: string;
-  deposit_paid: boolean;
+  depositRequired: boolean;
+  depositPaid: boolean;
+  no_show: boolean;
+  riskScore: number;
+  updatedAt: Date;
   Customer: {
     Domain: {
       name: string;
@@ -33,7 +37,7 @@ const Page = async (props: Props) => {
   const session = await getServerSession(authConfig);
   if (!session || !session.user) return null;
 
-  const domainBookings = await onGetAllBookingsForCurrentUser(session.user.id);
+  const allBookings = await onGetAllBookingsForCurrentUser(session.user.id);
   const today = new Date();
 
   // Fetch user details including booking link
@@ -42,15 +46,8 @@ const Page = async (props: Props) => {
     select: { bookingLink: true }
   });
 
-  if (!domainBookings)
-    return (
-      <div className="w-full flex justify-center">
-        <p>No Appointments</p>
-      </div>
-    );
-
   // Type assertion to match the expected Booking interface
-  const typedBookings = domainBookings.bookings as unknown as Booking[];
+  const typedBookings = (allBookings?.bookings || []) as Booking[];
   
   const bookingsExistToday = typedBookings.filter(
     (booking) => booking.date.getDate() === today.getDate()
@@ -60,7 +57,7 @@ const Page = async (props: Props) => {
     <>
       <InfoBar />
       <div className="grid grid-cols-1 lg:grid-cols-3 flex-1 h-0 gap-3">
-        <div className="lg:col-span-2 overflow-y-auto">
+        <div className="lg:col-span-2 overflow-y-auto px-2">
           <Section
             label="Direct Booking Link" 
             message="Create and share a unique booking link with your customers."
