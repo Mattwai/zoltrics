@@ -11,6 +11,8 @@ interface CustomTimeSlot {
 
 interface TimeSlot {
   slot: string;
+  startTime?: string;
+  endTime?: string;
   duration: number;
   maxSlots: number;
   id?: string;
@@ -30,14 +32,39 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const selectedDate = new Date(date);
+    // Parse the date string to create a date with the correct day
+    let selectedDate: Date;
+    
+    // Check if the date is in ISO format or YYYY-MM-DD format
+    if (date.includes('T')) {
+      // It's an ISO string
+      selectedDate = new Date(date);
+    } else {
+      // It's a YYYY-MM-DD format
+      const [year, month, day] = date.split('-').map(Number);
+      selectedDate = new Date(year, month - 1, day); // Month is 0-indexed in JavaScript Date
+    }
+    
+    console.log('Original date string:', date);
+    console.log('Parsed selected date:', selectedDate);
+    
     const dayOfWeek = selectedDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+    // Set up start and end of the selected day to query for custom slots
+    const startOfDay = new Date(selectedDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(selectedDate);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    console.log('Querying custom slots from', startOfDay, 'to', endOfDay);
 
     // Get existing bookings for the selected date
     const existingBookings = await client.bookings.findMany({
       where: {
         date: {
-          equals: selectedDate,
+          gte: startOfDay,
+          lte: endOfDay
         },
         Customer: {
           Domain: {
@@ -56,12 +83,20 @@ export async function GET(request: NextRequest) {
     const customSlots = await client.customTimeSlot.findMany({
       where: {
         userId,
-        date: selectedDate,
+        date: {
+          gte: startOfDay,
+          lte: endOfDay
+        }
       },
       orderBy: {
         startTime: 'asc',
       },
     });
+    
+    console.log(`Found ${customSlots.length} custom slots for date:`, selectedDate);
+    if (customSlots.length > 0) {
+      console.log('Custom slots:', customSlots);
+    }
     
     // Get weekly booking calendar settings
     const calendarSettings = await client.bookingCalendarSettings.findUnique({
@@ -98,9 +133,23 @@ export async function GET(request: NextRequest) {
               // Format the current time as a slot
               const timeSlot = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
               
+              // Calculate end time based on duration
+              let endHour = currentHour;
+              let endMinute = currentMinute + duration;
+              
+              // Adjust if minutes overflow
+              while (endMinute >= 60) {
+                endHour++;
+                endMinute -= 60;
+              }
+              
+              const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+              
               // Add this slot to available slots
               availableSlots.push({
                 slot: timeSlot,
+                startTime: timeSlot,
+                endTime: endTime,
                 duration: duration,
                 maxSlots: slot.maxBookings,
                 isCustom: false
@@ -123,14 +172,38 @@ export async function GET(request: NextRequest) {
     // Now add custom slots - these are additional slots for specific dates
     if (customSlots.length > 0) {
       customSlots.forEach(slot => {
+        // Calculate end time based on start time and duration
+        const [startHour, startMinute] = slot.startTime.split(':').map(Number);
+        let endHour = startHour;
+        let endMinute = startMinute + slot.duration;
+        
+        // Adjust if minutes overflow
+        while (endMinute >= 60) {
+          endHour++;
+          endMinute -= 60;
+        }
+        
+        const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+        
         availableSlots.push({
           slot: slot.startTime,
+          startTime: slot.startTime,
+          endTime: endTime,
           duration: slot.duration,
           maxSlots: slot.maxSlots,
           id: slot.id,
           isCustom: true
         });
       });
+      
+      console.log('After adding custom slots, available slots include:', 
+        availableSlots.filter(slot => slot.isCustom === true).map(slot => ({
+          slot: slot.slot,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          isCustom: slot.isCustom
+        }))
+      );
     }
 
     // Sort slots by time
@@ -157,6 +230,10 @@ export async function GET(request: NextRequest) {
         return hour > currentHour || (hour === currentHour && minute > currentMinute);
       });
     }
+
+    // Final logging of what we're returning
+    console.log(`Returning ${availableSlots.length} total slots`);
+    console.log('Custom slots being returned:', availableSlots.filter(slot => slot.isCustom === true).length);
 
     return NextResponse.json({ slots: availableSlots });
   } catch (error) {

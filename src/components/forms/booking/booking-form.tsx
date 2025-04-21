@@ -29,6 +29,13 @@ import { useSession } from "next-auth/react";
 interface AppointmentTimeSlots {
   slot: string;
   available?: boolean;
+  slotsRemaining?: number;
+  startTime?: string;
+  endTime?: string;
+  duration?: number;
+  formattedDuration?: string;
+  isCustom?: boolean;
+  maxSlots?: number;
 }
 
 const formSchema = z.object({
@@ -91,16 +98,53 @@ const BookingForm = ({ userId }: BookingFormProps) => {
 
   const fetchAvailableTimeSlots = async (date: Date, userId: string) => {
     try {
-      const response = await fetch(`/api/bookings/available-slots?date=${date.toISOString()}&userId=${userId}`);
+      // Format the date in YYYY-MM-DD format to preserve the selected date regardless of timezone
+      const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      
+      const response = await fetch(`/api/bookings/available-slots?date=${formattedDate}&userId=${userId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch available time slots');
       }
       const data = await response.json();
-      return data.slots as AppointmentTimeSlots[];
+      
+      // Process the slots to include formatted duration and calculate slots remaining
+      const processedSlots = data.slots.map((slot: any) => {
+        // Calculate end time if not provided
+        const endTimeValue = slot.endTime || calculateEndTime(slot.slot, slot.duration);
+        
+        // Format duration for display (e.g., "30 mins")
+        const formattedDuration = `${slot.duration} mins`;
+        
+        // Calculate slots remaining if maxSlots is provided
+        const slotsRemaining = slot.maxSlots || 1;
+        
+        // Make sure to preserve the isCustom property exactly as it comes from the API
+        return {
+          ...slot,
+          startTime: slot.startTime || slot.slot,
+          endTime: endTimeValue,
+          formattedDuration: formattedDuration,
+          slotsRemaining: slotsRemaining,
+          isCustom: Boolean(slot.isCustom) // Ensure isCustom is a boolean
+        };
+      });
+      
+      return processedSlots as AppointmentTimeSlots[];
     } catch (error) {
       console.error('Error fetching time slots:', error);
       throw error;
     }
+  };
+
+  // Helper function to calculate end time based on start time and duration
+  const calculateEndTime = (startTime: string, durationMinutes: number) => {
+    const [hours, minutes] = startTime.split(':').map(Number);
+    
+    let totalMinutes = hours * 60 + minutes + durationMinutes;
+    const endHours = Math.floor(totalMinutes / 60);
+    const endMinutes = totalMinutes % 60;
+    
+    return `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
   };
 
   useEffect(() => {
@@ -108,6 +152,8 @@ const BookingForm = ({ userId }: BookingFormProps) => {
       setIsLoading(true);
       fetchAvailableTimeSlots(selectedDate, session.user.id)
         .then((slots: AppointmentTimeSlots[]) => {
+          console.log("Fetched time slots:", slots);
+          console.log("Custom slots count:", slots.filter(slot => slot.isCustom).length);
           setAvailableTimeSlots(slots);
           setError(null);
         })
@@ -273,14 +319,27 @@ const BookingForm = ({ userId }: BookingFormProps) => {
                       key={index}
                       variant={field.value === slot.slot ? "default" : "outline"}
                       className={cn(
-                        "justify-start text-left h-12",
-                        field.value === slot.slot && "bg-grandis text-black"
+                        "justify-start text-left h-auto py-2 flex flex-col items-start",
+                        field.value === slot.slot && "bg-grandis text-black",
+                        slot.isCustom && "border-blue-400 border-2"
                       )}
                       onClick={() => {
                         handleTimeSlotClick(slot);
                       }}
                     >
-                      {slot.slot}
+                      <div className="font-medium">{slot.slot}</div>
+                      {slot.startTime && slot.endTime && (
+                        <div className="text-xs opacity-80">{slot.startTime} - {slot.endTime}</div>
+                      )}
+                      <div className="flex justify-between w-full text-xs mt-1">
+                        {slot.formattedDuration && <span>{slot.formattedDuration}</span>}
+                        {slot.slotsRemaining !== undefined && (
+                          <span className="ml-auto">{slot.slotsRemaining} {slot.slotsRemaining === 1 ? 'slot' : 'slots'} left</span>
+                        )}
+                      </div>
+                      {slot.isCustom && (
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded mt-1 font-medium">Custom Slot</span>
+                      )}
                     </Button>
                   ))
                 ) : (
