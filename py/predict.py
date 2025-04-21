@@ -6,9 +6,9 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 
 def load_model_and_scaler():
-    with open('src/models/model.pkl', 'rb') as f:
+    with open('models/deposit-predictor-model.pkl', 'rb') as f:
         model = pickle.load(f)
-    with open('src/models/scaler.pkl', 'rb') as f:
+    with open('models/deposit-predictor-scaler.pkl', 'rb') as f:
         scaler = pickle.load(f)
     return model, scaler
 
