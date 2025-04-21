@@ -1,47 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { client } from "@/lib/prisma";
-
-// Helper function to generate time slots based on start time, end time, and duration
-const generateTimeSlots = (startTime: string, endTime: string, duration: number) => {
-  const slots = [];
-  const [startHour, startMinute] = startTime.split(':').map(Number);
-  const [endHour, endMinute] = endTime.split(':').map(Number);
-  
-  let currentHour = startHour;
-  let currentMinute = startMinute;
-  
-  // Start time of the current slot
-  let slotStartHour = currentHour;
-  let slotStartMinute = currentMinute;
-  
-  while (currentHour < endHour || (currentHour === endHour && currentMinute < endMinute)) {
-    // Calculate end time of this slot
-    let nextMinute = currentMinute + duration;
-    let nextHour = currentHour;
-    
-    // Adjust hour if minutes overflow
-    while (nextMinute >= 60) {
-      nextHour++;
-      nextMinute -= 60;
-    }
-    
-    // Only add the slot if it doesn't go beyond the end time
-    if (nextHour < endHour || (nextHour === endHour && nextMinute <= endMinute)) {
-      slots.push({
-        slot: `${slotStartHour.toString().padStart(2, '0')}:${slotStartMinute.toString().padStart(2, '0')} - ${nextHour.toString().padStart(2, '0')}:${nextMinute.toString().padStart(2, '0')}`,
-        duration,
-      });
-    }
-    
-    // Move to next slot
-    slotStartHour = nextHour;
-    slotStartMinute = nextMinute;
-    currentHour = nextHour;
-    currentMinute = nextMinute;
-  }
-  
-  return slots;
-};
+import { generateTimeSlots, formatTimeSlot } from "@/lib/time-slots";
 
 export async function GET(request: NextRequest) {
   try {
@@ -77,27 +36,50 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    let availableSlots: { slot: string; duration: number; maxSlots?: number; id?: string }[] = [];
+    let availableSlots: { slot: string; duration: number; maxSlots?: number; id?: string; isCustom?: boolean }[] = [];
 
-    // If there are custom slots for this date, use them
+    // Add weekly default slots
+    if (calendarSettings && calendarSettings.timeSlots) {
+      try {
+        const weeklySlots = JSON.parse(calendarSettings.timeSlots as string);
+        if (weeklySlots[dayOfWeek] && weeklySlots[dayOfWeek].length > 0) {
+          // Add formatted weekly slots
+          weeklySlots[dayOfWeek].forEach((slot: any) => {
+            const endTime = calculateEndTime(slot.startTime, slot.duration);
+            availableSlots.push({
+              slot: formatTimeSlot(slot.startTime, endTime),
+              duration: slot.duration,
+              maxSlots: slot.maxBookings,
+              isCustom: false
+            });
+          });
+        }
+      } catch (error) {
+        console.error("Error parsing weekly slots:", error);
+      }
+    }
+
+    // Add custom slots for this date - these are additional slots
     if (customSlots.length > 0) {
-      availableSlots = customSlots.flatMap(slot => 
-        generateTimeSlots(slot.startTime, slot.endTime, slot.duration).map(timeSlot => ({
-          ...timeSlot,
+      customSlots.forEach(slot => {
+        availableSlots.push({
+          slot: formatTimeSlot(slot.startTime, slot.endTime),
+          duration: slot.duration,
           maxSlots: slot.maxSlots,
           id: slot.id,
-        }))
-      );
-    } 
-    // Otherwise, use the weekly settings
-    else if (calendarSettings) {
-      const weeklySlots = JSON.parse(calendarSettings.timeSlots as string);
-      const daySlots = weeklySlots[dayOfWeek] || [];
-      
-      availableSlots = daySlots.flatMap((slot: any) => 
-        generateTimeSlots(slot.startTime, slot.endTime, slot.duration)
-      );
+          isCustom: true
+        });
+      });
     }
+
+    // Sort slots by time
+    availableSlots.sort((a, b) => {
+      const timeA = a.slot.split(' - ')[0];
+      const timeB = b.slot.split(' - ')[0];
+      if (timeA < timeB) return -1;
+      if (timeA > timeB) return 1;
+      return 0;
+    });
 
     return NextResponse.json({ 
       slots: availableSlots,
@@ -110,6 +92,21 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Helper to calculate end time from start time and duration
+function calculateEndTime(startTime: string, durationMinutes: number): string {
+  const [hour, minute] = startTime.split(':').map(Number);
+  
+  let endMinute = minute + durationMinutes;
+  let endHour = hour;
+  
+  while (endMinute >= 60) {
+    endHour++;
+    endMinute -= 60;
+  }
+  
+  return `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
 }
 
 export async function POST(request: NextRequest) {
@@ -125,18 +122,39 @@ export async function POST(request: NextRequest) {
 
     const selectedDate = new Date(date);
 
-    // Delete existing slots for this date
-    await client.customTimeSlot.deleteMany({
+    // Get existing custom slots first
+    const existingSlots = await client.customTimeSlot.findMany({
       where: {
         userId,
         date: selectedDate,
       },
+      select: {
+        id: true
+      }
     });
 
-    // Create new slots
-    const newSlots = await Promise.all(
-      slots.map((slot: any) =>
-        client.customTimeSlot.create({
+    // Create a set of IDs to keep track of which slots were processed
+    const processedIds = new Set();
+    
+    // Update or create slots
+    const slotsPromises = slots.map(async (slot: any) => {
+      if (slot.id) {
+        // Mark this ID as processed
+        processedIds.add(slot.id);
+        
+        // Update existing slot
+        return client.customTimeSlot.update({
+          where: { id: slot.id },
+          data: {
+            startTime: slot.startTime,
+            endTime: slot.endTime,
+            duration: slot.duration,
+            maxSlots: slot.maxSlots,
+          },
+        });
+      } else {
+        // Create new slot
+        return client.customTimeSlot.create({
           data: {
             date: selectedDate,
             startTime: slot.startTime,
@@ -145,11 +163,26 @@ export async function POST(request: NextRequest) {
             maxSlots: slot.maxSlots,
             userId,
           },
-        })
-      )
-    );
+        });
+      }
+    });
+    
+    // Delete slots that weren't included in the updated list
+    const idsToDelete = existingSlots
+      .map(slot => slot.id)
+      .filter(id => !processedIds.has(id));
+      
+    if (idsToDelete.length > 0) {
+      await client.customTimeSlot.deleteMany({
+        where: {
+          id: { in: idsToDelete }
+        }
+      });
+    }
 
-    return NextResponse.json({ slots: newSlots });
+    const updatedSlots = await Promise.all(slotsPromises);
+
+    return NextResponse.json({ slots: updatedSlots });
   } catch (error) {
     console.error("Error saving custom slots:", error);
     return NextResponse.json(
@@ -157,4 +190,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

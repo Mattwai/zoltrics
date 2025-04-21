@@ -18,6 +18,8 @@ import {
   DialogTitle, 
   DialogFooter 
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { generateTimeOptions, calculateDuration } from "@/lib/time-slots";
 
 interface TimeSlot {
   id?: string;
@@ -25,18 +27,15 @@ interface TimeSlot {
   endTime: string;
   duration: number;
   maxSlots: number;
+  isCustom?: boolean;
 }
 
 interface CustomTimeSlotsProps {
   userId: string;
 }
 
-const TIME_OPTIONS = Array.from({ length: 24 * 4 }, (_, i) => {
-  const hour = Math.floor(i / 4);
-  const minute = (i % 4) * 15;
-  return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
-});
-
+// Use the utility function to generate time options
+const TIME_OPTIONS = generateTimeOptions();
 const DURATION_OPTIONS = [15, 30, 45, 60, 90, 120];
 
 export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
@@ -99,6 +98,15 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
   };
 
   const handleEditSlot = (slot: TimeSlot) => {
+    // Can only edit custom slots, not weekly defaults
+    if (!slot.isCustom) {
+      toast({
+        title: "Info",
+        description: "Weekly default slots cannot be edited here. Use the Booking Calendar page to modify weekly defaults.",
+      });
+      return;
+    }
+    
     setEditingSlot(slot);
     setNewSlot({
       id: slot.id,
@@ -112,6 +120,19 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
 
   const handleRemoveSlot = async (slotId: string) => {
     if (!selectedDate) return;
+    
+    // Find the slot to be removed
+    const slotToRemove = customSlots.find(slot => slot.id === slotId);
+    if (!slotToRemove) return;
+    
+    // Check if it's a custom slot
+    if (!slotToRemove.isCustom) {
+      toast({
+        title: "Info",
+        description: "Weekly default slots cannot be removed here. Use the Booking Calendar page to modify weekly defaults.",
+      });
+      return;
+    }
     
     const formattedDate = format(selectedDate, "yyyy-MM-dd");
     const remainingSlots = customSlots.filter(slot => slot.id !== slotId);
@@ -175,11 +196,11 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
     if (editingSlot?.id) {
       // Update existing slot
       updatedSlots = updatedSlots.map(slot => 
-        slot.id === editingSlot.id ? newSlot : slot
+        slot.id === editingSlot.id ? {...newSlot, isCustom: true} : slot
       );
     } else {
       // Add new slot
-      updatedSlots.push(newSlot);
+      updatedSlots.push({...newSlot, isCustom: true});
     }
     
     setLoading(true);
@@ -217,26 +238,22 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
     }
   };
 
-  // Calculate duration in minutes between two time strings
-  const calculateDuration = (startTime: string, endTime: string): number => {
-    const [startHour, startMinute] = startTime.split(":").map(Number);
-    const [endHour, endMinute] = endTime.split(":").map(Number);
-    
-    const startMinutes = startHour * 60 + startMinute;
-    const endMinutes = endHour * 60 + endMinute;
-    
-    return Math.max(0, endMinutes - startMinutes);
-  };
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
       <div className="lg:col-span-1">
         <Section
           label="Custom Time Slots"
-          message="Create date-specific time slots that override your weekly schedule. Select a date on the calendar to view and modify its available slots."
+          message="Create date-specific time slots that are added to your weekly schedule. Select a date on the calendar to view and modify its available slots."
         />
       </div>
       <div className="lg:col-span-4 space-y-6">
+        <div className="p-4 bg-blue-50 rounded-md mb-6">
+          <p className="text-sm text-blue-800">
+            <strong>Important:</strong> Custom time slots are displayed alongside your weekly default slots.
+            They do not override your weekly schedule - they add to it.
+            Slots marked as "Custom" are specific to this date and can be edited or removed here.
+          </p>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
@@ -256,7 +273,7 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Available Time Slots</CardTitle>
               <Button onClick={handleAddSlot} variant="outline">
-                Add Slot
+                Add Custom Slot
               </Button>
             </CardHeader>
             <CardContent>
@@ -267,30 +284,35 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
               ) : availableSlots.length > 0 ? (
                 <div className={`space-y-3 ${availableSlots.length > 5 ? 'max-h-[300px] overflow-y-auto pr-2' : ''}`}>
                   {availableSlots.map((slot, index) => {
-                    const originalSlot = customSlots.find(s => s.id === slot.id);
+                    const isCustomSlot = slot.isCustom;
                     return (
                       <div key={index} className="p-3 border rounded-md flex items-center justify-between">
                         <div className="space-y-1">
-                          <div className="font-medium">
+                          <div className="font-medium flex items-center gap-2">
                             {slot.slot} ({slot.duration} min)
+                            {isCustomSlot ? (
+                              <Badge variant="outline" className="bg-blue-50 text-blue-800">Custom</Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-gray-100 text-gray-800">Weekly Default</Badge>
+                            )}
                           </div>
                           <div className="text-sm text-muted-foreground">
                             Max bookings: {slot.maxSlots || 1}
                           </div>
                         </div>
-                        {originalSlot && (
+                        {isCustomSlot && (
                           <div className="flex gap-2">
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              onClick={() => handleEditSlot(originalSlot)}
+                              onClick={() => handleEditSlot(slot)}
                             >
                               Edit
                             </Button>
                             <Button 
                               variant="destructive" 
                               size="sm"
-                              onClick={() => handleRemoveSlot(originalSlot.id!)}
+                              onClick={() => handleRemoveSlot(slot.id!)}
                             >
                               Remove
                             </Button>
@@ -300,11 +322,11 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
                     );
                   })}
                 </div>
-              ) : (
+              ) :
                 <div className="text-center py-8 text-muted-foreground">
                   No time slots available for this date
                 </div>
-              )}
+              }
             </CardContent>
           </Card>
         </div>

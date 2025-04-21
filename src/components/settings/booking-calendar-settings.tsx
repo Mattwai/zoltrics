@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader } from "@/components/loader";
 import Section from "@/components/section-label";
+import { generateTimeSlots, calculateDuration, generateTimeOptions } from "@/lib/time-slots";
 
 interface TimeSlot {
   startTime: string;
@@ -29,11 +30,8 @@ const DAYS_OF_WEEK = [
   "Sunday",
 ];
 
-const TIME_OPTIONS = Array.from({ length: 24 * 4 }, (_, i) => {
-  const hour = Math.floor(i / 4);
-  const minute = (i % 4) * 15;
-  return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
-});
+// Use the utility function to generate time options
+const TIME_OPTIONS = generateTimeOptions();
 
 export const BookingCalendarSettings = ({ userId }: BookingCalendarSettingsProps) => {
   const { toast } = useToast();
@@ -50,17 +48,6 @@ export const BookingCalendarSettings = ({ userId }: BookingCalendarSettingsProps
   });
   const [activeDay, setActiveDay] = useState<string>("Monday");
   const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
-
-  // Calculate duration in minutes between two time strings
-  const calculateDuration = (startTime: string, endTime: string): number => {
-    const [startHour, startMinute] = startTime.split(":").map(Number);
-    const [endHour, endMinute] = endTime.split(":").map(Number);
-    
-    const startMinutes = startHour * 60 + startMinute;
-    const endMinutes = endHour * 60 + endMinute;
-    
-    return Math.max(0, endMinutes - startMinutes);
-  };
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -164,10 +151,18 @@ export const BookingCalendarSettings = ({ userId }: BookingCalendarSettingsProps
       
       const timeSlots: Record<number, any[]> = {};
       
-      // For each day, add its time slot if the day is selected
+      // For each day, generate individual time slots if the day is selected
       Object.entries(dayMap).forEach(([day, index]) => {
         if (availableDays.includes(day)) {
-          timeSlots[index] = [dayTimeSlots[day]];
+          const daySlot = dayTimeSlots[day];
+          // Generate multiple time slots based on the duration
+          const generatedSlots = generateTimeSlots(
+            daySlot.startTime, 
+            daySlot.endTime, 
+            daySlot.duration, 
+            daySlot.maxBookings
+          );
+          timeSlots[index] = generatedSlots;
         } else {
           timeSlots[index] = [];
         }
@@ -317,6 +312,8 @@ export const BookingCalendarSettings = ({ userId }: BookingCalendarSettingsProps
             <div className="mt-4 p-3 bg-gray-50 rounded border text-sm text-gray-600">
               <p>On {activeDay}s, appointments will last {dayTimeSlots[activeDay]?.duration || 30} minutes between {dayTimeSlots[activeDay]?.startTime || "09:00"} and {dayTimeSlots[activeDay]?.endTime || "17:00"}.</p>
               <p>You can accept up to {dayTimeSlots[activeDay]?.maxBookings || 1} concurrent booking(s) per time slot.</p>
+              <p className="mt-2 text-blue-600">This will generate {Math.floor(calculateDuration(dayTimeSlots[activeDay]?.startTime || "09:00", dayTimeSlots[activeDay]?.endTime || "17:00") / (dayTimeSlots[activeDay]?.duration || 30))} individual {dayTimeSlots[activeDay]?.duration || 30}-minute slots.</p>
+              <p className="mt-2 text-violet-700">Your settings will create individual appointment slots at {dayTimeSlots[activeDay]?.duration || 30}-minute intervals (e.g., 9:00, 9:30, 10:00, etc.).</p>
             </div>
           </div>
         </div>
@@ -326,5 +323,4 @@ export const BookingCalendarSettings = ({ userId }: BookingCalendarSettingsProps
         </Button>
       </div>
     </div>
-  );
-}; 
+  );}
