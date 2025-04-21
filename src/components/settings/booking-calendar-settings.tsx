@@ -242,7 +242,7 @@ export const BookingCalendarSettings = ({ userId }: BookingCalendarSettingsProps
           
           <div className="border rounded-md p-4">
             <h4 className="font-medium mb-4">
-              {activeDay} Settings
+              <b>{activeDay}</b> Settings
               {!availableDays.includes(activeDay) && 
                 <span className="text-sm text-muted-foreground ml-2">(Disabled - check the box above to enable)</span>
               }
@@ -256,7 +256,7 @@ export const BookingCalendarSettings = ({ userId }: BookingCalendarSettingsProps
                   value={dayTimeSlots[activeDay]?.startTime || "09:00"}
                   onChange={(e) => handleTimeSlotChange(activeDay, "startTime", e.target.value)}
                   disabled={!availableDays.includes(activeDay)}
-                  className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 pl-2"
                 >
                   {TIME_OPTIONS.map((time) => (
                     <option key={time} value={time}>
@@ -273,7 +273,7 @@ export const BookingCalendarSettings = ({ userId }: BookingCalendarSettingsProps
                   value={dayTimeSlots[activeDay]?.endTime || "17:00"}
                   onChange={(e) => handleTimeSlotChange(activeDay, "endTime", e.target.value)}
                   disabled={!availableDays.includes(activeDay)}
-                  className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 pl-2"
                 >
                   {TIME_OPTIONS.map((time) => (
                     <option key={time} value={time}>
@@ -290,7 +290,7 @@ export const BookingCalendarSettings = ({ userId }: BookingCalendarSettingsProps
                   value={dayTimeSlots[activeDay]?.duration || 30}
                   onChange={(e) => handleTimeSlotChange(activeDay, "duration", parseInt(e.target.value))}
                   disabled={!availableDays.includes(activeDay)}
-                  className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 pl-2"
                 >
                   {[15, 30, 45, 60, 90, 120].map(duration => (
                     <option key={duration} value={duration}>
