@@ -41,7 +41,7 @@ model Session {
 }
 
 model User {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id        String    @id @default(uuid()) @db.Uuid
   name      String?
   email     String    @unique
   emailVerified DateTime?
@@ -54,6 +54,8 @@ model User {
   domains Domain[]
   campaign Campaign[]
   subscription Billings?
+  bookingCalendarSettings BookingCalendarSettings?
+  customTimeSlots CustomTimeSlot[]
 }
 
 model VerificationRequest {
@@ -210,4 +212,32 @@ enum Plans {
 enum Role {
   user
   assistant
+}
+
+model BookingCalendarSettings {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @unique @db.Uuid
+  availableDays String[]
+  timeSlots     Json
+  startDate     DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("booking_calendar_settings")
+}
+
+model CustomTimeSlot {
+  id        String   @id @default(cuid())
+  date      DateTime
+  startTime String
+  endTime   String
+  duration  Int      // Duration in minutes
+  maxSlots  Int      // Maximum number of bookings allowed for this slot
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, date])
 }

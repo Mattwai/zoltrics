@@ -20,10 +20,16 @@ import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { CalendarIcon, CheckCircle } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { APPOINTMENT_TIME_SLOTS } from "@/constants/timeslots";
+import { useSession } from "next-auth/react";
+
+// Define the AppointmentTimeSlots interface
+interface AppointmentTimeSlots {
+  slot: string;
+  available?: boolean;
+}
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -40,10 +46,16 @@ type BookingFormProps = {
 
 const BookingForm = ({ userId }: BookingFormProps) => {
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [depositRequired, setDepositRequired] = useState<boolean>(false);
   const [riskScore, setRiskScore] = useState<number | null>(null);
-  
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<AppointmentTimeSlots[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { data: session } = useSession();
+  const [disabledDates, setDisabledDates] = useState<Date[]>([]);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -51,6 +63,70 @@ const BookingForm = ({ userId }: BookingFormProps) => {
       email: "",
     },
   });
+
+  const handleDateChange = async (date: Date | undefined) => {
+    if (date && session?.user?.id) {
+      setIsLoading(true);
+      try {
+        const slots = await fetchAvailableTimeSlots(date, session.user.id);
+        setAvailableTimeSlots(slots);
+        if (selectedTime && !slots.some(slot => slot.slot === selectedTime)) {
+          setSelectedTime(null);
+          form.setValue('time', '');
+        }
+        setError(null);
+        
+        // If no slots available for this date, add it to disabled dates
+        if (slots.length === 0) {
+          setDisabledDates(prev => [...prev, date]);
+        }
+      } catch (err) {
+        console.error('Error fetching time slots:', err);
+        setError('Failed to load available time slots');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const fetchAvailableTimeSlots = async (date: Date, userId: string) => {
+    try {
+      const response = await fetch(`/api/bookings/available-slots?date=${date.toISOString()}&userId=${userId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch available time slots');
+      }
+      const data = await response.json();
+      return data.slots as AppointmentTimeSlots[];
+    } catch (error) {
+      console.error('Error fetching time slots:', error);
+      throw error;
+    }
+  };
+
+  useEffect(() => {
+    if (selectedDate && session?.user?.id) {
+      setIsLoading(true);
+      fetchAvailableTimeSlots(selectedDate, session.user.id)
+        .then((slots: AppointmentTimeSlots[]) => {
+          setAvailableTimeSlots(slots);
+          setError(null);
+        })
+        .catch(err => {
+          console.error('Error fetching time slots:', err);
+          setError('Failed to load available time slots');
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    } else {
+      setAvailableTimeSlots([]);
+    }
+  }, [selectedDate, session?.user?.id]);
+
+  const handleTimeSlotClick = (slot: AppointmentTimeSlots) => {
+    setSelectedTime(slot.slot);
+    form.setValue("time", slot.slot);
+  };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
@@ -158,9 +234,19 @@ const BookingForm = ({ userId }: BookingFormProps) => {
                   <Calendar
                     mode="single"
                     selected={field.value}
-                    onSelect={field.onChange}
+                    onSelect={async (date) => {
+                      field.onChange(date);
+                      await handleDateChange(date);
+                    }}
                     disabled={(date) =>
-                      date < new Date(new Date().setHours(0, 0, 0, 0)) || date > new Date(new Date().setMonth(new Date().getMonth() + 3))
+                      date < new Date(new Date().setHours(0, 0, 0, 0)) ||
+                      date > new Date(new Date().setMonth(new Date().getMonth() + 3)) ||
+                      disabledDates.some(
+                        (disabledDate) =>
+                          disabledDate.getFullYear() === date.getFullYear() &&
+                          disabledDate.getMonth() === date.getMonth() &&
+                          disabledDate.getDate() === date.getDate()
+                      )
                     }
                     initialFocus
                   />
@@ -177,24 +263,31 @@ const BookingForm = ({ userId }: BookingFormProps) => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Time</FormLabel>
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                {APPOINTMENT_TIME_SLOTS.map((slot, index) => (
-                  <Button
-                    type="button"
-                    key={index}
-                    variant={field.value === slot.slot ? "default" : "outline"}
-                    className={cn(
-                      "justify-start text-left",
-                      field.value === slot.slot && "bg-grandis text-black"
-                    )}
-                    onClick={() => {
-                      field.onChange(slot.slot);
-                      setSelectedTime(slot.slot);
-                    }}
-                  >
-                    {slot.slot}
-                  </Button>
-                ))}
+              <div className="grid grid-cols-2 gap-2 mt-2 max-h-[200px] overflow-y-auto">
+                {isLoading ? (
+                  <div className="col-span-2 text-center py-4">Loading available time slots...</div>
+                ) : availableTimeSlots.length > 0 ? (
+                  availableTimeSlots.map((slot, index) => (
+                    <Button
+                      type="button"
+                      key={index}
+                      variant={field.value === slot.slot ? "default" : "outline"}
+                      className={cn(
+                        "justify-start text-left h-12",
+                        field.value === slot.slot && "bg-grandis text-black"
+                      )}
+                      onClick={() => {
+                        handleTimeSlotClick(slot);
+                      }}
+                    >
+                      {slot.slot}
+                    </Button>
+                  ))
+                ) : (
+                  <div className="col-span-2 text-center py-4 text-gray-500">
+                    No available time slots for this date
+                  </div>
+                )}
               </div>
               <FormMessage />
             </FormItem>

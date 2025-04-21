@@ -1,4 +1,5 @@
 import { onGetAllBookingsForCurrentUser } from "@/actions/appointment";
+import { onGetUser } from "@/actions/settings";
 import AllAppointments from "@/components/appointment/all-appointment";
 import InfoBar from "@/components/infobar";
 import BookingLink from "@/components/settings/booking-link";
@@ -41,10 +42,7 @@ const Page = async (props: Props) => {
   const today = new Date();
 
   // Fetch user details including booking link
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { bookingLink: true }
-  });
+  const user = await onGetUser();
 
   // Type assertion to match the expected Booking interface
   const typedBookings = (allBookings?.bookings || []) as Booking[];

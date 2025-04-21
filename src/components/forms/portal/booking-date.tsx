@@ -4,10 +4,15 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { APPOINTMENT_TIME_SLOTS } from "@/constants/timeslots";
 import { cn } from "@/lib/utils";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { FieldValues, UseFormRegister } from "react-hook-form";
+
+interface TimeSlot {
+  slot: string;
+  duration?: number;
+  maxSlots?: number;
+}
 
 type Props = {
   date: Date | undefined;
@@ -23,6 +28,7 @@ type Props = {
         slot: string;
       }[]
     | undefined;
+  userId: string;
 };
 
 const BookAppointmentDate = ({
@@ -34,7 +40,38 @@ const BookAppointmentDate = ({
   currentSlot,
   loading,
   bookings,
+  userId,
 }: Props) => {
+  const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
+  const [isLoadingSlots, setIsLoadingSlots] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (date && userId) {
+      fetchTimeSlots();
+    } else {
+      setAvailableSlots([]);
+    }
+  }, [date, userId]);
+
+  const fetchTimeSlots = async () => {
+    if (!date || !userId) return;
+    
+    setIsLoadingSlots(true);
+    try {
+      const response = await fetch(`/api/bookings/available-slots?date=${date.toISOString()}&userId=${userId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch time slots");
+      }
+      const data = await response.json();
+      setAvailableSlots(data.slots || []);
+    } catch (error) {
+      console.error("Error fetching time slots:", error);
+      setAvailableSlots([]);
+    } finally {
+      setIsLoadingSlots(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-5 justify-center">
       <div className="flex justify-center">
@@ -58,46 +95,54 @@ const BookAppointmentDate = ({
           />
         </div>
         <div className="flex flex-col gap-5">
-          {APPOINTMENT_TIME_SLOTS.map((slot, key) => (
-            <Label htmlFor={`slot-${key}`} key={key}>
-              <Card
-                onClick={() => onSlot(slot.slot)}
-                className={cn(
-                  currentSlot == slot.slot ? "bg-grandis" : "bg-peach",
-                  "px-10 py-4",
-                  bookings &&
+          {isLoadingSlots ? (
+            <div className="text-center">Loading available time slots...</div>
+          ) : availableSlots.length > 0 ? (
+            availableSlots.map((slot, index) => (
+              <Label htmlFor={`slot-${index}`} key={index}>
+                <Card
+                  onClick={() => onSlot(slot.slot)}
+                  className={cn(
+                    currentSlot === slot.slot ? "bg-grandis" : "bg-peach",
+                    "px-10 py-4",
+                    bookings &&
+                      bookings.some(
+                        (booking) =>
+                          `${booking.date.getDate()}/${booking.date.getMonth()}` ===
+                            `${date?.getDate()}/${date?.getMonth()}` &&
+                          booking.slot === slot.slot
+                      )
+                      ? "bg-gray-300"
+                      : "cursor-pointer border-orange hover:bg-grandis transition duration-150 ease-in-out"
+                  )}
+                >
+                  <Input
+                    {...(bookings &&
                     bookings.some(
                       (booking) =>
-                        `${booking.date.getDate()}/${booking.date.getMonth()}` ===
-                          `${date?.getDate()}/${date?.getMonth()}` &&
-                        booking.slot == slot.slot
+                        booking.date === date && booking.slot === slot.slot
                     )
-                    ? "bg-gray-300"
-                    : "cursor-pointer border-orange hover:bg-grandis transition duration-150 ease-in-out"
-                )}
-              >
-                <Input
-                  {...(bookings &&
-                  bookings.some(
-                    (booking) =>
-                      booking.date == date && booking.slot == slot.slot
-                  )
-                    ? {
-                        disabled: true,
-                      }
-                    : {
-                        disabled: false,
-                      })}
-                  className="hidden"
-                  type="radio"
-                  value={slot.slot}
-                  {...register("slot")}
-                  id={`slot-${key}`}
-                />
-                {slot.slot}
-              </Card>
-            </Label>
-          ))}
+                      ? {
+                          disabled: true,
+                        }
+                      : {
+                          disabled: false,
+                        })}
+                    className="hidden"
+                    type="radio"
+                    value={slot.slot}
+                    {...register("slot")}
+                    id={`slot-${index}`}
+                  />
+                  {slot.slot}
+                </Card>
+              </Label>
+            ))
+          ) : (
+            <div className="text-center p-4 bg-gray-100 rounded-md">
+              No available time slots for this date
+            </div>
+          )}
         </div>
       </div>
       <div className="flex gap-5 justify-center mt-5">

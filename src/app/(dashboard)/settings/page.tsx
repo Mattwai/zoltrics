@@ -1,10 +1,12 @@
 import InfoBar from "@/components/infobar";
 import BillingSettings from "@/components/settings/billing-settings";
 import BookingLink from "@/components/settings/booking-link";
+import { BookingCalendarSettings } from "@/components/settings/booking-calendar-settings";
+import { CustomTimeSlots } from "@/components/settings/custom-time-slots";
 import ChangePassword from "@/components/settings/change-password";
 import DarkModetoggle from "@/components/settings/dark-mode";
 import { authConfig } from "@/lib/auth";
-import prisma from "@/lib/prisma";
+import { onGetUser } from "@/actions/settings";
 import { getServerSession } from "next-auth";
 
 type Props = {};
@@ -14,10 +16,8 @@ const Page = async (props: Props) => {
   if (!session || !session.user) return null;
 
   // Fetch user details including booking link
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { bookingLink: true }
-  });
+  const user = await onGetUser();
+  
   return (
     <>
       <InfoBar />
@@ -27,6 +27,8 @@ const Page = async (props: Props) => {
           userId={session.user.id}
           initialBookingLink={user?.bookingLink || null}
           baseUrl={process.env.NEXT_PUBLIC_BASE_URL || ""}/>
+        <BookingCalendarSettings userId={session.user.id} />
+        <CustomTimeSlots userId={session.user.id} />
         <DarkModetoggle />
         {/* <ChangePassword /> */}
       </div>

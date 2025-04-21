@@ -491,19 +491,70 @@ export const onCreateNewDomainProduct = async (
   }
 };
 
+const generateBookingLink = async () => {
+  let link;
+  let exists = true;
+
+  while (exists) {
+    link = Math.random().toString(36).substring(2, 15);
+    const user = await client.user.findUnique({
+      where: { bookingLink: link },
+    });
+    exists = !!user;
+  }
+
+  return link;
+};
+
 export const onGetUser = async (): Promise<User | null> => {
-  const session = await getServerSession(authConfig);
-  if (!session || !session.user) return null;
   try {
+    const session = await getServerSession(authConfig);
+    if (!session?.user?.id) {
+      console.error("No session or user ID found");
+      return null;
+    }
+
     const user = await client.user.findUnique({
       where: {
         id: session.user.id,
       },
     });
-    if (!user) throw new Error("User not found");
+    
+    if (!user) {
+      console.error(`User not found for ID: ${session.user.id}`);
+      return null;
+    }
+
+    // If booking link is null, generate a new one
+    if (!user.bookingLink) {
+      const newBookingLink = await generateBookingLink();
+      const updatedUser = await client.user.update({
+        where: { id: user.id },
+        data: { bookingLink: newBookingLink },
+      });
+      return updatedUser;
+    }
+    
     return user;
   } catch (error) {
     console.error("Error fetching user:", error);
+    return null;
+  }
+};
+
+export const onGetWeeklySettings = async (userId: string) => {
+  try {
+    const settings = await client.bookingCalendarSettings.findUnique({
+      where: { userId },
+    });
+    
+    if (!settings) return null;
+    
+    return {
+      timeSlots: JSON.parse(settings.timeSlots as string),
+    };
+  } catch (error) {
+    console.error("Error fetching weekly settings:", error);
     return null;
   }
 };

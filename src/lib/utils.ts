@@ -65,3 +65,37 @@ export const getMonthName = (month: number) => {
     ? "Nov"
     : month == 12 && "Dec";
 };
+
+export const getDefaultTimeSlots = () => {
+  return {
+    startTime: "09:00",
+    endTime: "16:30",
+    duration: 30,
+  };
+};
+
+export const generateTimeSlots = (startTime: string, endTime: string, duration: number) => {
+  if (!startTime || !endTime) return [];
+  
+  const slots = [];
+  const [startHour, startMinute] = startTime.split(':').map(Number);
+  const [endHour, endMinute] = endTime.split(':').map(Number);
+  
+  let currentHour = startHour;
+  let currentMinute = startMinute;
+  
+  while (currentHour < endHour || (currentHour === endHour && currentMinute <= endMinute)) {
+    slots.push({
+      slot: `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`,
+      duration,
+    });
+    
+    currentMinute += duration;
+    if (currentMinute >= 60) {
+      currentHour++;
+      currentMinute = 0;
+    }
+  }
+  
+  return slots;
+};
