@@ -1,5 +1,6 @@
 import { onGetUserByBookingLink } from "@/actions/appointment";
 import BookingForm from "@/components/forms/booking/booking-form";
+import AiChatBot from "@/components/chatbot";
 import { redirect } from "next/navigation";
 
 type Props = {
@@ -16,12 +17,15 @@ const BookingPage = async ({ params }: Props) => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
       <div className="w-full max-w-md">
         <h1 className="text-2xl font-bold mb-6 text-center">
-          Book an Appointment
+          Book an Appointment with {user.name || "Us"}
         </h1>
         <BookingForm userId={user.id} />
+      </div>
+      <div className="fixed bottom-4 right-4 z-50">
+        <AiChatBot userId={user.id} />
       </div>
     </div>
   );

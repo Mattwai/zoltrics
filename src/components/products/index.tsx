@@ -12,7 +12,6 @@ type Props = {
     id: string;
     name: string;
     price: number;
-    image: string;
     createdAt: Date;
     domainId: string | null;
   }[];

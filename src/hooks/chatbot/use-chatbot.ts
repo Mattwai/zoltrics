@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 
-export const useChatBot = () => {
+export const useChatBot = (userId?: string) => {
   const {
     register,
     handleSubmit,
@@ -87,40 +87,109 @@ export const useChatBot = () => {
       setLoading(false);
     }
   };
+  
+  const onGetUserChatBot = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/user/${userId}/chatbot`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.chatbot) {
+          setCurrentBotId(data.chatbot.id);
+          setOnChats((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: data.chatbot.welcomeMessage || "Hello! How can I assist you with your booking today?",
+            },
+          ]);
+          setCurrentBot({
+            name: data.chatbot.name || "BookerBuddy",
+            chatBot: {
+              id: data.chatbot.id,
+              welcomeMessage: data.chatbot.welcomeMessage,
+              background: data.chatbot.background,
+              textColor: data.chatbot.textColor,
+              helpdesk: data.chatbot.helpdesk,
+            },
+            helpdesk: data.chatbot.helpdesk_data || [],
+          });
+          setLoading(false);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching user chatbot:", error);
+    }
+  };
 
   useEffect(() => {
-    window.addEventListener("message", (e) => {
-      console.log(e.data);
-      const botid = e.data;
-      if (limitRequest < 1 && typeof botid == "string") {
-        onGetDomainChatBot(botid);
-        limitRequest++;
-      }
-    });
-  }, []);
+    if (userId) {
+      onGetUserChatBot(userId);
+    } else {
+      window.addEventListener("message", (e) => {
+        console.log(e.data);
+        const botid = e.data;
+        if (limitRequest < 1 && typeof botid == "string") {
+          onGetDomainChatBot(botid);
+          limitRequest++;
+        }
+      });
+    }
+  }, [userId]);
 
   const onStartChatting = handleSubmit(async (values) => {
-    if (values.content) {
-      if (!onRealTime?.mode) {
-        setOnChats((prev: any) => [
-          ...prev,
-          {
-            role: "user",
-            content: values.content,
+    if (!values.content) {
+      reset();
+      return;
+    }
+
+    // Add user message to chat
+    if (!onRealTime?.mode) {
+      setOnChats((prev: any) => [
+        ...prev,
+        {
+          role: "user",
+          content: values.content,
+        },
+      ]);
+    }
+
+    setOnAiTyping(true);
+
+    try {
+      let response;
+      
+      if (userId) {
+        // If we have a userId, use the user-specific chatbot assistant API
+        const userAssistantResponse = await fetch(`/api/user/${userId}/chatbot/assistant`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-        ]);
+          body: JSON.stringify({
+            message: values.content,
+            chat: onChats,
+          }),
+        });
+        
+        if (userAssistantResponse.ok) {
+          const data = await userAssistantResponse.json();
+          response = data;
+        } else {
+          console.error('Error from chatbot assistant API:', await userAssistantResponse.text());
+        }
+      } else if (currentBotId) {
+        // Otherwise use the domain-based chatbot API
+        response = await onAiChatBotAssistant(
+          currentBotId,
+          onChats,
+          "user",
+          values.content
+        );
       }
 
-      setOnAiTyping(true);
-      const response = await onAiChatBotAssistant(
-        currentBotId!,
-        onChats,
-        "user",
-        values.content
-      );
-
+      setOnAiTyping(false);
+      
       if (response) {
-        setOnAiTyping(false);
         if (response.live) {
           setOnRealTime((prev) => ({
             ...prev,
@@ -131,42 +200,12 @@ export const useChatBot = () => {
           setOnChats((prev: any) => [...prev, response.response]);
         }
       }
+    } catch (error) {
+      console.error("Error in chatbot interaction:", error);
+      setOnAiTyping(false);
     }
+    
     reset();
-
-    if (values.content) {
-      if (!onRealTime?.mode) {
-        setOnChats((prev: any) => [
-          ...prev,
-          {
-            role: "user",
-            content: values.content,
-          },
-        ]);
-      }
-
-      setOnAiTyping(true);
-
-      const response = await onAiChatBotAssistant(
-        currentBotId!,
-        onChats,
-        "user",
-        values.content
-      );
-
-      if (response) {
-        setOnAiTyping(false);
-        if (response.live) {
-          setOnRealTime((prev) => ({
-            ...prev,
-            chatroom: response.chatRoom,
-            mode: response.live,
-          }));
-        } else {
-          setOnChats((prev: any) => [...prev, response.response]);
-        }
-      }
-    }
   });
 
   return {

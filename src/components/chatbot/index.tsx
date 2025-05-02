@@ -4,9 +4,11 @@ import { BotIcon } from "@/icons/bot-icon";
 import { cn } from "@/lib/utils";
 import { BotWindow } from "./window";
 
-type Props = {};
+type Props = {
+  userId?: string;
+};
 
-const AiChatBot = (props: Props) => {
+const AiChatBot = ({ userId }: Props) => {
   const {
     onOpenChatBot,
     botOpened,
@@ -20,21 +22,21 @@ const AiChatBot = (props: Props) => {
     onRealTime,
     setOnChats,
     errors,
-  } = useChatBot();
+  } = useChatBot(userId);
 
   return (
     <div className="h-screen flex flex-col justify-end items-end gap-4">
-      {botOpened && (
+      {botOpened && currentBot && (
         <BotWindow
           errors={errors}
           setChat={setOnChats}
           realtimeMode={onRealTime}
-          helpdesk={currentBot?.helpdesk!}
-          domainName={currentBot?.name!}
+          helpdesk={currentBot.helpdesk || []}
+          domainName={currentBot.name || "BookerBuddy"}
           ref={messageWindowRef}
-          help={currentBot?.chatBot?.helpdesk}
-          theme={currentBot?.chatBot?.background}
-          textColor={currentBot?.chatBot?.textColor}
+          help={currentBot.chatBot?.helpdesk}
+          theme={currentBot.chatBot?.background}
+          textColor={currentBot.chatBot?.textColor}
           chats={onChats}
           register={register}
           onChat={onStartChatting}

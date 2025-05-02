@@ -2,13 +2,36 @@ import { authConfig } from "@/lib/auth";
 import { client } from "@/lib/prisma";
 import { extractEmailsFromString, extractURLfromString } from "@/lib/utils";
 import { getServerSession } from "next-auth";
-import OpenAi from "openai";
 import { onRealTimeChat } from "../conversation";
 import { onMailer } from "../mailer";
 
-const openai = new OpenAi({
-  apiKey: process.env.OPEN_AI_KEY,
-});
+// We no longer need the OpenAI client directly here
+// Removed the dangerous browser flag
+
+// Helper function to call our secure API endpoint
+async function callChatAPI(messages: any[]) {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/ai/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages,
+        model: "gpt-3.5-turbo",
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API call failed: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error calling chat API:", error);
+    throw error;
+  }
+}
 
 interface FilterQuestion {
   question: string;
@@ -222,46 +245,45 @@ export const onAiChatBotAssistant = async (
         author
       );
 
-      const chatCompletion = await openai.chat.completions.create({
-        messages: [
-          {
-            role: "assistant",
-            content: `
-              You will get an array of questions that you must ask the customer.
+      const chatCompletionResponse = await callChatAPI([
+        {
+          role: "assistant",
+          content: `
+            You will get an array of questions that you must ask the customer.
 
-              Progress the conversation using those questions.
+            Progress the conversation using those questions.
 
-              Whenever you ask a question from the array i need you to add a keyword at the end of the question (complete) this keyword is extremely important.
+            Whenever you ask a question from the array i need you to add a keyword at the end of the question (complete) this keyword is extremely important.
 
-              Do not forget it.
+            Do not forget it.
 
-              only add this keyword when your asking a question from the array of questions. No other question satisfies this condition
+            only add this keyword when your asking a question from the array of questions. No other question satisfies this condition
 
-              Always maintain character and stay respectfull.
+            Always maintain character and stay respectfull.
 
-              The array of questions : [${chatBotDomain.filterQuestions
-                .map((questions: FilterQuestion) => questions.question)
-                .join(", ")}]
+            The array of questions : [${chatBotDomain.filterQuestions
+              .map((questions: FilterQuestion) => questions.question)
+              .join(", ")}]
 
-              if the customer says something out of context or inapporpriate. Simply say this is beyond you and you will get a real user to continue the conversation. And add a keyword (realtime) at the end.
+            if the customer says something out of context or inapporpriate. Simply say this is beyond you and you will get a real user to continue the conversation. And add a keyword (realtime) at the end.
 
-              if the customer agrees to book an appointment send them this link ${
-                process.env.NEXT_PUBLIC_BASE_URL
-              }/portal/${id}/appointment/${checkCustomer?.customer[0].id}
+            if the customer agrees to book an appointment send them this link ${
+              process.env.NEXT_PUBLIC_BASE_URL
+            }/portal/${id}/appointment/${checkCustomer?.customer[0].id}
 
-              if the customer wants to buy a product redirect them to the payment page ${
-                process.env.NEXT_PUBLIC_BASE_URL
-              }/portal/${id}/payment/${checkCustomer?.customer[0].id}
-            `,
-          },
-          ...chat,
-          {
-            role: "user",
-            content: message,
-          },
-        ],
-        model: "gpt-3.5-turbo",
-      });
+            if the customer wants to buy a product redirect them to the payment page ${
+              process.env.NEXT_PUBLIC_BASE_URL
+            }/portal/${id}/payment/${checkCustomer?.customer[0].id}
+          `,
+        },
+        ...chat,
+        {
+          role: "user",
+          content: message,
+        },
+      ]);
+
+      const chatCompletion = { choices: chatCompletionResponse.choices };
 
       if (chatCompletion.choices[0].message.content?.includes("(realtime)")) {
         const realtime = await client.chatRoom.update({
@@ -355,26 +377,25 @@ export const onAiChatBotAssistant = async (
       }
     }
     console.log("No customer");
-    const chatCompletion = await openai.chat.completions.create({
-      messages: [
-        {
-          role: "assistant",
-          content: `
-            You are a highly knowledgeable and experienced sales representative for a ${chatBotDomain.name} that offers a valuable product or service. Your goal is to have a natural, human-like conversation with the customer in order to understand their needs, provide relevant information, and ultimately guide them towards making a purchase or redirect them to a link if they havent provided all relevant information.
-            Right now you are talking to a customer for the first time. Start by giving them a warm welcome on behalf of ${chatBotDomain.name} and make them feel welcomed.
+    const chatCompletionResponse = await callChatAPI([
+      {
+        role: "assistant",
+        content: `
+          You are a highly knowledgeable and experienced sales representative for a ${chatBotDomain.name} that offers a valuable product or service. Your goal is to have a natural, human-like conversation with the customer in order to understand their needs, provide relevant information, and ultimately guide them towards making a purchase or redirect them to a link if they havent provided all relevant information.
+          Right now you are talking to a customer for the first time. Start by giving them a warm welcome on behalf of ${chatBotDomain.name} and make them feel welcomed.
 
-            Your next task is lead the conversation naturally to get the customers email address. Be respectful and never break character
+          Your next task is lead the conversation naturally to get the customers email address. Be respectful and never break character
 
-          `,
-        },
-        ...chat,
-        {
-          role: "user",
-          content: message,
-        },
-      ],
-      model: "gpt-3.5-turbo",
-    });
+        `,
+      },
+      ...chat,
+      {
+        role: "user",
+        content: message,
+      },
+    ]);
+
+    const chatCompletion = { choices: chatCompletionResponse.choices };
 
     if (chatCompletion) {
       const response = {
