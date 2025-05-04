@@ -24,6 +24,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { signIn, useSession } from "next-auth/react";
+import { DepositPayment } from "./deposit-payment-form";
 
 // Define the AppointmentTimeSlots interface
 interface AppointmentTimeSlots {
@@ -63,6 +64,8 @@ const BookingForm = ({ userId }: BookingFormProps) => {
   const { data: session, status } = useSession();
   const [isGuest, setIsGuest] = useState(false);
   const [disabledDates, setDisabledDates] = useState<Date[]>([]);
+  const [bookingId, setBookingId] = useState<string | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -206,47 +209,38 @@ const BookingForm = ({ userId }: BookingFormProps) => {
         setIsSubmitted(true);
         setDepositRequired(data.depositRequired);
         setRiskScore(data.riskScore);
+        setBookingId(data.booking.id);
 
-        // Show different success messages based on authentication state
-        if (session) {
-          return (
-            <div className="flex flex-col items-center justify-center py-8 space-y-4">
-              <CheckCircle className="w-16 h-16 text-green-500" />
-              <h2 className="text-2xl font-semibold">Booking Confirmed!</h2>
-              <p className="text-center">
-                Thank you for booking your appointment. You will receive a confirmation email shortly.
-                You can manage your booking anytime by signing into your Google account.
-              </p>
-              {depositRequired && (
-                <p className="text-center text-red-500">
-                  Due to previous cancellations for this session, a deposit is required to confirm your booking.
-                </p>
-              )}
-            </div>
-          );
-        } else {
-          return (
-            <div className="flex flex-col items-center justify-center py-8 space-y-4">
-              <CheckCircle className="w-16 h-16 text-green-500" />
-              <h2 className="text-2xl font-semibold">Booking Confirmed!</h2>
-              <p className="text-center">
-                Thank you for booking your appointment. You will receive a confirmation email shortly.
-                To manage your booking in the future, please keep your confirmation email.
-              </p>
-              {depositRequired && (
-                <p className="text-center text-red-500">
-                  Due to previous cancellations for this session, a deposit is required to confirm your booking.
-                </p>
-              )}
-            </div>
-          );
+        if (data.depositRequired) {
+          // Request deposit payment intent
+          const depositResponse = await fetch('/api/bookings/deposit', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              bookingId: data.booking.id,
+              userId: userId,
+            }),
+          });
+
+          if (depositResponse.ok) {
+            const depositData = await depositResponse.json();
+            setClientSecret(depositData.clientSecret);
+          }
         }
-      } else {
-        console.error("Error creating booking:", await response.text());
       }
     } catch (error) {
       console.error("Error creating booking:", error);
     }
+  };
+
+  const handleDepositSuccess = () => {
+    // Reset the form state after successful deposit payment
+    setIsSubmitted(false);
+    setDepositRequired(false);
+    setClientSecret(null);
+    setBookingId(null);
   };
 
   // Show authentication options if not authenticated and not guest
@@ -300,6 +294,24 @@ const BookingForm = ({ userId }: BookingFormProps) => {
     );
   }
 
+  if (isSubmitted && depositRequired && clientSecret && bookingId) {
+    return (
+      <div className="space-y-4">
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold">Deposit Required</h2>
+          <p className="text-gray-600 mt-2">
+            Due to previous cancellations, a deposit of $20 is required to confirm your booking.
+          </p>
+        </div>
+        <DepositPayment
+          clientSecret={clientSecret}
+          bookingId={bookingId}
+          onSuccess={handleDepositSuccess}
+        />
+      </div>
+    );
+  }
+
   if (isSubmitted) {
     return (
       <div className="flex flex-col items-center justify-center py-8 space-y-4">
@@ -310,11 +322,6 @@ const BookingForm = ({ userId }: BookingFormProps) => {
           {session && "You can manage your booking anytime by signing into your Google account."}
           {!session && "To manage your booking in the future, please keep your confirmation email."}
         </p>
-        {depositRequired && (
-          <p className="text-center text-red-500">
-            Due to previous cancellations for this session, a deposit is required to confirm your booking.
-          </p>
-        )}
       </div>
     );
   }
