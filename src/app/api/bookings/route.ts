@@ -114,7 +114,7 @@ async function predictCancellationRisk(features: any): Promise<number> {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, date, slot, userId } = body;
+    const { name, email, date, slot, userId, isAuthenticated, googleUserId } = body;
 
     if (!name || !email || !date || !slot || !userId) {
       return NextResponse.json(
@@ -139,6 +139,20 @@ export async function POST(req: NextRequest) {
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // If authenticated with Google, verify the user exists
+    if (isAuthenticated && googleUserId) {
+      const googleUser = await prisma.user.findUnique({
+        where: { id: googleUserId },
+      });
+
+      if (!googleUser) {
+        return NextResponse.json(
+          { error: "Google user not found" },
+          { status: 404 }
+        );
+      }
     }
 
     // Find or create customer - explicitly set domainId to null for direct bookings
@@ -197,9 +211,10 @@ export async function POST(req: NextRequest) {
         domainId: null,
         customerId: customer.id,
         source: "direct_link",
-        depositRequired, // New field to store deposit requirement
-        // depositPaid,
-        riskScore, // New field to store risk score
+        depositRequired,
+        riskScore,
+        isAuthenticated: !!isAuthenticated,
+        googleUserId: googleUserId || null,
       },
     });
 

@@ -179,6 +179,8 @@ model Bookings {
   depositRequired Boolean @default(false) // Whether deposit is required
   depositPaid Boolean @default(false) // Whether a required deposit has been paid
   riskScore Float? // Cancellation risk score from model
+  isAuthenticated Boolean @default(false) // Whether the booking was made by an authenticated user
+  googleUserId String? @db.Uuid // The Google user ID if authenticated
   createdAt  DateTime  @default(now())
   updatedAt DateTime @updatedAt
 }
