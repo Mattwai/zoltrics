@@ -51,7 +51,7 @@ export const CustomerTable = ({
                 description="Customer answers are stored by the bot when your customers respond back to the questions asked by the bot."
                 trigger={
                   <Card
-                    className="bg-grandis py-2 px-4 cursor-pointer text-gray-700 hover:bg-orange"
+                    className="bg-royalPurple py-2 px-4 cursor-pointer text-gray-700 hover:bg-orange"
                     onClick={() => onId(c.id)}
                   >
                     View

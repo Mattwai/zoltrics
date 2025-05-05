@@ -27,7 +27,7 @@ const Bubble = ({ message, createdAt }: Props) => {
           "flex flex-col gap-3 min-w-[200px] max-w-[300px] p-4 rounded-t-md",
           message.role == "assistant"
             ? "bg-muted rounded-r-md"
-            : "bg-grandis rounded-l-md"
+            : "bg-royalPurple rounded-l-md"
         )}
       >
         {createdAt ? (

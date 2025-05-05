@@ -426,7 +426,7 @@ const BookingForm = ({ userId }: BookingFormProps) => {
                       variant={field.value === slot.slot ? "default" : "outline"}
                       className={cn(
                         "justify-start text-left h-auto py-2 flex flex-col items-start",
-                        field.value === slot.slot && "bg-grandis text-black",
+                        field.value === slot.slot && "bg-royalPurple text-black",
                         slot.isCustom && "border-blue-400 border-2"
                       )}
                       onClick={() => {

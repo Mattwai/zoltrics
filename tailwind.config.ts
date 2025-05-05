@@ -25,6 +25,8 @@ const config = {
         orange: "#FFA947",
         peach: "#FFE0BD",
         platinum: "#E6E6E6",
+        royalPurple: '#7b2da4',
+        orchid: '##a855f7',
         ghost: "#CDCDCD",
         grandis: "#FFC989",
         porcelain: "#F1F1F1",
