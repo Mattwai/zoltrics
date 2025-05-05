@@ -269,7 +269,7 @@ export const useKnowledgeBase = (id: string) => {
       values.category
     );
     if (entry) {
-      setEntries(entry.entries!);
+      setEntries(entry.entries!.map(e => ({ ...e, category: e.category || undefined })));
       toast({
         title: entry.status === 200 ? "Success" : "Error",
         description: entry.message,
@@ -283,7 +283,7 @@ export const useKnowledgeBase = (id: string) => {
     setLoading(true);
     const result = await onGetAllKnowledgeBaseEntries(id);
     if (result) {
-      setEntries(result.entries);
+      setEntries(result.entries.map(e => ({ ...e, category: e.category || undefined })));
     }
     setLoading(false);
   };
