@@ -8,6 +8,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { Loader } from "@/components/loader";
 import Section from "@/components/section-label";
 import { generateTimeSlots, calculateDuration, generateTimeOptions } from "@/lib/time-slots";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Clock, Calendar, Copy } from "lucide-react";
 
 interface TimeSlot {
   startTime: string;
@@ -32,6 +35,36 @@ const DAYS_OF_WEEK = [
 
 // Use the utility function to generate time options
 const TIME_OPTIONS = generateTimeOptions();
+
+const BUSINESS_HOURS_PRESETS = {
+  "Standard Business": {
+    "Monday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+    "Tuesday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+    "Wednesday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+    "Thursday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+    "Friday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+    "Saturday": { startTime: "09:00", endTime: "13:00", duration: 30, maxBookings: 1 },
+    "Sunday": { startTime: "09:00", endTime: "13:00", duration: 30, maxBookings: 1 },
+  },
+  "Extended Hours": {
+    "Monday": { startTime: "08:00", endTime: "20:00", duration: 30, maxBookings: 1 },
+    "Tuesday": { startTime: "08:00", endTime: "20:00", duration: 30, maxBookings: 1 },
+    "Wednesday": { startTime: "08:00", endTime: "20:00", duration: 30, maxBookings: 1 },
+    "Thursday": { startTime: "08:00", endTime: "20:00", duration: 30, maxBookings: 1 },
+    "Friday": { startTime: "08:00", endTime: "20:00", duration: 30, maxBookings: 1 },
+    "Saturday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+    "Sunday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+  },
+  "Weekend Only": {
+    "Monday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+    "Tuesday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+    "Wednesday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+    "Thursday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+    "Friday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+    "Saturday": { startTime: "09:00", endTime: "20:00", duration: 30, maxBookings: 1 },
+    "Sunday": { startTime: "09:00", endTime: "20:00", duration: 30, maxBookings: 1 },
+  }
+};
 
 export const BookingCalendarSettings = ({ userId }: BookingCalendarSettingsProps) => {
   const { toast } = useToast();
@@ -198,129 +231,233 @@ export const BookingCalendarSettings = ({ userId }: BookingCalendarSettingsProps
     }
   };
 
+  const applyPreset = (preset: string) => {
+    const presetHours = BUSINESS_HOURS_PRESETS[preset as keyof typeof BUSINESS_HOURS_PRESETS];
+    setDayTimeSlots(presetHours);
+    setAvailableDays(Object.keys(presetHours));
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
       <div className="lg:col-span-1">
         <Section
           label="Booking Calendar"
-          message="Customize your availability and booking preferences. These settings determine when customers can book appointments with you."
+          message="Set up your weekly schedule to let customers know when they can book appointments with you."
         />
       </div>
       <div className="lg:col-span-4 space-y-6">
         <div className="p-4 bg-blue-50 rounded-md mb-6">
           <p className="text-sm text-blue-800">
-            <strong>Important:</strong> By default, no time slots are available for booking.
-            Use this page to set your weekly schedule by selecting available days and adding time slots.
-            For date-specific overrides, use the Custom Time Slots page.
+            <strong>Quick Start:</strong> Choose a preset schedule or customize your own availability.
+            Your settings will determine when customers can book appointments with you.
           </p>
         </div>
 
-        <div className="space-y-4">
-          <h3 className="font-semibold">Available Days</h3>
-          <div className="flex flex-wrap gap-4">
-            {DAYS_OF_WEEK.map((day) => (
-              <div key={day} className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id={day}
-                  checked={availableDays.includes(day)}
-                  onChange={() => handleDayToggle(day)}
-                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                />
-                <Label htmlFor={day}>{day}</Label>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-4">
+        <Tabs defaultValue="presets" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="presets">Preset Schedules</TabsTrigger>
+            <TabsTrigger value="custom">Custom Schedule</TabsTrigger>
+          </TabsList>
           
-          <div className="border rounded-md p-4">
-            <h4 className="font-medium mb-4">
-              <b>{activeDay}</b> Settings
-              {!availableDays.includes(activeDay) && 
-                <span className="text-sm text-muted-foreground ml-2">(Disabled - check the box above to enable)</span>
-              }
-            </h4>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <Label htmlFor={`startTime-${activeDay}`} className="text-sm text-gray-500">Start Time</Label>
-                <select
-                  id={`startTime-${activeDay}`}
-                  value={dayTimeSlots[activeDay]?.startTime || "09:00"}
-                  onChange={(e) => handleTimeSlotChange(activeDay, "startTime", e.target.value)}
-                  disabled={!availableDays.includes(activeDay)}
-                  className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 pl-2"
-                >
-                  {TIME_OPTIONS.map((time) => (
-                    <option key={time} value={time}>
-                      {time}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <Label htmlFor={`endTime-${activeDay}`} className="text-sm text-gray-500">End Time</Label>
-                <select
-                  id={`endTime-${activeDay}`}
-                  value={dayTimeSlots[activeDay]?.endTime || "17:00"}
-                  onChange={(e) => handleTimeSlotChange(activeDay, "endTime", e.target.value)}
-                  disabled={!availableDays.includes(activeDay)}
-                  className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 pl-2"
-                >
-                  {TIME_OPTIONS.map((time) => (
-                    <option key={time} value={time}>
-                      {time}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <Label htmlFor={`duration-${activeDay}`} className="text-sm text-gray-500">Appointment Duration (min)</Label>
-                <select
-                  id={`duration-${activeDay}`}
-                  value={dayTimeSlots[activeDay]?.duration || 30}
-                  onChange={(e) => handleTimeSlotChange(activeDay, "duration", parseInt(e.target.value))}
-                  disabled={!availableDays.includes(activeDay)}
-                  className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 pl-2"
-                >
-                  {[15, 30, 45, 60, 90, 120].map(duration => (
-                    <option key={duration} value={duration}>
-                      {duration}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <Label htmlFor={`maxBookings-${activeDay}`} className="text-sm text-gray-500">Max Concurrent Bookings</Label>
-                <Input
-                  id={`maxBookings-${activeDay}`}
-                  type="number"
-                  min="1"
-                  value={dayTimeSlots[activeDay]?.maxBookings || 1}
-                  onChange={(e) => handleTimeSlotChange(activeDay, "maxBookings", parseInt(e.target.value))}
-                  disabled={!availableDays.includes(activeDay)}
-                  className="w-full mt-1"
-                />
-              </div>
+          <TabsContent value="presets" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {Object.keys(BUSINESS_HOURS_PRESETS).map((preset) => (
+                <Card key={preset} className="cursor-pointer hover:border-blue-500 transition-colors"
+                      onClick={() => applyPreset(preset)}>
+                  <CardHeader>
+                    <CardTitle className="text-lg">{preset}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      {Object.entries(BUSINESS_HOURS_PRESETS[preset as keyof typeof BUSINESS_HOURS_PRESETS]).map(([day, hours]) => (
+                        <div key={day} className="flex justify-between">
+                          <span>{day.slice(0, 3)}</span>
+                          <span>{hours.startTime} - {hours.endTime}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-            
-            <div className="mt-4 p-3 bg-gray-50 rounded border text-sm text-gray-600">
-              <p>On {activeDay}s, appointments will last {dayTimeSlots[activeDay]?.duration || 30} minutes between {dayTimeSlots[activeDay]?.startTime || "09:00"} and {dayTimeSlots[activeDay]?.endTime || "17:00"}.</p>
-              <p>You can accept up to {dayTimeSlots[activeDay]?.maxBookings || 1} concurrent booking(s) per time slot.</p>
-              <p className="mt-2 text-blue-600">This will generate {Math.floor(calculateDuration(dayTimeSlots[activeDay]?.startTime || "09:00", dayTimeSlots[activeDay]?.endTime || "17:00") / (dayTimeSlots[activeDay]?.duration || 30))} individual {dayTimeSlots[activeDay]?.duration || 30}-minute slots.</p>
-              <p className="mt-2 text-violet-700">Your settings will create individual appointment slots at {dayTimeSlots[activeDay]?.duration || 30}-minute intervals (e.g., 9:00, 9:30, 10:00, etc.).</p>
+          </TabsContent>
+
+          <TabsContent value="custom" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    Available Days
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    {DAYS_OF_WEEK.map((day) => (
+                      <div 
+                        key={day} 
+                        className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                          availableDays.includes(day) 
+                            ? 'border-blue-200 bg-blue-50' 
+                            : 'border-gray-200 hover:border-gray-300'
+                        } ${
+                          activeDay === day 
+                            ? 'ring-2 ring-blue-500' 
+                            : ''
+                        }`}
+                        onClick={() => {
+                          handleDayToggle(day);
+                          setActiveDay(day);
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <Label 
+                            htmlFor={day} 
+                            className={`font-medium cursor-pointer ${
+                              availableDays.includes(day) ? 'text-blue-700' : 'text-gray-700'
+                            }`}
+                          >
+                            {day}
+                          </Label>
+                          <input
+                            type="checkbox"
+                            id={day}
+                            checked={availableDays.includes(day)}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              handleDayToggle(day);
+                            }}
+                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                        </div>
+                        {availableDays.includes(day) && (
+                          <div className="mt-2 text-sm text-blue-600">
+                            {dayTimeSlots[day]?.startTime} - {dayTimeSlots[day]?.endTime}
+                            <br />
+                            <span className="text-xs text-blue-500">
+                              {dayTimeSlots[day]?.duration}min slots
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    {activeDay} Settings
+                    {!availableDays.includes(activeDay) && (
+                      <span className="text-sm text-muted-foreground ml-2">
+                        (Enable this day to set hours)
+                      </span>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor={`startTime-${activeDay}`}>Start Time</Label>
+                      <select
+                        id={`startTime-${activeDay}`}
+                        value={dayTimeSlots[activeDay]?.startTime || "09:00"}
+                        onChange={(e) => handleTimeSlotChange(activeDay, "startTime", e.target.value)}
+                        disabled={!availableDays.includes(activeDay)}
+                        className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 pl-2"
+                      >
+                        {TIME_OPTIONS.map((time) => (
+                          <option key={time} value={time}>{time}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor={`endTime-${activeDay}`}>End Time</Label>
+                      <select
+                        id={`endTime-${activeDay}`}
+                        value={dayTimeSlots[activeDay]?.endTime || "17:00"}
+                        onChange={(e) => handleTimeSlotChange(activeDay, "endTime", e.target.value)}
+                        disabled={!availableDays.includes(activeDay)}
+                        className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 pl-2"
+                      >
+                        {TIME_OPTIONS.map((time) => (
+                          <option key={time} value={time}>{time}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor={`duration-${activeDay}`}>Appointment Duration</Label>
+                      <select
+                        id={`duration-${activeDay}`}
+                        value={dayTimeSlots[activeDay]?.duration || 30}
+                        onChange={(e) => handleTimeSlotChange(activeDay, "duration", parseInt(e.target.value))}
+                        disabled={!availableDays.includes(activeDay)}
+                        className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 pl-2"
+                      >
+                        {[15, 30, 45, 60, 90, 120].map(duration => (
+                          <option key={duration} value={duration}>{duration} minutes</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor={`maxBookings-${activeDay}`}>Maximum Concurrent Bookings</Label>
+                      <Input
+                        id={`maxBookings-${activeDay}`}
+                        type="number"
+                        min="1"
+                        value={dayTimeSlots[activeDay]?.maxBookings || 1}
+                        onChange={(e) => handleTimeSlotChange(activeDay, "maxBookings", parseInt(e.target.value))}
+                        disabled={!availableDays.includes(activeDay)}
+                        className="w-full mt-1"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </div>
-        </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Weekly Schedule Preview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-7 gap-2">
+                  {DAYS_OF_WEEK.map((day) => (
+                    <div key={day} className="text-center">
+                      <div className={`p-2 rounded-t-md ${availableDays.includes(day) ? 'bg-blue-50' : 'bg-gray-50'}`}>
+                        <span className="font-medium">{day.slice(0, 3)}</span>
+                      </div>
+                      <div className={`p-2 rounded-b-md border ${availableDays.includes(day) ? 'border-blue-200' : 'border-gray-200'}`}>
+                        {availableDays.includes(day) ? (
+                          <div className="text-sm">
+                            <div>{dayTimeSlots[day]?.startTime}</div>
+                            <div>to</div>
+                            <div>{dayTimeSlots[day]?.endTime}</div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {dayTimeSlots[day]?.duration}min slots
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-sm text-muted-foreground">Unavailable</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         <Button onClick={handleSave} className="w-full">
-          <Loader loading={loading}>Save Settings</Loader>
+          <Loader loading={loading}>Save Schedule</Loader>
         </Button>
       </div>
     </div>
-  );}
+  );
+};
