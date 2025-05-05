@@ -71,19 +71,19 @@ const MaxMenu = ({ current, domains, onExpand, onSignOut }: Props) => {
             size="max"
             label="Chatbot"
             icon={<ChatIcon />}
-            path="settings"
+            path="chatbot-settings"
           />
           <MenuItem
             size="max"
             label="Products"
             icon={<HelpDeskIcon />}
-            path="settings"
+            path="product-settings"
           />
           <MenuItem
             size="max"
             label="Appointments"
             icon={<TimerIcon />}
-            path="settings"
+            path="appointment-settings"
           />
           <MenuItem
             size="max"
