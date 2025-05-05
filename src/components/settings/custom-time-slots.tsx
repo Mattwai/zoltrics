@@ -30,6 +30,7 @@ interface TimeSlot {
   duration: number;
   maxSlots: number;
   isCustom?: boolean;
+  overrideRegular?: boolean;
 }
 
 interface CustomTimeSlotsProps {
@@ -201,7 +202,26 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
     setLoading(true);
     try {
       const formattedDate = format(selectedDate, "yyyy-MM-dd");
-      const remainingSlots = customSlots.filter(slot => slot.id !== slotId);
+      let updatedSlots = [...customSlots];
+      
+      // If it's a regular slot (no id), we need to create a custom slot to override it
+      if (!slotId) {
+        const slotToRemove = availableSlots.find(slot => !slot.id);
+        if (slotToRemove) {
+          // Create a custom slot with the same time but marked as deleted
+          updatedSlots.push({
+            startTime: slotToRemove.slot,
+            endTime: calculateEndTime(slotToRemove.slot, slotToRemove.duration),
+            duration: slotToRemove.duration,
+            maxSlots: 0, // Set maxSlots to 0 to effectively delete it
+            isCustom: true,
+            overrideRegular: true // Add this flag to indicate this is overriding a regular slot
+          });
+        }
+      } else {
+        // For custom slots, just remove them from the array
+        updatedSlots = updatedSlots.filter(slot => slot.id !== slotId);
+      }
       
       const response = await fetch("/api/bookings/custom-slots", {
         method: "POST",
@@ -210,7 +230,7 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
         },
         body: JSON.stringify({
           date: formattedDate,
-          slots: remainingSlots,
+          slots: updatedSlots,
           userId,
         }),
       });
@@ -223,7 +243,7 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
       });
       
       // Update the local state
-      setCustomSlots(remainingSlots);
+      setCustomSlots(updatedSlots);
       // Refresh the available slots
       fetchTimeSlots(formattedDate);
     } catch (error) {
@@ -260,14 +280,27 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
     const formattedDate = format(selectedDate, "yyyy-MM-dd");
     let updatedSlots = [...customSlots];
     
-    if (editingSlot?.id) {
-      // Update existing slot
+    // If editing a regular slot (no id), we need to create a custom slot to override it
+    if (!editingSlot?.id) {
+      const regularSlot = availableSlots.find(slot => !slot.id && slot.slot === newSlot.startTime);
+      if (regularSlot) {
+        // Remove any existing custom slot for this time
+        updatedSlots = updatedSlots.filter(slot => slot.startTime !== regularSlot.slot);
+        // Add the new custom slot with override flag
+        updatedSlots.push({
+          ...newSlot,
+          isCustom: true,
+          overrideRegular: true // Add this flag to indicate this is overriding a regular slot
+        });
+      } else {
+        // If it's a completely new slot, just add it
+        updatedSlots.push({...newSlot, isCustom: true});
+      }
+    } else {
+      // Update existing custom slot
       updatedSlots = updatedSlots.map(slot => 
         slot.id === editingSlot.id ? {...newSlot, isCustom: true} : slot
       );
-    } else {
-      // Add new slot
-      updatedSlots.push({...newSlot, isCustom: true});
     }
     
     setLoading(true);

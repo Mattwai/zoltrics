@@ -56,12 +56,22 @@ export async function GET(request: NextRequest) {
             // Add formatted weekly slots
             weeklySlots[dayOfWeek].forEach((slot: any) => {
               const endTime = calculateEndTime(slot.startTime, slot.duration);
-              availableSlots.push({
-                slot: formatTimeSlot(slot.startTime, endTime),
-                duration: slot.duration,
-                maxSlots: slot.maxBookings,
-                isCustom: false
-              });
+              const slotTime = formatTimeSlot(slot.startTime, endTime);
+              
+              // Check if this regular slot is overridden by a custom slot
+              const isOverridden = customSlots.some(customSlot => 
+                customSlot.startTime === slot.startTime && 
+                (customSlot.overrideRegular || customSlot.maxSlots === 0)
+              );
+              
+              if (!isOverridden) {
+                availableSlots.push({
+                  slot: slotTime,
+                  duration: slot.duration,
+                  maxSlots: slot.maxBookings,
+                  isCustom: false
+                });
+              }
             });
           }
         } catch (error) {
@@ -72,13 +82,16 @@ export async function GET(request: NextRequest) {
       // Add custom slots for this date - these are additional slots
       if (customSlots.length > 0) {
         customSlots.forEach(slot => {
-          availableSlots.push({
-            slot: formatTimeSlot(slot.startTime, slot.endTime),
-            duration: slot.duration,
-            maxSlots: slot.maxSlots,
-            id: slot.id,
-            isCustom: true
-          });
+          // Only add custom slots that aren't marked for deletion (maxSlots > 0)
+          if (slot.maxSlots > 0) {
+            availableSlots.push({
+              slot: formatTimeSlot(slot.startTime, slot.endTime),
+              duration: slot.duration,
+              maxSlots: slot.maxSlots,
+              id: slot.id,
+              isCustom: true
+            });
+          }
         });
       }
     }
@@ -171,7 +184,8 @@ export async function POST(request: NextRequest) {
           date: selectedDate,
         },
         select: {
-          id: true
+          id: true,
+          startTime: true
         }
       });
 
@@ -192,6 +206,7 @@ export async function POST(request: NextRequest) {
               endTime: slot.endTime,
               duration: slot.duration,
               maxSlots: slot.maxSlots,
+              overrideRegular: slot.overrideRegular || false
             },
           });
         } else {
@@ -203,6 +218,7 @@ export async function POST(request: NextRequest) {
               endTime: slot.endTime,
               duration: slot.duration,
               maxSlots: slot.maxSlots,
+              overrideRegular: slot.overrideRegular || false,
               userId,
             },
           });
