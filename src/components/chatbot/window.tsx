@@ -66,7 +66,6 @@ export const BotWindow = forwardRef<HTMLDivElement, Props>(
     },
     ref
   ) => {
-    console.log(errors);
     return (
       <div className="h-[670px] w-[450px] flex flex-col bg-white rounded-xl mr-[80px] border-[1px] overflow-hidden">
         <div className="flex justify-between px-4 pt-4">
@@ -75,7 +74,7 @@ export const BotWindow = forwardRef<HTMLDivElement, Props>(
               <h3 className="text-lg font-bold leading-none">
                 Sales Rep - BookerBuddy
               </h3>
-              <p className="text-sm">{domainName.split(".com")[0]}</p>
+              <p className="text-sm">{domainName?.split(".com")[0] || "BookerBuddy"}</p>
               {realtimeMode?.mode && (
                 <RealTimeMode
                   setChats={setChat}
@@ -94,19 +93,29 @@ export const BotWindow = forwardRef<HTMLDivElement, Props>(
             <div className="flex flex-col h-full">
               <div
                 style={{
-                  background: theme || "",
-                  color: textColor || "",
+                  background: theme || "#ffffff",
+                  color: textColor || "#000000",
                 }}
                 className="px-3 flex h-[400px] flex-col py-5 gap-3 chat-window overflow-y-auto"
                 ref={ref}
               >
-                {chats.map((chat, key) => (
+                {chats?.map((chat, key) => (
                   <Bubble key={key} message={chat} />
                 ))}
                 {onResponding && <Responding />}
               </div>
               <form
-                onSubmit={onChat}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (onChat) {
+                    onChat();
+                    // Clear the input after submission
+                    const input = e.currentTarget.querySelector('input');
+                    if (input) {
+                      input.value = '';
+                    }
+                  }
+                }}
                 className="flex px-3 py-1 flex-col flex-1 bg-porcelain"
               >
                 <div className="flex justify-between">
@@ -142,7 +151,7 @@ export const BotWindow = forwardRef<HTMLDivElement, Props>(
               </div>
               <Separator orientation="horizontal" />
 
-              {helpdesk.map((desk) => (
+              {helpdesk?.map((desk) => (
                 <Accordion
                   key={desk.id}
                   trigger={desk.question}

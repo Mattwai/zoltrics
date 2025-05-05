@@ -1,5 +1,6 @@
 import { cn, extractUUIDFromString, getMonthName } from "@/lib/utils";
 import Link from "next/link";
+import React from "react";
 
 type Props = {
   message: {
@@ -11,24 +12,25 @@ type Props = {
 };
 
 const Bubble = ({ message, createdAt }: Props) => {
+  const isUser = message.role === "user";
+  const content = message.content || "";
+  const link = message.link;
   let d = new Date();
-  const image = extractUUIDFromString(message.content);
-  console.log(message.link);
+  const image = extractUUIDFromString(content);
+  console.log(link);
 
   return (
     <div
-      className={cn(
-        "flex gap-2 items-end",
-        message.role == "assistant" ? "self-start" : "self-end flex-row-reverse"
-      )}
+      className={`flex ${
+        message.role === "assistant" ? "justify-start" : "justify-end"
+      }`}
     >
       <div
-        className={cn(
-          "flex flex-col gap-3 min-w-[200px] max-w-[300px] p-4 rounded-t-md",
-          message.role == "assistant"
-            ? "bg-muted rounded-r-md"
-            : "bg-grandis rounded-l-md"
-        )}
+        className={`max-w-[80%] rounded-lg p-3 ${
+          message.role === "assistant"
+            ? "bg-gray-100"
+            : "bg-purple text-white"
+        }`}
       >
         {createdAt ? (
           <div className="flex gap-2 text-xs text-gray-600">
@@ -36,29 +38,31 @@ const Bubble = ({ message, createdAt }: Props) => {
               {createdAt.getDate()} {getMonthName(createdAt.getMonth())}
             </p>
             <p>
-              {createdAt.getHours()}:{createdAt.getMinutes()}
+              {createdAt.getHours()}:{String(createdAt.getMinutes()).padStart(2, '0')}
               {createdAt.getHours() > 12 ? "PM" : "AM"}
             </p>
           </div>
         ) : (
           <p className="text-xs">
-            {`${d.getHours()}:${d.getMinutes()} ${
+            {`${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')} ${
               d.getHours() > 12 ? "pm" : "am"
             }`}
           </p>
         )}
-        <p className="text-sm">
-          {message.content.replace("(complete)", " ")}
-          {message.link && (
-            <Link
-              className="underline font-bold pl-2"
-              href={message.link}
-              target="_blank"
-            >
-              Your Link
-            </Link>
-          )}
-        </p>
+        <div 
+          className="whitespace-pre-wrap"
+          dangerouslySetInnerHTML={{ __html: content }}
+        />
+        {link && (
+          <a
+            href={link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs underline"
+          >
+            Click here
+          </a>
+        )}
       </div>
     </div>
   );

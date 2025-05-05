@@ -1,17 +1,20 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/loader";
+import { Button } from "@/components/ui/button";
 import { useProducts } from "@/hooks/settings/use-settings";
-import FormGenerator from "../forms/form-generator";
 import { useRouter } from "next/navigation";
+import FormGenerator from "../forms/form-generator";
 
 type CreateProductFormProps = {
   id: string;
   onProductAdded?: () => void;
 };
 
-export const CreateProductForm = ({ id, onProductAdded }: CreateProductFormProps) => {
+export const CreateProductForm = ({
+  id,
+  onProductAdded,
+}: CreateProductFormProps) => {
   const router = useRouter();
   const { onCreateNewProduct, register, errors, loading } = useProducts(id);
 

@@ -138,7 +138,7 @@ const EmailMarketing = ({ campaign, domains, subscription }: Props) => {
                           title="Edit Email"
                           description="This email will be sent to campaign members"
                           trigger={
-                            <Card className="rounded-lg cursor-pointer bg-grandis py-2 px-5 font-semibold text-sm hover:bg-orange text-gray-700">
+                            <Card className="rounded-lg cursor-pointer bg-royalPurple py-2 px-5 font-semibold text-sm hover:bg-purple text-gray-700">
                               Edit Email
                             </Card>
                           }

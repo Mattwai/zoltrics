@@ -20,10 +20,10 @@ import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { CalendarIcon, CheckCircle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { signIn, useSession } from "next-auth/react";
 import { DepositPayment } from "./deposit-payment-form";
 
 // Define the AppointmentTimeSlots interface
@@ -65,7 +65,9 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [depositRequired, setDepositRequired] = useState<boolean>(false);
   const [riskScore, setRiskScore] = useState<number | null>(null);
-  const [availableTimeSlots, setAvailableTimeSlots] = useState<AppointmentTimeSlots[]>([]);
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<
+    AppointmentTimeSlots[]
+  >([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { data: session, status } = useSession();
@@ -96,14 +98,14 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
       try {
         const slots = await fetchAvailableTimeSlots(date, session.user.id);
         setAvailableTimeSlots(slots);
-        if (selectedTime && !slots.some(slot => slot.slot === selectedTime)) {
+        if (selectedTime && !slots.some((slot) => slot.slot === selectedTime)) {
           setSelectedTime(null);
-          form.setValue('time', '');
+          form.setValue("time", "");
         }
         setError(null);
       } catch (err) {
-        console.error('Error fetching time slots:', err);
-        setError('Failed to load available time slots');
+        console.error("Error fetching time slots:", err);
+        setError("Failed to load available time slots");
       } finally {
         setIsLoading(false);
       }
@@ -113,30 +115,35 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
   const fetchAvailableTimeSlots = async (date: Date, userId: string) => {
     try {
       // Format the date in YYYY-MM-DD format to preserve the selected date regardless of timezone
-      const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-      
-      const response = await fetch(`/api/bookings/available-slots?date=${formattedDate}&userId=${userId}`);
+      const formattedDate = `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+      ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+      const response = await fetch(
+        `/api/bookings/available-slots?date=${formattedDate}&userId=${userId}`
+      );
       if (!response.ok) {
-        throw new Error('Failed to fetch available time slots');
+        throw new Error("Failed to fetch available time slots");
       }
       const data = await response.json();
-      
+
       // If no slots are returned, the date might be blocked
       if (!data.slots || data.slots.length === 0) {
         return [];
       }
-      
+
       // Process the slots to include formatted duration and calculate slots remaining
       const processedSlots = data.slots.map((slot: any) => {
         // Calculate end time if not provided
-        const endTimeValue = slot.endTime || calculateEndTime(slot.slot, slot.duration);
-        
+        const endTimeValue =
+          slot.endTime || calculateEndTime(slot.slot, slot.duration);
+
         // Format duration for display (e.g., "30 mins")
         const formattedDuration = `${slot.duration} mins`;
-        
+
         // Calculate slots remaining if maxSlots is provided
         const slotsRemaining = slot.maxSlots || 1;
-        
+
         // Make sure to preserve the isCustom property exactly as it comes from the API
         return {
           ...slot,
@@ -144,26 +151,28 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
           endTime: endTimeValue,
           formattedDuration: formattedDuration,
           slotsRemaining: slotsRemaining,
-          isCustom: Boolean(slot.isCustom) // Ensure isCustom is a boolean
+          isCustom: Boolean(slot.isCustom), // Ensure isCustom is a boolean
         };
       });
-      
+
       return processedSlots as AppointmentTimeSlots[];
     } catch (error) {
-      console.error('Error fetching time slots:', error);
+      console.error("Error fetching time slots:", error);
       throw error;
     }
   };
 
   // Helper function to calculate end time based on start time and duration
   const calculateEndTime = (startTime: string, durationMinutes: number) => {
-    const [hours, minutes] = startTime.split(':').map(Number);
-    
+    const [hours, minutes] = startTime.split(":").map(Number);
+
     let totalMinutes = hours * 60 + minutes + durationMinutes;
     const endHours = Math.floor(totalMinutes / 60);
     const endMinutes = totalMinutes % 60;
-    
-    return `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
+
+    return `${endHours.toString().padStart(2, "0")}:${endMinutes
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   useEffect(() => {
@@ -172,13 +181,16 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
       fetchAvailableTimeSlots(selectedDate, session.user.id)
         .then((slots: AppointmentTimeSlots[]) => {
           console.log("Fetched time slots:", slots);
-          console.log("Custom slots count:", slots.filter(slot => slot.isCustom).length);
+          console.log(
+            "Custom slots count:",
+            slots.filter((slot) => slot.isCustom).length
+          );
           setAvailableTimeSlots(slots);
           setError(null);
         })
-        .catch(err => {
-          console.error('Error fetching time slots:', err);
-          setError('Failed to load available time slots');
+        .catch((err) => {
+          console.error("Error fetching time slots:", err);
+          setError("Failed to load available time slots");
         })
         .finally(() => {
           setIsLoading(false);
@@ -195,10 +207,10 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const response = await fetch('/api/bookings', {
-        method: 'POST',
+      const response = await fetch("/api/bookings", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           name: values.name,
@@ -220,10 +232,10 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
 
         if (data.depositRequired) {
           // Request deposit payment intent
-          const depositResponse = await fetch('/api/bookings/deposit', {
-            method: 'POST',
+          const depositResponse = await fetch("/api/bookings/deposit", {
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
             body: JSON.stringify({
               bookingId: data.booking.id,
@@ -254,12 +266,15 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
   if (status !== "loading" && !session && !isGuest) {
     return (
       <div className="flex flex-col items-center justify-center space-y-4 p-6 bg-white rounded-lg shadow">
-        <h2 className="text-2xl font-semibold text-center mb-4">Choose how to continue</h2>
+        <h2 className="text-2xl font-semibold text-center mb-4">
+          Choose how to continue
+        </h2>
         <p className="text-gray-600 text-center mb-6">
-          Sign in with Google to manage your bookings later, or continue as a guest
+          Sign in with Google to manage your bookings later, or continue as a
+          guest
         </p>
         <Button
-          onClick={() => signIn('google')}
+          onClick={() => signIn("google")}
           className="w-full flex items-center justify-center space-x-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -307,7 +322,8 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
         <div className="text-center">
           <h2 className="text-2xl font-semibold">Deposit Required</h2>
           <p className="text-gray-600 mt-2">
-            Due to previous cancellations, a deposit of $20 is required to confirm your booking.
+            Due to previous cancellations, a deposit of $20 is required to
+            confirm your booking.
           </p>
         </div>
         <DepositPayment
@@ -325,9 +341,12 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
         <CheckCircle className="w-16 h-16 text-green-500" />
         <h2 className="text-2xl font-semibold">Booking Confirmed!</h2>
         <p className="text-center">
-          Thank you for booking your appointment. You will receive a confirmation email shortly.
-          {session && "You can manage your booking anytime by signing into your Google account."}
-          {!session && "To manage your booking in the future, please keep your confirmation email."}
+          Thank you for booking your appointment. You will receive a
+          confirmation email shortly.
+          {session &&
+            "You can manage your booking anytime by signing into your Google account."}
+          {!session &&
+            "To manage your booking in the future, please keep your confirmation email."}
         </p>
       </div>
     );
@@ -376,8 +395,8 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
               >
                 <option value="">Select a service</option>
                 {products
-                  .filter(product => product.isLive)
-                  .map(product => (
+                  .filter((product) => product.isLive)
+                  .map((product) => (
                     <option key={product.id} value={product.id}>
                       {product.name} - ${product.price}
                     </option>
@@ -423,7 +442,8 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
                     }}
                     disabled={(date) =>
                       date < new Date(new Date().setHours(0, 0, 0, 0)) ||
-                      date > new Date(new Date().setMonth(new Date().getMonth() + 3))
+                      date >
+                        new Date(new Date().setMonth(new Date().getMonth() + 3))
                     }
                     initialFocus
                   />
@@ -442,16 +462,22 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
               <FormLabel>Time</FormLabel>
               <div className="grid grid-cols-2 gap-2 mt-2 max-h-[200px] overflow-y-auto">
                 {isLoading ? (
-                  <div className="col-span-2 text-center py-4">Loading available time slots...</div>
+                  <div className="col-span-2 text-center py-4">
+                    Loading available time slots...
+                  </div>
                 ) : availableTimeSlots.length > 0 ? (
                   availableTimeSlots.map((slot, index) => (
                     <Button
                       type="button"
                       key={index}
-                      variant={field.value === slot.slot ? "default" : "outline"}
+                      variant={
+                        field.value === slot.slot ? "default" : "outline"
+                      }
                       className={cn(
                         "justify-start text-left h-auto py-2 flex flex-col items-start",
-                        field.value === slot.slot && "bg-grandis text-black"
+                        field.value === slot.slot &&
+                          "bg-royalPurple text-black",
+                        slot.isCustom && "border-blue-400 border-2"
                       )}
                       onClick={() => {
                         handleTimeSlotClick(slot);
@@ -459,19 +485,28 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
                     >
                       <div className="font-medium">{slot.slot}</div>
                       {slot.startTime && slot.endTime && (
-                        <div className="text-xs opacity-80">{slot.startTime} - {slot.endTime}</div>
+                        <div className="text-xs opacity-80">
+                          {slot.startTime} - {slot.endTime}
+                        </div>
                       )}
                       <div className="flex justify-between w-full text-xs mt-1">
-                        {slot.formattedDuration && <span>{slot.formattedDuration}</span>}
+                        {slot.formattedDuration && (
+                          <span>{slot.formattedDuration}</span>
+                        )}
                         {slot.slotsRemaining !== undefined && (
-                          <span className="ml-auto">{slot.slotsRemaining} {slot.slotsRemaining === 1 ? 'slot' : 'slots'} left</span>
+                          <span className="ml-auto">
+                            {slot.slotsRemaining}{" "}
+                            {slot.slotsRemaining === 1 ? "slot" : "slots"} left
+                          </span>
                         )}
                       </div>
                     </Button>
                   ))
                 ) : (
                   <div className="col-span-2 text-center py-4">
-                    <div className="text-gray-500 mb-2">No available time slots for this date</div>
+                    <div className="text-gray-500 mb-2">
+                      No available time slots for this date
+                    </div>
                   </div>
                 )}
               </div>
@@ -488,4 +523,4 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
   );
 };
 
-export default BookingForm; 
+export default BookingForm;

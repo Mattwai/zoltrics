@@ -71,7 +71,7 @@ export default async function Home() {
             })}
           >
             <CardHeader>
-              <CardTitle className="text-orange">{card.title}</CardTitle>
+              <CardTitle className="text-purple">{card.title}</CardTitle>
               <CardDescription>
                 {pricingCards.find((c) => c.title === card.title)?.description}
               </CardDescription>
@@ -93,7 +93,7 @@ export default async function Home() {
               </div>
               <Link
                 href={`/dashbord?plan=${card.title}`}
-                className="bg-[#f3d299] border-orange border-2 p-2 w-full text-center font-bold rounded-md"
+                className="bg-[#f3d299] border-purple border-2 p-2 w-full text-center font-bold rounded-md"
               >
                 Get Started
               </Link>
