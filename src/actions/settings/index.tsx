@@ -178,6 +178,16 @@ export const onGetCurrentDomainInfo = async (domain: string) => {
             name: true,
             userId: true,
             products: true,
+            User: {
+              select: {
+                chatBot: {
+                  select: {
+                    id: true,
+                    welcomeMessage: true
+                  }
+                }
+              }
+            }
           },
         },
         chatBot: {
