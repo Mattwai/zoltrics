@@ -55,6 +55,7 @@ model User {
   knowledgeBase           KnowledgeBase[]
   sessions                Session[]
   bookingCalendarSettings BookingCalendarSettings?
+  blockedDates            BlockedDate[]
 }
 
 model VerificationRequest {
@@ -233,6 +234,20 @@ model CustomTimeSlot {
   user      User     @relation(fields: [userId], references: [id])
 
   @@index([userId, date])
+}
+
+model BlockedDate {
+  id        String   @id @default(cuid())
+  userId    String   @db.Uuid
+  date      DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
 }
 
 enum Plans {

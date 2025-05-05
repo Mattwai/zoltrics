@@ -101,11 +101,6 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
           form.setValue('time', '');
         }
         setError(null);
-        
-        // If no slots available for this date, add it to disabled dates
-        if (slots.length === 0) {
-          setDisabledDates(prev => [...prev, date]);
-        }
       } catch (err) {
         console.error('Error fetching time slots:', err);
         setError('Failed to load available time slots');
@@ -423,13 +418,7 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
                     }}
                     disabled={(date) =>
                       date < new Date(new Date().setHours(0, 0, 0, 0)) ||
-                      date > new Date(new Date().setMonth(new Date().getMonth() + 3)) ||
-                      disabledDates.some(
-                        (disabledDate) =>
-                          disabledDate.getFullYear() === date.getFullYear() &&
-                          disabledDate.getMonth() === date.getMonth() &&
-                          disabledDate.getDate() === date.getDate()
-                      )
+                      date > new Date(new Date().setMonth(new Date().getMonth() + 3))
                     }
                     initialFocus
                   />
@@ -480,8 +469,8 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
                     </Button>
                   ))
                 ) : (
-                  <div className="col-span-2 text-center py-4 text-gray-500">
-                    No available time slots for this date
+                  <div className="col-span-2 text-center py-4">
+                    <div className="text-gray-500 mb-2">No available time slots for this date</div>
                   </div>
                 )}
               </div>

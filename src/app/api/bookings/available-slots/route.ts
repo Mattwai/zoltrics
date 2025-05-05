@@ -45,10 +45,29 @@ export async function GET(request: NextRequest) {
       selectedDate = new Date(year, month - 1, day); // Month is 0-indexed in JavaScript Date
     }
     
+    // Set the time to midnight for consistent date comparison
+    selectedDate.setHours(0, 0, 0, 0);
+    
     console.log('Original date string:', date);
     console.log('Parsed selected date:', selectedDate);
     
     const dayOfWeek = selectedDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+    // Check if the date is blocked
+    const blockedDate = await client.blockedDate.findFirst({
+      where: {
+        userId,
+        date: {
+          equals: selectedDate
+        }
+      },
+    });
+
+    // If the date is blocked, return empty slots array
+    if (blockedDate) {
+      console.log('Date is blocked, returning empty slots array');
+      return NextResponse.json({ slots: [] });
+    }
 
     // Set up start and end of the selected day to query for custom slots
     const startOfDay = new Date(selectedDate);
