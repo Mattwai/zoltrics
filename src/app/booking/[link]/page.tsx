@@ -25,7 +25,18 @@ const BookingPage = async ({ params }: Props) => {
         <BookingForm userId={user.id} />
       </div>
       <div className="fixed bottom-4 right-4 z-50">
-        <AiChatBot userId={user.id} />
+        <AiChatBot 
+          userId={user.id} 
+          initialChatBot={{
+            name: user.name || "BookerBuddy",
+            chatBot: user.chatBot,
+            helpdesk: (user.helpdesk || []).map(h => ({
+              ...h,
+              domainId: null,
+              userId: undefined
+            })),
+          }}
+        />
       </div>
     </div>
   );

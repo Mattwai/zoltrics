@@ -6,9 +6,25 @@ import { BotWindow } from "./window";
 
 type Props = {
   userId?: string;
+  initialChatBot?: {
+    name: string;
+    chatBot: {
+      id: string;
+      welcomeMessage: string | null;
+      background: string | null;
+      textColor: string | null;
+      helpdesk: boolean;
+    } | null;
+    helpdesk: {
+      id: string;
+      question: string;
+      answer: string;
+      domainId: string | null;
+    }[];
+  };
 };
 
-const AiChatBot = ({ userId }: Props) => {
+const AiChatBot = ({ userId, initialChatBot }: Props) => {
   const {
     onOpenChatBot,
     botOpened,
@@ -22,7 +38,7 @@ const AiChatBot = ({ userId }: Props) => {
     onRealTime,
     setOnChats,
     errors,
-  } = useChatBot(userId);
+  } = useChatBot(userId, initialChatBot);
 
   return (
     <div className="h-screen flex flex-col justify-end items-end gap-4">

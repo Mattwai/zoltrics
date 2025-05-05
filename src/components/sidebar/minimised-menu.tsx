@@ -4,6 +4,9 @@ import SettingsIcon from "@/icons/settings-icon";
 import { LogOut, Menu } from "lucide-react";
 import DomainMenu from "./domain-menu";
 import MenuItem from "./menu-item";
+import ChatIcon from "@/icons/chat-icon";
+import HelpDeskIcon from "@/icons/help-desk-icon";
+import TimerIcon from "@/icons/timer-icon";
 
 type MinMenuProps = {
   onShrink(): void;
@@ -43,7 +46,25 @@ export const MinMenu = ({
         <div className="flex flex-col">
           <MenuItem
             size="min"
-            label="Settings"
+            label="Chatbot"
+            icon={<ChatIcon />}
+            path="chatbot-settings"
+          />
+          <MenuItem
+            size="min"
+            label="Products"
+            icon={<HelpDeskIcon />}
+            path="product-settings"
+          />
+          <MenuItem
+            size="min"
+            label="Appointments"
+            icon={<TimerIcon />}
+            path="appointment-settings"
+          />
+          <MenuItem
+            size="min"
+            label="General"
             icon={<SettingsIcon />}
             path="settings"
           />

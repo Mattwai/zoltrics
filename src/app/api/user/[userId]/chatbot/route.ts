@@ -1,104 +1,125 @@
-import { authConfig } from "@/lib/auth";
-import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import OpenAI from "openai";
+import { ChatBot, HelpDesk, Prisma, User } from "@prisma/client";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+type HelpDeskQuestion = {
+  id: string;
+  userId: string | null;
+  question: string;
+  answer: string;
+  knowledgeBase?: string;
+};
+
+type UserWithRelations = {
+  id: string;
+  chatBot: ChatBot | null;
+  helpdesk: HelpDeskQuestion[];
+  knowledgeBase: {
+    id: string;
+    title: string;
+    content: string;
+    category?: string;
+  }[];
+};
 
 export async function GET(
   request: Request,
   { params }: { params: { userId: string } }
 ) {
   try {
-    const { userId } = params;
-    
-    if (!userId) {
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
-    }
-
-    // Get user details
     const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        name: true,
-        bookingLink: true,
-        domains: {
-          take: 1,  // Just get the first domain if available
-          select: {
-            id: true,
-            name: true,
-            chatBot: {
-              select: {
-                id: true,
-                welcomeMessage: true,
-                background: true,
-                textColor: true,
-                helpdesk: true,
-              }
-            },
-            helpdesk: {
-              select: {
-                id: true,
-                question: true,
-                answer: true,
-                domainId: true,
-              }
-            }
-          }
-        }
+      where: {
+        id: params.userId,
       },
-    });
+      include: {
+        chatBot: true,
+        helpdesk: true,
+      },
+    }) as UserWithRelations | null;
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    // Create a default chatbot response
-    const defaultChatbot = {
-      id: "default",
-      welcomeMessage: "Hello! How can I help you with your booking today?",
-      background: "#ffffff",
-      textColor: "#000000",
-      helpdesk: false,
-      helpdesk_data: [],
-      name: "BookerBuddy",
-    };
-
-    // Check if the user has domains with a chatbot
-    if (user.domains.length > 0 && user.domains[0].chatBot) {
-      const domain = user.domains[0];
-      const chatBot = domain.chatBot!; // Non-null assertion since we checked it's not null
-      
-      return NextResponse.json({
-        user: {
-          id: user.id,
-          name: user.name,
-          bookingLink: user.bookingLink,
-        },
-        chatbot: {
-          id: chatBot.id,
-          welcomeMessage: chatBot.welcomeMessage || defaultChatbot.welcomeMessage,
-          background: chatBot.background || defaultChatbot.background,
-          textColor: chatBot.textColor || defaultChatbot.textColor,
-          helpdesk: chatBot.helpdesk,
-          helpdesk_data: domain.helpdesk,
-          name: domain.name,
+      return NextResponse.json(
+        { error: "User not found" },
+        {
+          status: 404,
         }
-      });
-    } else {
-      // Return the default chatbot response
-      return NextResponse.json({
-        user: {
-          id: user.id,
-          name: user.name,
-          bookingLink: user.bookingLink,
-        },
-        chatbot: defaultChatbot
-      });
+      );
     }
+
+    const chatBot = user.chatBot;
+    const helpdesk = user.helpdesk;
+
+    return NextResponse.json({
+      welcomeMessage: chatBot?.welcomeMessage || "Hi! How can I help you today?",
+      background: chatBot?.background || "#ffffff",
+      textColor: chatBot?.textColor || "#000000",
+      helpdesk: chatBot?.helpdesk || false,
+      helpdeskQuestions: helpdesk || [],
+    });
   } catch (error) {
-    console.error("Error getting user chatbot:", error);
+    console.error("Error in GET /api/user/[userId]/chatbot:", error);
     return NextResponse.json(
-      { error: "Failed to get user chatbot" },
+      { error: "Internal server error" },
+      {
+        status: 500,
+      }
+    );
+  }
+}
+
+export async function POST(
+  request: Request,
+  { params }: { params: { userId: string } }
+) {
+  try {
+    const { message } = await request.json();
+
+    const user = await prisma.user.findUnique({
+      where: {
+        id: params.userId,
+      },
+      include: {
+        chatBot: true,
+        knowledgeBase: true,
+      },
+    }) as UserWithRelations | null;
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    // Search through knowledge base entries
+    const relevantEntries = (user as UserWithRelations).knowledgeBase.filter(entry => {
+      const searchTerms = message.toLowerCase().split(' ');
+      const entryText = `${entry.title} ${entry.content} ${entry.category || ''}`.toLowerCase();
+      return searchTerms.some((term: string) => entryText.includes(term));
+    });
+
+    if (relevantEntries.length > 0) {
+      // Combine relevant information
+      const response = relevantEntries
+        .map(entry => `${entry.title}:\n${entry.content}`)
+        .join('\n\n');
+      
+      return NextResponse.json({ response });
+    }
+
+    // If no relevant information found
+    return NextResponse.json({
+      response: "I apologize, but I don't have enough information in my knowledge base to answer that question. Please contact a human agent for assistance."
+    });
+  } catch (error) {
+    console.error("Error in POST /api/user/[userId]/chatbot:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

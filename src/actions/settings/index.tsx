@@ -1,7 +1,7 @@
 "use server";
 import { authConfig } from "@/lib/auth";
 import { client } from "@/lib/prisma";
-import { User } from "@prisma/client";
+import { User, ChatBot, HelpDesk, Domain } from "@prisma/client";
 import { getServerSession } from "next-auth";
 
 export const onIntegrateDomain = async (domain: string) => {
@@ -54,10 +54,15 @@ export const onIntegrateDomain = async (domain: string) => {
             domains: {
               create: {
                 name: domain,
-                chatBot: {
-                  create: {
-                    welcomeMessage: "Hey there, have  a question? Text us here",
-                  },
+              },
+            },
+            chatBot: {
+              upsert: {
+                create: {
+                  welcomeMessage: "Hey there, have a question? Text us here",
+                },
+                update: {
+                  welcomeMessage: "Hey there, have a question? Text us here",
                 },
               },
             },
@@ -173,12 +178,22 @@ export const onGetCurrentDomainInfo = async (domain: string) => {
             name: true,
             userId: true,
             products: true,
-            chatBot: {
+            User: {
               select: {
-                id: true,
-                welcomeMessage: true,
-              },
-            },
+                chatBot: {
+                  select: {
+                    id: true,
+                    welcomeMessage: true
+                  }
+                }
+              }
+            }
+          },
+        },
+        chatBot: {
+          select: {
+            id: true,
+            welcomeMessage: true,
           },
         },
       },
@@ -236,17 +251,20 @@ export const onUpdateDomain = async (id: string, name: string) => {
 
 export const onUpdateWelcomeMessage = async (
   message: string,
-  domainId: string
+  userId: string
 ) => {
   try {
-    const update = await client.domain.update({
+    const update = await client.user.update({
       where: {
-        id: domainId,
+        id: userId,
       },
       data: {
         chatBot: {
-          update: {
-            data: {
+          upsert: {
+            create: {
+              welcomeMessage: message,
+            },
+            update: {
               welcomeMessage: message,
             },
           },
@@ -302,14 +320,14 @@ export const onDeleteUserDomain = async (id: string) => {
 };
 
 export const onCreateHelpDeskQuestion = async (
-  id: string,
+  userId: string,
   question: string,
   answer: string
 ) => {
   try {
-    const helpDeskQuestion = await client.domain.update({
+    const helpDeskQuestion = await client.user.update({
       where: {
-        id,
+        id: userId,
       },
       data: {
         helpdesk: {
@@ -347,11 +365,11 @@ export const onCreateHelpDeskQuestion = async (
   }
 };
 
-export const onGetAllHelpDeskQuestions = async (id: string) => {
+export const onGetAllHelpDeskQuestions = async (userId: string) => {
   try {
     const questions = await client.helpDesk.findMany({
       where: {
-        domainId: id,
+        userId: userId,
       },
       select: {
         question: true,
@@ -362,7 +380,7 @@ export const onGetAllHelpDeskQuestions = async (id: string) => {
 
     return {
       status: 200,
-      message: "New help desk question added",
+      message: "Help desk questions retrieved",
       questions: questions,
     };
   } catch (error) {
@@ -370,11 +388,11 @@ export const onGetAllHelpDeskQuestions = async (id: string) => {
   }
 };
 
-export const onCreateFilterQuestions = async (id: string, question: string) => {
+export const onCreateFilterQuestions = async (userId: string, question: string) => {
   try {
-    const filterQuestion = await client.domain.update({
+    const filterQuestion = await client.user.update({
       where: {
-        id,
+        id: userId,
       },
       data: {
         filterQuestions: {
@@ -409,11 +427,11 @@ export const onCreateFilterQuestions = async (id: string, question: string) => {
   }
 };
 
-export const onGetAllFilterQuestions = async (id: string) => {
+export const onGetAllFilterQuestions = async (userId: string) => {
   try {
     const questions = await client.filterQuestions.findMany({
       where: {
-        domainId: id,
+        userId: userId,
       },
       select: {
         question: true,
@@ -506,7 +524,11 @@ const generateBookingLink = async () => {
   return link;
 };
 
-export const onGetUser = async (): Promise<User | null> => {
+export const onGetUser = async (): Promise<(User & {
+  chatBot: ChatBot | null;
+  helpdesk: HelpDesk[];
+  domains: Domain[];
+}) | null> => {
   try {
     const session = await getServerSession(authConfig);
     if (!session?.user?.id) {
@@ -517,6 +539,11 @@ export const onGetUser = async (): Promise<User | null> => {
     const user = await client.user.findUnique({
       where: {
         id: session.user.id,
+      },
+      include: {
+        domains: true,
+        chatBot: true,
+        helpdesk: true,
       },
     });
     
@@ -531,6 +558,11 @@ export const onGetUser = async (): Promise<User | null> => {
       const updatedUser = await client.user.update({
         where: { id: user.id },
         data: { bookingLink: newBookingLink },
+        include: {
+          domains: true,
+          chatBot: true,
+          helpdesk: true,
+        },
       });
       return updatedUser;
     }
@@ -556,5 +588,81 @@ export const onGetWeeklySettings = async (userId: string) => {
   } catch (error) {
     console.error("Error fetching weekly settings:", error);
     return null;
+  }
+};
+
+export const onCreateKnowledgeBaseEntry = async (
+  userId: string,
+  title: string,
+  content: string,
+  category?: string
+) => {
+  try {
+    const entry = await client.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        knowledgeBase: {
+          create: {
+            title,
+            content,
+            category,
+          },
+        },
+      },
+      include: {
+        knowledgeBase: {
+          select: {
+            id: true,
+            title: true,
+            content: true,
+            category: true,
+          },
+        },
+      },
+    });
+
+    if (entry) {
+      return {
+        status: 200,
+        message: "New knowledge base entry added",
+        entries: entry.knowledgeBase,
+      };
+    }
+
+    return {
+      status: 400,
+      message: "Oops! something went wrong",
+    };
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const onGetAllKnowledgeBaseEntries = async (userId: string) => {
+  try {
+    const entries = await client.knowledgeBase.findMany({
+      where: {
+        userId: userId,
+      },
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        category: true,
+      },
+      orderBy: {
+        title: "asc",
+      },
+    });
+
+    return {
+      status: 200,
+      message: "Knowledge base entries retrieved",
+      entries: entries,
+    };
+  } catch (error) {
+    console.log(error);
   }
 };

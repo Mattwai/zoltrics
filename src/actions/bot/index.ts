@@ -59,29 +59,42 @@ export const onStoreConversations = async (
 
 export const onGetCurrentChatBot = async (id: string) => {
   try {
-    const chatbot = await client.domain.findUnique({
+    const domain = await client.domain.findUnique({
       where: {
         id,
       },
       select: {
-        helpdesk: true,
         name: true,
-        chatBot: {
+        User: {
           select: {
-            id: true,
-            welcomeMessage: true,
-            textColor: true,
-            background: true,
-            helpdesk: true,
+            chatBot: true,
+            helpdesk: {
+              select: {
+                id: true,
+                question: true,
+                answer: true,
+              },
+            },
           },
         },
       },
     });
 
-    return chatbot; // Return the fetched chatbot or null if not found
+    if (!domain || !domain.User) {
+      return null;
+    }
+
+    return {
+      name: domain.name,
+      chatBot: domain.User.chatBot,
+      helpdesk: domain.User.helpdesk.map(h => ({
+        ...h,
+        domainId: null,
+      })),
+    };
   } catch (error) {
     console.log(error);
-    return null; // Return null in case of an error
+    return null;
   }
 };
 
@@ -94,18 +107,17 @@ export const onAiChatBotAssistant = async (
   try {
     const session = await getServerSession(authConfig);
     if (!session || !session.user) {
-      throw new Error("User not authenticated"); // Handle unauthorized access
+      throw new Error("User not authenticated");
     }
 
-    //Fetch user details using NextAuth.js session
     const userId = session.user.id;
     const user = await client.user.findUnique({
       where: { id: userId },
-      select: { email: true }, // Adjust as per your schema
+      select: { email: true },
     });
 
     if (!user) {
-      throw new Error("User not found"); // Handle case where user is null or undefined
+      throw new Error("User not found");
     }
 
     const chatBotDomain = await client.domain.findUnique({
@@ -114,20 +126,37 @@ export const onAiChatBotAssistant = async (
       },
       select: {
         name: true,
-        filterQuestions: {
-          where: {
-            answered: null,
-          },
+        User: {
           select: {
-            question: true,
+            filterQuestions: {
+              where: {
+                answered: null,
+              },
+              select: {
+                question: true,
+              },
+            },
+            knowledgeBase: {
+              select: {
+                title: true,
+                content: true,
+                category: true,
+              },
+            },
+            bookingLink: true,
           },
         },
       },
     });
 
-    if (!chatBotDomain) {
-      throw new Error("Chatbot domain not found"); // Handle case where chatbot domain is null or undefined
+    if (!chatBotDomain || !chatBotDomain.User) {
+      throw new Error("Chatbot domain not found");
     }
+
+    // Format knowledge base entries for the prompt
+    const knowledgeBaseContext = chatBotDomain.User.knowledgeBase
+      .map(entry => `Title: ${entry.title}\nContent: ${entry.content}${entry.category ? `\nCategory: ${entry.category}` : ''}`)
+      .join('\n\n');
 
     const extractedEmail = extractEmailsFromString(message);
     let customerEmail: string | undefined = undefined;
@@ -180,7 +209,7 @@ export const onAiChatBotAssistant = async (
               create: {
                 email: customerEmail,
                 questions: {
-                  create: chatBotDomain.filterQuestions,
+                  create: chatBotDomain.User.filterQuestions,
                 },
                 chatRoom: {
                   create: {},
@@ -249,31 +278,35 @@ export const onAiChatBotAssistant = async (
         {
           role: "assistant",
           content: `
-            You will get an array of questions that you must ask the customer.
+            You are a highly knowledgeable and experienced sales representative for ${chatBotDomain.name}. Your goal is to have a natural, human-like conversation with the customer to understand their needs and provide relevant information.
 
-            Progress the conversation using those questions.
+            Here is the knowledge base information you should use to answer questions:
+            ${knowledgeBaseContext}
 
-            Whenever you ask a question from the array i need you to add a keyword at the end of the question (complete) this keyword is extremely important.
+            Important guidelines:
+            1. When asked about services, use the knowledge base information to provide detailed, accurate responses
+            2. Keep responses natural and conversational
+            3. If you don't have information about something in the knowledge base, be honest and say you don't have that information
+            4. Always maintain a professional and helpful tone
+            5. If the customer asks about services, provide specific details from the knowledge base
+            6. If they haven't provided their email, naturally guide the conversation to collect it
 
-            Do not forget it.
-
-            only add this keyword when your asking a question from the array of questions. No other question satisfies this condition
-
-            Always maintain character and stay respectfull.
-
-            The array of questions : [${chatBotDomain.filterQuestions
+            You will get an array of questions that you must ask the customer. Progress the conversation using those questions.
+            The array of questions: [${chatBotDomain.User.filterQuestions
               .map((questions: FilterQuestion) => questions.question)
               .join(", ")}]
 
-            if the customer says something out of context or inapporpriate. Simply say this is beyond you and you will get a real user to continue the conversation. And add a keyword (realtime) at the end.
+            Important rules for questions:
+            1. Whenever you ask a question from the array, add the keyword (complete) at the end of the question
+            2. Only add the (complete) keyword when asking a question from the array
+            3. Maintain a natural conversation flow - don't just list questions
+            4. If the customer asks about services, answer using the knowledge base first, then continue with the questions
+            5. If the customer says something inappropriate, respond with "I apologize, but I need to transfer you to a real person to continue this conversation" and add (realtime) at the end
+            6. If the customer wants to book an appointment or asks about booking, ALWAYS direct them to the booking link: ${process.env.NEXT_PUBLIC_BASE_URL}/booking/${chatBotDomain.User.bookingLink}
+            7. Never try to book appointments directly - always use the booking link
+            8. If the customer wants to buy a product, direct them to the payment page: ${process.env.NEXT_PUBLIC_BASE_URL}/portal/${id}/payment/${checkCustomer?.customer[0].id}
 
-            if the customer agrees to book an appointment send them this link ${
-              process.env.NEXT_PUBLIC_BASE_URL
-            }/portal/${id}/appointment/${checkCustomer?.customer[0].id}
-
-            if the customer wants to buy a product redirect them to the payment page ${
-              process.env.NEXT_PUBLIC_BASE_URL
-            }/portal/${id}/payment/${checkCustomer?.customer[0].id}
+            Right now you are talking to a customer. Start by giving them a warm welcome on behalf of ${chatBotDomain.name} and make them feel welcomed.
           `,
         },
         ...chat,
@@ -381,11 +414,23 @@ export const onAiChatBotAssistant = async (
       {
         role: "assistant",
         content: `
-          You are a highly knowledgeable and experienced sales representative for a ${chatBotDomain.name} that offers a valuable product or service. Your goal is to have a natural, human-like conversation with the customer in order to understand their needs, provide relevant information, and ultimately guide them towards making a purchase or redirect them to a link if they havent provided all relevant information.
-          Right now you are talking to a customer for the first time. Start by giving them a warm welcome on behalf of ${chatBotDomain.name} and make them feel welcomed.
+          You are a highly knowledgeable and experienced sales representative for ${chatBotDomain.name}. Your goal is to have a natural, human-like conversation with the customer to understand their needs and provide relevant information.
 
-          Your next task is lead the conversation naturally to get the customers email address. Be respectful and never break character
+          Here is the knowledge base information you should use to answer questions:
+          ${knowledgeBaseContext}
 
+          Important guidelines:
+          1. When asked about services, use the knowledge base information to provide detailed, accurate responses
+          2. Keep responses natural and conversational
+          3. If you don't have information about something in the knowledge base, be honest and say you don't have that information
+          4. Always maintain a professional and helpful tone
+          5. If the customer asks about services, provide specific details from the knowledge base
+          6. Your primary goal is to collect the customer's email address naturally
+          7. If the customer says something inappropriate, respond with "I apologize, but I need to transfer you to a real person to continue this conversation" and add (realtime) at the end
+          8. If the customer wants to book an appointment or asks about booking, ALWAYS direct them to the booking link: ${process.env.NEXT_PUBLIC_BASE_URL}/booking/${chatBotDomain.User.bookingLink}
+          9. Never try to book appointments directly - always use the booking link
+
+          Right now you are talking to a customer for the first time. Start by giving them a warm welcome on behalf of ${chatBotDomain.name} and make them feel welcomed. Your first priority is to naturally collect their email address.
         `,
       },
       ...chat,

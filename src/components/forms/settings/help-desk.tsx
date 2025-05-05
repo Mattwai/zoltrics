@@ -43,14 +43,14 @@ const HelpDesk = ({ id }: Props) => {
           <div className="flex flex-col gap-3">
             <Section
               label="Answer to question"
-              message="The answer for the question above."
+              message="The answer for the question above"
             />
             <FormGenerator
               inputType="textarea"
               register={register}
               errors={errors}
-              name="answer"
               form="help-desk-form"
+              name="answer"
               placeholder="Type your answer"
               type="text"
               lines={5}

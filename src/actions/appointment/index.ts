@@ -166,8 +166,8 @@ export const onGetAllBookingsForCurrentUser = async (id: string) => {
               },
             },
           },
-          Domain: null,
         },
+        domainId: null,
       },
       select: {
         id: true,
@@ -237,7 +237,7 @@ export const getUserAppointments = async () => {
                 },
               },
             },
-            Domain: null,
+            domainId: null,
           },
         },
       });
@@ -259,6 +259,10 @@ export const onGetUserByBookingLink = async (bookingLink: string) => {
     const user = await client.user.findUnique({
       where: {
         bookingLink,
+      },
+      include: {
+        chatBot: true,
+        helpdesk: true,
       },
     });
     return user;

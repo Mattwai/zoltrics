@@ -1,6 +1,10 @@
 import React from "react";
 
-export const BotIcon = () => {
+type Props = {
+  className?: string;
+};
+
+export const BotIcon = ({ className }: Props) => {
   return (
     <svg
       width="47"
@@ -8,6 +12,7 @@ export const BotIcon = () => {
       viewBox="0 0 47 47"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      className={className}
     >
       <path
         d="M16.8297 20.6851H30.3231"

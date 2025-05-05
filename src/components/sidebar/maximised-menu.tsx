@@ -2,8 +2,10 @@ import { SIDE_BAR_MENU } from "@/constants/menu";
 import SettingsIcon from "@/icons/settings-icon";
 import { LogOut, Menu } from "lucide-react";
 import Image from "next/image";
-import DomainMenu from "./domain-menu";
 import MenuItem from "./menu-item";
+import ChatIcon from "@/icons/chat-icon";
+import HelpDeskIcon from "@/icons/help-desk-icon";
+import TimerIcon from "@/icons/timer-icon";
 
 type Props = {
   onExpand(): void;
@@ -49,10 +51,28 @@ const MaxMenu = ({ current, domains, onExpand, onSignOut }: Props) => {
           {/* <DomainMenu domains={domains} /> */}
         </div>
         <div className="flex flex-col">
-          <p className="text-xs text-gray-500 mb-3">OPTIONS</p>
+          <p className="text-xs text-gray-500 mb-3">SETTINGS</p>
           <MenuItem
             size="max"
-            label="Settings"
+            label="Chatbot"
+            icon={<ChatIcon />}
+            path="chatbot-settings"
+          />
+          <MenuItem
+            size="max"
+            label="Products"
+            icon={<HelpDeskIcon />}
+            path="product-settings"
+          />
+          <MenuItem
+            size="max"
+            label="Appointments"
+            icon={<TimerIcon />}
+            path="appointment-settings"
+          />
+          <MenuItem
+            size="max"
+            label="General"
             icon={<SettingsIcon />}
             path="settings"
           />

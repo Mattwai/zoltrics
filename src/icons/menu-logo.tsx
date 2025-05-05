@@ -4,7 +4,7 @@ type MenuLogoProps = {
   onClick(): void;
 };
 
-export const MenuLogo = ({ onClick }: MenuLogoProps) => {
+const MenuLogo = ({ onClick }: MenuLogoProps) => {
   return (
     <svg
       onClick={onClick}
@@ -36,3 +36,5 @@ export const MenuLogo = ({ onClick }: MenuLogoProps) => {
     </svg>
   );
 };
+
+export default MenuLogo;
