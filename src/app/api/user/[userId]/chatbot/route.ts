@@ -21,6 +21,13 @@ type UserWithRelations = {
     content: string;
     category?: string;
   }[];
+  domains: {
+    name: string;
+    products: {
+      name: string;
+      price: number;
+    }[];
+  }[];
 };
 
 export async function GET(
@@ -35,6 +42,7 @@ export async function GET(
       include: {
         chatBot: true,
         helpdesk: true,
+        domains: true,
       },
     }) as UserWithRelations | null;
 
@@ -56,6 +64,13 @@ export async function GET(
       textColor: chatBot?.textColor || "#000000",
       helpdesk: chatBot?.helpdesk || false,
       helpdeskQuestions: helpdesk || [],
+      domains: user.domains.map(domain => ({
+        name: domain.name,
+        products: domain.products.map(product => ({
+          name: product.name,
+          price: product.price,
+        })),
+      })),
     });
   } catch (error) {
     console.error("Error in GET /api/user/[userId]/chatbot:", error);
@@ -79,14 +94,6 @@ export async function POST(
         console.error("DeepSeek API key is not set");
         return NextResponse.json(
           { error: "DeepSeek API key is not configured" },
-          { status: 500 }
-        );
-      }
-
-      if (!process.env.DEEPSEEK_API_URL) {
-        console.error("DeepSeek API url is not set");
-        return NextResponse.json(
-          { error: "DeepSeek API url is not configured" },
           { status: 500 }
         );
       }
@@ -126,7 +133,7 @@ export async function POST(
 
     // If no relevant information found, use DeepSeek
     try {
-      const response = await fetch(process.env.DEEPSEEK_API_URL, {
+      const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -138,16 +145,30 @@ export async function POST(
             {
               role: "system",
               content: `You are a helpful assistant for ${user.name || "the business"}. Your goal is to help users with their questions.
-              
-              Here is the information about FAQs:
-              
+
+              IMPORTANT: Follow this EXACT response format with proper line breaks, tabs, and spacing. Copy this format exactly:
+
+              Hello! How can I assist you with your booking today?
+
+              Quick Options:
+                  - Popular Services: [service name] ($[price])
+                  - Next Available Slots:
+                      - [date]: [time] ([duration])
+
+              Would you like to book one of these times? Or ask a question? Just say "book" or type your question!
+
+              Available Services:
+                  ${user.domains.flatMap(d => d.products).map(p => `${p.name} - $${p.price}`).join('\n                ') || "No products available"}
+
               FAQs:
-              ${user.helpdesk?.map(hd => `Q: ${hd.question}\nA: ${hd.answer}`).join('\n\n') || "No FAQ information available"}
-              
-              Knowledge Base:
-              ${user.knowledgeBase?.map(kb => `${kb.title}:\n${kb.content}`).join('\n\n') || "No knowledge base information available"}
-              
-              Be friendly, professional, and direct in your responses.`
+                  ${user.helpdesk?.map(hd => `Q: ${hd.question}\n                A: ${hd.answer}`).join('\n\n                ') || "No FAQ information available"}
+
+              Remember:
+              1. Use EXACTLY 4 spaces for indentation
+              2. Add TWO newlines between major sections
+              3. Add ONE newline between list items
+              4. Keep the exact format shown above
+              5. Don't add any extra formatting or emojis`
             },
             {
               role: "user",

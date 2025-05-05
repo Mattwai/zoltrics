@@ -10,14 +10,6 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!process.env.DEEPSEEK_API_URL) {
-      console.error("DeepSeek API URL is not set");
-      return NextResponse.json(
-        { error: "DeepSeek API URL is not configured" },
-        { status: 500 }
-      );
-    }
-
     const { messages } = await request.json();
 
     if (!messages || !Array.isArray(messages)) {
@@ -27,7 +19,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const response = await fetch(process.env.DEEPSEEK_API_URL, {
+    const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

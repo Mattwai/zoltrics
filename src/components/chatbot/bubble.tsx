@@ -1,5 +1,6 @@
 import { cn, extractUUIDFromString, getMonthName } from "@/lib/utils";
 import Link from "next/link";
+import React from "react";
 
 type Props = {
   message: {
@@ -20,18 +21,16 @@ const Bubble = ({ message, createdAt }: Props) => {
 
   return (
     <div
-      className={cn(
-        "flex w-full",
-        isUser ? "justify-end" : "justify-start"
-      )}
+      className={`flex ${
+        message.role === "assistant" ? "justify-start" : "justify-end"
+      }`}
     >
       <div
-        className={cn(
-          "flex max-w-[80%] flex-col gap-2 rounded-lg p-3",
-          isUser
-            ? "bg-royalPurple text-white"
-            : "bg-porcelain text-black"
-        )}
+        className={`max-w-[80%] rounded-lg p-3 ${
+          message.role === "assistant"
+            ? "bg-gray-100"
+            : "bg-purple-500 text-white"
+        }`}
       >
         {createdAt ? (
           <div className="flex gap-2 text-xs text-gray-600">
@@ -50,7 +49,10 @@ const Bubble = ({ message, createdAt }: Props) => {
             }`}
           </p>
         )}
-        <p className="text-sm">{content}</p>
+        <div 
+          className="whitespace-pre-wrap"
+          dangerouslySetInnerHTML={{ __html: content }}
+        />
         {link && (
           <a
             href={link}

@@ -93,10 +93,6 @@ export const onAiChatBotAssistant = async (
       throw new Error("DeepSeek API key is not configured");
     }
 
-    if (!process.env.DEEPSEEK_API_URL) {
-      throw new Error("DeepSeek API URL is not configured");
-    }
-
     const bot = await prisma.chatBot.findUnique({
       where: {
         id: botId,
@@ -116,7 +112,7 @@ export const onAiChatBotAssistant = async (
       throw new Error("Bot not found");
     }
 
-    const response = await fetch(process.env.DEEPSEEK_API_URL, {
+    const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

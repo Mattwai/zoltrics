@@ -109,6 +109,11 @@ export const BotWindow = forwardRef<HTMLDivElement, Props>(
                   e.preventDefault();
                   if (onChat) {
                     onChat();
+                    // Clear the input after submission
+                    const input = e.currentTarget.querySelector('input');
+                    if (input) {
+                      input.value = '';
+                    }
                   }
                 }}
                 className="flex px-3 py-1 flex-col flex-1 bg-porcelain"

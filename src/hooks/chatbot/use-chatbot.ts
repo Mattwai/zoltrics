@@ -94,14 +94,22 @@ export const useChatBot = (userId?: string, initialChatBot?: {
     setCurrentBotId(id);
     const chatbot = await onGetCurrentChatBot(id);
     if (chatbot) {
-      setOnChats((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: chatbot.chatBot?.welcomeMessage || "Hello! How can I assist you with your booking today?",
+      setCurrentBot({
+        name: chatbot.User?.name || "BookerBuddy",
+        chatBot: {
+          id: chatbot.id,
+          welcomeMessage: chatbot.welcomeMessage,
+          background: chatbot.background,
+          textColor: chatbot.textColor,
+          helpdesk: chatbot.helpdesk,
         },
-      ]);
-      setCurrentBot(chatbot);
+        helpdesk: chatbot.User?.helpdesk.map(h => ({
+          id: h.id,
+          question: h.question,
+          answer: h.answer,
+          domainId: null
+        })) || [],
+      });
       setLoading(false);
     }
   };
@@ -113,13 +121,6 @@ export const useChatBot = (userId?: string, initialChatBot?: {
         const data = await response.json();
         if (data.chatbot) {
           setCurrentBotId(data.chatbot.id);
-          setOnChats((prev) => [
-            ...prev,
-            {
-              role: "assistant",
-              content: data.chatbot.welcomeMessage || "Hello! How can I assist you with your booking today?",
-            },
-          ]);
           setCurrentBot({
             name: data.chatbot.name || "BookerBuddy",
             chatBot: {
@@ -141,13 +142,6 @@ export const useChatBot = (userId?: string, initialChatBot?: {
 
   useEffect(() => {
     if (initialChatBot) {
-      setOnChats((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: initialChatBot.chatBot?.welcomeMessage || "Hello! How can I assist you with your booking today?",
-        },
-      ]);
       setLoading(false);
     } else if (userId) {
       onGetUserChatBot(userId);
@@ -172,6 +166,9 @@ export const useChatBot = (userId?: string, initialChatBot?: {
       role: "user" as const,
       content: values.content.trim(),
     };
+
+    // Clear the input immediately
+    reset({ content: '' });
 
     // Add user message to chat
     if (!onRealTime?.mode) {
@@ -227,15 +224,7 @@ export const useChatBot = (userId?: string, initialChatBot?: {
       setOnAiTyping(false);
       
       if (response) {
-        if (response.live) {
-          setOnRealTime((prev) => ({
-            ...prev,
-            chatroom: response.chatRoom,
-            mode: response.live,
-          }));
-        } else {
-          setOnChats((prev) => [...prev, response.response]);
-        }
+        setOnChats((prev) => [...prev, response.response]);
       }
     } catch (error) {
       console.error("Error in chatbot interaction:", error);
@@ -249,8 +238,6 @@ export const useChatBot = (userId?: string, initialChatBot?: {
         },
       ]);
     }
-    
-    reset();
   });
 
   return {
