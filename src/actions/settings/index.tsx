@@ -484,28 +484,89 @@ export const onCreateNewDomainProduct = async (
   price: string
 ) => {
   try {
-    const product = await client.domain.update({
-      where: {
-        id,
-      },
-      data: {
-        products: {
-          create: {
-            name,
-            price: parseInt(price),
-          },
-        },
-      },
-    });
-
-    if (product) {
+    // Validate price is a valid number
+    const priceNum = parseInt(price);
+    if (isNaN(priceNum)) {
       return {
-        status: 200,
-        message: "Product successfully created",
+        status: 400,
+        message: "Price must be a valid number",
       };
     }
+
+    // First try to find an existing domain
+    const domain = await client.domain.findFirst({
+      where: { id },
+    });
+
+    if (domain) {
+      // If domain exists, create product under that domain
+      const product = await client.domain.update({
+        where: {
+          id,
+        },
+        data: {
+          products: {
+            create: {
+              name,
+              price: priceNum,
+            },
+          },
+        },
+      });
+
+      if (product) {
+        return {
+          status: 200,
+          message: "Product successfully created",
+        };
+      }
+    } else {
+      // If no domain exists, create a default domain and add the product
+      const session = await getServerSession(authConfig);
+      if (!session?.user?.id) {
+        return {
+          status: 400,
+          message: "User not authenticated",
+        };
+      }
+
+      const newDomain = await client.user.update({
+        where: {
+          id: session.user.id,
+        },
+        data: {
+          domains: {
+            create: {
+              name: "default",
+              products: {
+                create: {
+                  name,
+                  price: priceNum,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (newDomain) {
+        return {
+          status: 200,
+          message: "Product successfully created",
+        };
+      }
+    }
+
+    return {
+      status: 400,
+      message: "Failed to create product",
+    };
   } catch (error) {
-    console.log(error);
+    console.error("Error creating product:", error);
+    return {
+      status: 400,
+      message: "Failed to create product. Please try again.",
+    };
   }
 };
 
@@ -527,7 +588,15 @@ const generateBookingLink = async () => {
 export const onGetUser = async (): Promise<(User & {
   chatBot: ChatBot | null;
   helpdesk: HelpDesk[];
-  domains: Domain[];
+  domains: (Domain & {
+    products: {
+      id: string;
+      name: string;
+      price: number;
+      createdAt: Date;
+      domainId: string | null;
+    }[];
+  })[];
 }) | null> => {
   try {
     const session = await getServerSession(authConfig);
@@ -541,7 +610,11 @@ export const onGetUser = async (): Promise<(User & {
         id: session.user.id,
       },
       include: {
-        domains: true,
+        domains: {
+          include: {
+            products: true
+          }
+        },
         chatBot: true,
         helpdesk: true,
       },
@@ -559,7 +632,11 @@ export const onGetUser = async (): Promise<(User & {
         where: { id: user.id },
         data: { bookingLink: newBookingLink },
         include: {
-          domains: true,
+          domains: {
+            include: {
+              products: true
+            }
+          },
           chatBot: true,
           helpdesk: true,
         },
@@ -664,5 +741,64 @@ export const onGetAllKnowledgeBaseEntries = async (userId: string) => {
     };
   } catch (error) {
     console.log(error);
+  }
+};
+
+export const onUpdateProductStatus = async (productId: string, isLive: boolean) => {
+  try {
+    const product = await client.product.update({
+      where: {
+        id: productId,
+      },
+      data: {
+        isLive,
+      },
+    });
+
+    if (product) {
+      return {
+        status: 200,
+        message: `Product ${isLive ? 'activated' : 'deactivated'} successfully`,
+      };
+    }
+
+    return {
+      status: 400,
+      message: "Failed to update product status",
+    };
+  } catch (error) {
+    console.error("Error updating product status:", error);
+    return {
+      status: 400,
+      message: "Failed to update product status. Please try again.",
+    };
+  }
+};
+
+export const onDeleteProduct = async (productId: string) => {
+  try {
+    const product = await client.product.delete({
+      where: {
+        id: productId,
+      },
+    });
+
+    if (product) {
+      return {
+        status: 200,
+        message: "Product deleted successfully",
+      };
+    }
+
+    return {
+      status: 400,
+      message: "Failed to delete product",
+    };
+  } catch (error) {
+    console.error("Error deleting product:", error);
+    return {
+      status: 400,
+      message: "Failed to delete product. Please try again.",
+    };
   }
 };

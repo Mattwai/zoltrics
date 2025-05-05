@@ -46,13 +46,20 @@ const formSchema = z.object({
     required_error: "Please select a date",
   }),
   time: z.string().min(1, "Please select a time"),
+  productId: z.string().min(1, "Please select a product"),
 });
 
 type BookingFormProps = {
   userId: string;
+  products: {
+    id: string;
+    name: string;
+    price: number;
+    isLive: boolean;
+  }[];
 };
 
-const BookingForm = ({ userId }: BookingFormProps) => {
+const BookingForm = ({ userId, products }: BookingFormProps) => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -94,11 +101,6 @@ const BookingForm = ({ userId }: BookingFormProps) => {
           form.setValue('time', '');
         }
         setError(null);
-        
-        // If no slots available for this date, add it to disabled dates
-        if (slots.length === 0) {
-          setDisabledDates(prev => [...prev, date]);
-        }
       } catch (err) {
         console.error('Error fetching time slots:', err);
         setError('Failed to load available time slots');
@@ -118,6 +120,11 @@ const BookingForm = ({ userId }: BookingFormProps) => {
         throw new Error('Failed to fetch available time slots');
       }
       const data = await response.json();
+      
+      // If no slots are returned, the date might be blocked
+      if (!data.slots || data.slots.length === 0) {
+        return [];
+      }
       
       // Process the slots to include formatted duration and calculate slots remaining
       const processedSlots = data.slots.map((slot: any) => {
@@ -359,6 +366,30 @@ const BookingForm = ({ userId }: BookingFormProps) => {
 
         <FormField
           control={form.control}
+          name="productId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Select a Service</FormLabel>
+              <select
+                className="w-full rounded-md border border-input bg-background px-3 py-2"
+                {...field}
+              >
+                <option value="">Select a service</option>
+                {products
+                  .filter(product => product.isLive)
+                  .map(product => (
+                    <option key={product.id} value={product.id}>
+                      {product.name} - ${product.price}
+                    </option>
+                  ))}
+              </select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
           name="date"
           render={({ field }) => (
             <FormItem className="flex flex-col">
@@ -392,13 +423,7 @@ const BookingForm = ({ userId }: BookingFormProps) => {
                     }}
                     disabled={(date) =>
                       date < new Date(new Date().setHours(0, 0, 0, 0)) ||
-                      date > new Date(new Date().setMonth(new Date().getMonth() + 3)) ||
-                      disabledDates.some(
-                        (disabledDate) =>
-                          disabledDate.getFullYear() === date.getFullYear() &&
-                          disabledDate.getMonth() === date.getMonth() &&
-                          disabledDate.getDate() === date.getDate()
-                      )
+                      date > new Date(new Date().setMonth(new Date().getMonth() + 3))
                     }
                     initialFocus
                   />
@@ -426,8 +451,7 @@ const BookingForm = ({ userId }: BookingFormProps) => {
                       variant={field.value === slot.slot ? "default" : "outline"}
                       className={cn(
                         "justify-start text-left h-auto py-2 flex flex-col items-start",
-                        field.value === slot.slot && "bg-grandis text-black",
-                        slot.isCustom && "border-blue-400 border-2"
+                        field.value === slot.slot && "bg-grandis text-black"
                       )}
                       onClick={() => {
                         handleTimeSlotClick(slot);
@@ -443,14 +467,11 @@ const BookingForm = ({ userId }: BookingFormProps) => {
                           <span className="ml-auto">{slot.slotsRemaining} {slot.slotsRemaining === 1 ? 'slot' : 'slots'} left</span>
                         )}
                       </div>
-                      {slot.isCustom && (
-                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded mt-1 font-medium">Custom Slot</span>
-                      )}
                     </Button>
                   ))
                 ) : (
-                  <div className="col-span-2 text-center py-4 text-gray-500">
-                    No available time slots for this date
+                  <div className="col-span-2 text-center py-4">
+                    <div className="text-gray-500 mb-2">No available time slots for this date</div>
                   </div>
                 )}
               </div>
