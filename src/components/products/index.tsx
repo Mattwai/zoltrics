@@ -12,13 +12,23 @@ type Props = {
     id: string;
     name: string;
     price: number;
-    createdAt: Date;
+    createdAt: Date | string;
     domainId: string | null;
   }[];
   id: string;
+  onProductAdded?: () => void;
 };
 
-const ProductTable = ({ id, products }: Props) => {
+const ProductTable = ({ id, products, onProductAdded }: Props) => {
+  const formatDate = (date: Date | string) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return {
+      day: dateObj.getDate(),
+      month: dateObj.getMonth(),
+      year: dateObj.getFullYear()
+    };
+  };
+
   return (
     <div>
       <div>
@@ -51,24 +61,63 @@ const ProductTable = ({ id, products }: Props) => {
                 </>
               }
             >
-              <CreateProductForm id={id} />
+              <CreateProductForm id={id} onProductAdded={onProductAdded} />
             </SideSheet>
           </div>
         }
       >
         <TabsContent value="All products">
-          <DataTable headers={["Featured Image", "Name", "Pricing", "Created"]}>
-            {products.map((product) => (
-              <TableRow key={product.id}>
-                <TableCell>${product.name}</TableCell>
-                <TableCell>{product.price}</TableCell>
-                <TableCell className="text-right">
-                  {product.createdAt.getDate()}{" "}
-                  {getMonthName(product.createdAt.getMonth())}{" "}
-                  {product.createdAt.getFullYear()}
-                </TableCell>
-              </TableRow>
-            ))}
+          <DataTable headers={["Name", "Price", "Created"]}>
+            {products.map((product) => {
+              const date = formatDate(product.createdAt);
+              return (
+                <TableRow key={product.id}>
+                  <TableCell>{product.name}</TableCell>
+                  <TableCell>${product.price}</TableCell>
+                  <TableCell className="text-right">
+                    {date.day}{" "}
+                    {getMonthName(date.month)}{" "}
+                    {date.year}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </DataTable>
+        </TabsContent>
+        <TabsContent value="Live">
+          <DataTable headers={["Name", "Price", "Created"]}>
+            {products.map((product) => {
+              const date = formatDate(product.createdAt);
+              return (
+                <TableRow key={product.id}>
+                  <TableCell>{product.name}</TableCell>
+                  <TableCell>${product.price}</TableCell>
+                  <TableCell className="text-right">
+                    {date.day}{" "}
+                    {getMonthName(date.month)}{" "}
+                    {date.year}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </DataTable>
+        </TabsContent>
+        <TabsContent value="Deactivated">
+          <DataTable headers={["Name", "Price", "Created"]}>
+            {products.map((product) => {
+              const date = formatDate(product.createdAt);
+              return (
+                <TableRow key={product.id}>
+                  <TableCell>{product.name}</TableCell>
+                  <TableCell>${product.price}</TableCell>
+                  <TableCell className="text-right">
+                    {date.day}{" "}
+                    {getMonthName(date.month)}{" "}
+                    {date.year}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </DataTable>
         </TabsContent>
       </TabsMenu>

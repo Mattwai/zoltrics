@@ -17,7 +17,6 @@ export type HelpDeskQuestionsProps = {
 
 export type AddProductProps = {
   name: string;
-  image?: any;
   price: string;
 };
 
@@ -98,13 +97,11 @@ export const AddProductSchema = z.object({
   name: z
     .string()
     .min(3, { message: "The name must have atleast 3 characters" }),
-  image: z
-    .any()
-    .refine((files) => files?.[0]?.size <= MAX_UPLOAD_SIZE, {
-      message: "Your file size must be less then 2MB",
+  price: z.string()
+    .refine((val) => !isNaN(parseInt(val)), {
+      message: "Price must be a valid number"
     })
-    .refine((files) => ACCEPTED_FILE_TYPES.includes(files?.[0]?.type), {
-      message: "Only JPG, JPEG & PNG are accepted file formats",
+    .refine((val) => parseInt(val) > 0, {
+      message: "Price must be greater than 0"
     }),
-  price: z.string(),
 });
