@@ -29,7 +29,7 @@ const Bubble = ({ message, createdAt }: Props) => {
         className={`max-w-[80%] rounded-lg p-3 ${
           message.role === "assistant"
             ? "bg-gray-100"
-            : "bg-purple-500 text-white"
+            : "bg-purple text-white"
         }`}
       >
         {createdAt ? (

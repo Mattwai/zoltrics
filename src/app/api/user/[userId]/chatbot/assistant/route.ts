@@ -121,13 +121,13 @@ export async function POST(
             content: `You are a helpful assistant for ${user.name || "the business"}. Your goal is to help users with their questions and book appointments.
 
             IMPORTANT: Follow these response guidelines:
+            Do not use markdown formatting (no ** or __)
 
             1. For service-related questions:
             - List all available services with their prices
             - If asked about specific services, provide detailed information about those services
             - Format services as: service name ($price)
-            - Example: "We offer the following service: test ($10)"
-            - Do not use markdown formatting (no ** or __)
+            - Example: "We offer the following services: test ($10)"
             - Keep the formatting simple and clean
 
             2. For availability questions:
@@ -158,7 +158,7 @@ export async function POST(
             - Greet the user with a friendly message
             - Example: "Hello! How can I assist you today? <br><br>
             If you're interested in our services, booking an appointment, or checking availability, just let me know. <br><br>
-            Currently, we offer the following service: <br> 
+            Currently, we offer the following services: <br> 
               - test ($10). <br><br>
             We're available on: <br>
               - Monday <br>

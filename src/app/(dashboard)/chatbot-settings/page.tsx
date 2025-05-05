@@ -21,6 +21,8 @@ import { HELP_DESK_TABS_MENU } from "@/constants/menu";
 import HelpDesk from "@/components/forms/settings/help-desk";
 import FilterQuestions from "@/components/forms/settings/filter-questions";
 import KnowledgeBase from "@/components/forms/settings/knowledge-base";
+import { SideSheet } from "@/components/sheet";
+import { Plus } from "lucide-react";
 import { User } from "@prisma/client";
 
 type UserWithChatBot = User & {
@@ -105,7 +107,26 @@ const Page = async (props: Props) => {
                 train your bot to act the way you want it to.
               </p>
             </div>
-            <TabsMenu triggers={HELP_DESK_TABS_MENU}>
+            <TabsMenu
+              triggers={HELP_DESK_TABS_MENU}
+              button={
+                <div className="flex-1 flex justify-end">
+                  <SideSheet
+                    title="Add Knowledge Base Entry"
+                    description="Create a new entry for your chatbot's knowledge base."
+                    className="flex items-center gap-2 bg-purple px-4 py-2 text-black font-semibold rounded-lg text-sm"
+                    trigger={
+                      <>
+                        <Plus size={20} className="text-white" />
+                        <p className="text-white">Add Entry</p>
+                      </>
+                    }
+                  >
+                    <KnowledgeBase id={user.id} />
+                  </SideSheet>
+                </div>
+              }
+            >
               <TabsContent value="help desk" className="w-full">
                 <HelpDesk id={user.id} />
               </TabsContent>
