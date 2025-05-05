@@ -46,13 +46,20 @@ const formSchema = z.object({
     required_error: "Please select a date",
   }),
   time: z.string().min(1, "Please select a time"),
+  productId: z.string().min(1, "Please select a product"),
 });
 
 type BookingFormProps = {
   userId: string;
+  products: {
+    id: string;
+    name: string;
+    price: number;
+    isLive: boolean;
+  }[];
 };
 
-const BookingForm = ({ userId }: BookingFormProps) => {
+const BookingForm = ({ userId, products }: BookingFormProps) => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -352,6 +359,30 @@ const BookingForm = ({ userId }: BookingFormProps) => {
               <FormControl>
                 <Input placeholder="Your email" {...field} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="productId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Select a Service</FormLabel>
+              <select
+                className="w-full rounded-md border border-input bg-background px-3 py-2"
+                {...field}
+              >
+                <option value="">Select a service</option>
+                {products
+                  .filter(product => product.isLive)
+                  .map(product => (
+                    <option key={product.id} value={product.id}>
+                      {product.name} - ${product.price}
+                    </option>
+                  ))}
+              </select>
               <FormMessage />
             </FormItem>
           )}
