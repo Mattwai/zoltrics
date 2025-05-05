@@ -1,6 +1,6 @@
 import React from "react";
 
-export const BotIcon = () => {
+const BotIcon = () => {
   return (
     <svg
       width="47"
@@ -26,3 +26,5 @@ export const BotIcon = () => {
     </svg>
   );
 };
+
+export default BotIcon;
