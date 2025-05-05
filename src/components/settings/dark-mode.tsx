@@ -23,7 +23,7 @@ const DarkModetoggle = (props: Props) => {
         <div
           className={cn(
             "rounded-2xl overflow-hidden cursor-pointer border-4 border-transparent",
-            theme == "system" && "border-orange"
+            theme == "system" && "border-purple"
           )}
           onClick={() => setTheme("system")}
         >
@@ -32,7 +32,7 @@ const DarkModetoggle = (props: Props) => {
         <div
           className={cn(
             "rounded-2xl overflow-hidden cursor-pointer border-4 border-transparent",
-            theme == "light" && "border-orange"
+            theme == "light" && "border-purple"
           )}
           onClick={() => setTheme("light")}
         >
@@ -41,7 +41,7 @@ const DarkModetoggle = (props: Props) => {
         <div
           className={cn(
             "rounded-2xl overflow-hidden cursor-pointer border-4 border-transparent",
-            theme == "dark" && "border-orange"
+            theme == "dark" && "border-purple"
           )}
           onClick={() => setTheme("dark")}
         >

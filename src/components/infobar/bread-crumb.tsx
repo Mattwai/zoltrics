@@ -25,7 +25,7 @@ const BreadCrumb = (props: Props) => {
             <Switch
               defaultChecked={realtime}
               onClick={(e) => onActivateRealtime(e)}
-              className="data-[state=checked]:bg-orange data-[state=unchecked]:bg-peach"
+              className="data-[state=checked]:bg-purple data-[state=unchecked]:bg-orchid"
             />
           </Loader>
         )}

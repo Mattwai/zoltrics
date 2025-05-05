@@ -62,7 +62,7 @@ const AllAppointments = ({ bookings }: Props) => {
               ) : (
                 <span className={cn(
                   "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold",
-                  "bg-orange/10 text-orange border-transparent"
+                  "bg-purple/10 text-purple border-transparent"
                 )}>
                   {booking.source === "direct_link" ? "Direct Booking" : "Booking Link"}
                 </span>
