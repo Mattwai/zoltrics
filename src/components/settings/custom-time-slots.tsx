@@ -8,7 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Loader } from "@/components/loader";
 import Section from "@/components/section-label";
 import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { format, isAfter, isBefore, startOfDay } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { 
@@ -19,7 +19,9 @@ import {
   DialogFooter 
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { generateTimeOptions, calculateDuration } from "@/lib/time-slots";
+import { generateTimeOptions, calculateDuration, calculateEndTime } from "@/lib/time-slots";
+import { Switch } from "@/components/ui/switch";
+import { AlertCircle, Clock, Calendar as CalendarIcon, X } from "lucide-react";
 
 interface TimeSlot {
   id?: string;
@@ -28,6 +30,7 @@ interface TimeSlot {
   duration: number;
   maxSlots: number;
   isCustom?: boolean;
+  overrideRegular?: boolean;
 }
 
 interface CustomTimeSlotsProps {
@@ -46,6 +49,7 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
   const [availableSlots, setAvailableSlots] = useState<any[]>([]);
   const [editingSlot, setEditingSlot] = useState<TimeSlot | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
   const [newSlot, setNewSlot] = useState<TimeSlot>({
     startTime: "09:00",
     endTime: "09:30",
@@ -68,6 +72,7 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
       const data = await response.json();
       setAvailableSlots(data.slots || []);
       setCustomSlots(data.customSlots || []);
+      setIsBlocked(data.isBlocked || false);
     } catch (error) {
       console.error("Error fetching time slots:", error);
       toast({
@@ -83,6 +88,88 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       setSelectedDate(date);
+      // Reset blocked state when changing dates
+      setIsBlocked(false);
+    }
+  };
+
+  const handleBlockDate = async () => {
+    if (!selectedDate) return;
+    
+    const formattedDate = format(selectedDate, "yyyy-MM-dd");
+    setLoading(true);
+    try {
+      const response = await fetch("/api/bookings/custom-slots", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          date: formattedDate,
+          slots: [],
+          userId,
+          isBlocked: true
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to block date");
+      
+      toast({
+        title: "Success",
+        description: "Date blocked successfully",
+      });
+      
+      fetchTimeSlots(formattedDate);
+      setIsBlocked(true);
+    } catch (error) {
+      console.error("Error blocking date:", error);
+      toast({
+        title: "Error",
+        description: "Failed to block date",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUnblockDate = async () => {
+    if (!selectedDate) return;
+    
+    const formattedDate = format(selectedDate, "yyyy-MM-dd");
+    setLoading(true);
+    try {
+      const response = await fetch("/api/bookings/custom-slots", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          date: formattedDate,
+          slots: [],
+          userId,
+          isBlocked: false
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to unblock date");
+      
+      toast({
+        title: "Success",
+        description: "Date unblocked successfully",
+      });
+      
+      fetchTimeSlots(formattedDate);
+      setIsBlocked(false);
+    } catch (error) {
+      console.error("Error unblocking date:", error);
+      toast({
+        title: "Error",
+        description: "Failed to unblock date",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -112,16 +199,30 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
   const handleRemoveSlot = async (slotId: string) => {
     if (!selectedDate) return;
     
-    // Find the slot to be removed
-    const slotToRemove = customSlots.find(slot => slot.id === slotId);
-    if (!slotToRemove) return;
-    
-    
-    const formattedDate = format(selectedDate, "yyyy-MM-dd");
-    const remainingSlots = customSlots.filter(slot => slot.id !== slotId);
-    
     setLoading(true);
     try {
+      const formattedDate = format(selectedDate, "yyyy-MM-dd");
+      let updatedSlots = [...customSlots];
+      
+      // If it's a regular slot (no id), we need to create a custom slot to override it
+      if (!slotId) {
+        const slotToRemove = availableSlots.find(slot => !slot.id);
+        if (slotToRemove) {
+          // Create a custom slot with the same time but marked as deleted
+          updatedSlots.push({
+            startTime: slotToRemove.slot,
+            endTime: calculateEndTime(slotToRemove.slot, slotToRemove.duration),
+            duration: slotToRemove.duration,
+            maxSlots: 0, // Set maxSlots to 0 to effectively delete it
+            isCustom: true,
+            overrideRegular: true // Add this flag to indicate this is overriding a regular slot
+          });
+        }
+      } else {
+        // For custom slots, just remove them from the array
+        updatedSlots = updatedSlots.filter(slot => slot.id !== slotId);
+      }
+      
       const response = await fetch("/api/bookings/custom-slots", {
         method: "POST",
         headers: {
@@ -129,7 +230,7 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
         },
         body: JSON.stringify({
           date: formattedDate,
-          slots: remainingSlots,
+          slots: updatedSlots,
           userId,
         }),
       });
@@ -141,6 +242,9 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
         description: "Time slot removed successfully",
       });
       
+      // Update the local state
+      setCustomSlots(updatedSlots);
+      // Refresh the available slots
       fetchTimeSlots(formattedDate);
     } catch (error) {
       console.error("Error removing time slot:", error);
@@ -176,14 +280,27 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
     const formattedDate = format(selectedDate, "yyyy-MM-dd");
     let updatedSlots = [...customSlots];
     
-    if (editingSlot?.id) {
-      // Update existing slot
+    // If editing a regular slot (no id), we need to create a custom slot to override it
+    if (!editingSlot?.id) {
+      const regularSlot = availableSlots.find(slot => !slot.id && slot.slot === newSlot.startTime);
+      if (regularSlot) {
+        // Remove any existing custom slot for this time
+        updatedSlots = updatedSlots.filter(slot => slot.startTime !== regularSlot.slot);
+        // Add the new custom slot with override flag
+        updatedSlots.push({
+          ...newSlot,
+          isCustom: true,
+          overrideRegular: true // Add this flag to indicate this is overriding a regular slot
+        });
+      } else {
+        // If it's a completely new slot, just add it
+        updatedSlots.push({...newSlot, isCustom: true});
+      }
+    } else {
+      // Update existing custom slot
       updatedSlots = updatedSlots.map(slot => 
         slot.id === editingSlot.id ? {...newSlot, isCustom: true} : slot
       );
-    } else {
-      // Add new slot
-      updatedSlots.push({...newSlot, isCustom: true});
     }
     
     setLoading(true);
@@ -225,54 +342,106 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
       <div className="lg:col-span-1">
         <Section
-          label="Custom Time Slots"
-          message="Create date-specific time slots that are added to your weekly schedule. Select a date on the calendar to view and modify its available slots."
+          label="Date-Specific Settings"
+          message="Manage your availability for specific dates. Block out dates or add custom time slots for holidays, vacations, or special hours."
         />
       </div>
       <div className="lg:col-span-4 space-y-6">
         <div className="p-4 bg-blue-50 rounded-md mb-6">
           <p className="text-sm text-blue-800">
-            <strong>Important:</strong> Custom time slots are displayed alongside your Regular Weekly slots.
-            They do not override your weekly schedule - they add to it.
-            Slots marked as "Custom" are specific to this date and can be edited or removed here.
+            <strong>Quick Actions:</strong> Select a date to block it completely or add custom time slots.
+            Blocked dates will not show any available slots to customers.
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Select Date</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5" />
+                Select Date
+              </CardTitle>
             </CardHeader>
-            <CardContent className="flex justify-center">
+            <CardContent className="flex flex-col gap-4">
               <Calendar
                 mode="single"
                 selected={selectedDate}
                 onSelect={handleDateSelect}
                 className="rounded-md border"
+                disabled={(date) => isBefore(date, startOfDay(new Date()))}
               />
+              {selectedDate && (
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm font-medium">
+                      {format(selectedDate, "MMMM d, yyyy")}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={isBlocked}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          handleBlockDate();
+                        } else {
+                          handleUnblockDate();
+                        }
+                      }}
+                    />
+                    <span className="text-sm text-gray-600">
+                      {isBlocked ? "Blocked" : "Available"}
+                    </span>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Available Time Slots</CardTitle>
-              <Button onClick={handleAddSlot} variant="outline">
-                Add Custom Slot
-              </Button>
+              <CardTitle>Time Slots</CardTitle>
+              {!isBlocked && (
+                <Button onClick={handleAddSlot} variant="outline">
+                  Add Custom Slot
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               {loading ? (
                 <div className="flex justify-center py-8">
                   <Loader loading={true}>Loading slots...</Loader>
                 </div>
+              ) : isBlocked ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900">Date Blocked</h3>
+                  <p className="text-sm text-gray-500 mt-2">
+                    This date is blocked and no appointments can be booked.
+                  </p>
+                </div>
               ) : availableSlots.length > 0 ? (
                 <div className={`space-y-3 ${availableSlots.length > 5 ? 'max-h-[300px] overflow-y-auto pr-2' : ''}`}>
                   {availableSlots.map((slot, index) => {
                     const isCustomSlot = slot.isCustom;
                     return (
-                      <div key={index} className="p-3 border rounded-md flex items-center justify-between">
+                      <div 
+                        key={index} 
+                        className="p-3 border rounded-md flex items-center justify-between hover:border-blue-300 transition-colors cursor-pointer"
+                        onClick={() => {
+                          setEditingSlot(slot);
+                          setNewSlot({
+                            id: slot.id,
+                            startTime: slot.slot,
+                            endTime: calculateEndTime(slot.slot, slot.duration),
+                            duration: slot.duration,
+                            maxSlots: slot.maxSlots || 1
+                          });
+                          setIsDialogOpen(true);
+                        }}
+                      >
                         <div className="space-y-1">
                           <div className="font-medium flex items-center gap-2">
-                            {slot.slot} ({slot.duration} min)
+                            {slot.slot} - {calculateEndTime(slot.slot, slot.duration)} ({slot.duration} min)
                             {isCustomSlot ? (
                               <Badge variant="outline" className="bg-blue-50 text-blue-800">Custom</Badge>
                             ) : (
@@ -283,33 +452,15 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
                             Max bookings: {slot.maxSlots || 1}
                           </div>
                         </div>
-                        {isCustomSlot && (
-                          <div className="flex gap-2">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => handleEditSlot(slot)}
-                            >
-                              Edit
-                            </Button>
-                            <Button 
-                              variant="destructive" 
-                              size="sm"
-                              onClick={() => handleRemoveSlot(slot.id!)}
-                            >
-                              Remove
-                            </Button>
-                          </div>
-                        )}
                       </div>
                     );
                   })}
                 </div>
-              ) :
+              ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  No time slots available for this date
+                  No custom time slots for this date
                 </div>
-              }
+              )}
             </CardContent>
           </Card>
         </div>
@@ -318,71 +469,25 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingSlot ? "Edit Time Slot" : "Add Time Slot"}</DialogTitle>
+            <DialogTitle>Time Slot Settings</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="startTime">Start Time</Label>
-                <select
-                  id="startTime"
-                  value={newSlot.startTime}
-                  onChange={(e) => {
-                    const newStartTime = e.target.value;
-                    const calculatedDuration = calculateDuration(newStartTime, newSlot.endTime);
-                    setNewSlot({
-                      ...newSlot, 
-                      startTime: newStartTime,
-                      duration: calculatedDuration
-                    });
-                  }}
-                  className="w-full mt-1 rounded-md"
-                >
-                  {TIME_OPTIONS.map((time) => (
-                    <option key={time} value={time}>
-                      {time}
-                    </option>
-                  ))}
-                </select>
+            <div className="space-y-2">
+              <div className="font-medium">Time</div>
+              <div className="text-sm text-muted-foreground">
+                {newSlot.startTime} - {newSlot.endTime}
               </div>
-              <div>
-                <Label htmlFor="endTime">End Time</Label>
-                <select
-                  id="endTime"
-                  value={newSlot.endTime}
-                  onChange={(e) => {
-                    const newEndTime = e.target.value;
-                    const calculatedDuration = calculateDuration(newSlot.startTime, newEndTime);
-                    setNewSlot({
-                      ...newSlot, 
-                      endTime: newEndTime,
-                      duration: calculatedDuration
-                    });
-                  }}
-                  className="w-full mt-1 rounded-md"
-                >
-                  {TIME_OPTIONS.map((time) => (
-                    <option key={time} value={time}>
-                      {time}
-                    </option>
-                  ))}
-                </select>
+            </div>
+
+            <div className="space-y-2">
+              <div className="font-medium">Duration</div>
+              <div className="text-sm text-muted-foreground">
+                {newSlot.duration} minutes
               </div>
             </div>
 
             <div>
-              <Label htmlFor="duration">Duration (minutes)</Label>
-              <Input
-                id="duration"
-                type="number"
-                value={newSlot.duration}
-                disabled
-                className="w-full mt-1 bg-gray-100 text-gray-600"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="maxSlots">Maximum Bookings</Label>
+              <Label htmlFor="maxSlots">Maximum Concurrent Bookings</Label>
               <Input
                 id="maxSlots"
                 type="number"
@@ -394,11 +499,20 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
             </div>
           </div>
           <DialogFooter>
+            <Button 
+              variant="destructive" 
+              onClick={() => {
+                handleRemoveSlot(editingSlot!.id!);
+                setIsDialogOpen(false);
+              }}
+            >
+              Delete Slot
+            </Button>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleSaveSlot}>
-              <Loader loading={loading}>Save</Loader>
+              <Loader loading={loading}>Save Changes</Loader>
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -203,7 +203,7 @@ export const useFilterQuestions = (userId: string) => {
   };
 };
 
-export const useProducts = (domainId: string) => {
+export const useProducts = (userId: string) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState<boolean>(false);
   const {
@@ -218,25 +218,51 @@ export const useProducts = (domainId: string) => {
   const onCreateNewProduct = handleSubmit(async (values) => {
     try {
       setLoading(true);
-      const product = await onCreateNewDomainProduct(
+      // Get the first domain ID from the user's domains
+      const response = await fetch("/api/user");
+      if (!response.ok) {
+        throw new Error("Failed to fetch user data");
+      }
+      const userData = await response.json();
+      const domainId = userData.domains[0]?.id || userId; // Use userId if no domain exists
+
+      const result = await onCreateNewDomainProduct(
         domainId,
         values.name,
         values.price
       );
-      if (product) {
-        reset();
+
+      if (result?.status === 200) {
         toast({
           title: "Success",
-          description: product.message,
+          description: "Product created successfully",
         });
-        setLoading(false);
+        reset();
+      } else {
+        toast({
+          title: "Error",
+          description: result?.message || "Failed to create product",
+          variant: "destructive",
+        });
       }
     } catch (error) {
-      console.log(error);
+      console.error("Error creating product:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create product. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   });
 
-  return { onCreateNewProduct, register, errors, loading };
+  return {
+    onCreateNewProduct,
+    register,
+    errors,
+    loading,
+  };
 };
 
 const KnowledgeBaseSchema = z.object({

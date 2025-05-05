@@ -29,6 +29,14 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Get blocked status for the date
+    const blockedDate = await client.blockedDate.findFirst({
+      where: {
+        userId,
+        date: selectedDate,
+      },
+    });
+
     // Get weekly booking calendar settings
     const calendarSettings = await client.bookingCalendarSettings.findUnique({
       where: {
@@ -38,38 +46,54 @@ export async function GET(request: NextRequest) {
 
     let availableSlots: { slot: string; duration: number; maxSlots?: number; id?: string; isCustom?: boolean }[] = [];
 
-    // Add weekly default slots
-    if (calendarSettings && calendarSettings.timeSlots) {
-      try {
-        const weeklySlots = JSON.parse(calendarSettings.timeSlots as string);
-        if (weeklySlots[dayOfWeek] && weeklySlots[dayOfWeek].length > 0) {
-          // Add formatted weekly slots
-          weeklySlots[dayOfWeek].forEach((slot: any) => {
-            const endTime = calculateEndTime(slot.startTime, slot.duration);
-            availableSlots.push({
-              slot: formatTimeSlot(slot.startTime, endTime),
-              duration: slot.duration,
-              maxSlots: slot.maxBookings,
-              isCustom: false
+    // Only add slots if the date is not blocked
+    if (!blockedDate) {
+      // Add weekly default slots
+      if (calendarSettings && calendarSettings.timeSlots) {
+        try {
+          const weeklySlots = JSON.parse(calendarSettings.timeSlots as string);
+          if (weeklySlots[dayOfWeek] && weeklySlots[dayOfWeek].length > 0) {
+            // Add formatted weekly slots
+            weeklySlots[dayOfWeek].forEach((slot: any) => {
+              const endTime = calculateEndTime(slot.startTime, slot.duration);
+              const slotTime = formatTimeSlot(slot.startTime, endTime);
+              
+              // Check if this regular slot is overridden by a custom slot
+              const isOverridden = customSlots.some(customSlot => 
+                customSlot.startTime === slot.startTime && 
+                (customSlot.overrideRegular || customSlot.maxSlots === 0)
+              );
+              
+              if (!isOverridden) {
+                availableSlots.push({
+                  slot: slotTime,
+                  duration: slot.duration,
+                  maxSlots: slot.maxBookings,
+                  isCustom: false
+                });
+              }
             });
-          });
+          }
+        } catch (error) {
+          console.error("Error parsing weekly slots:", error);
         }
-      } catch (error) {
-        console.error("Error parsing weekly slots:", error);
       }
-    }
 
-    // Add custom slots for this date - these are additional slots
-    if (customSlots.length > 0) {
-      customSlots.forEach(slot => {
-        availableSlots.push({
-          slot: formatTimeSlot(slot.startTime, slot.endTime),
-          duration: slot.duration,
-          maxSlots: slot.maxSlots,
-          id: slot.id,
-          isCustom: true
+      // Add custom slots for this date - these are additional slots
+      if (customSlots.length > 0) {
+        customSlots.forEach(slot => {
+          // Only add custom slots that aren't marked for deletion (maxSlots > 0)
+          if (slot.maxSlots > 0) {
+            availableSlots.push({
+              slot: formatTimeSlot(slot.startTime, slot.endTime),
+              duration: slot.duration,
+              maxSlots: slot.maxSlots,
+              id: slot.id,
+              isCustom: true
+            });
+          }
         });
-      });
+      }
     }
 
     // Sort slots by time
@@ -83,7 +107,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ 
       slots: availableSlots,
-      customSlots: customSlots
+      customSlots: customSlots,
+      isBlocked: !!blockedDate
     });
   } catch (error) {
     console.error("Error fetching custom slots:", error);
@@ -111,78 +136,112 @@ function calculateEndTime(startTime: string, durationMinutes: number): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const { date, slots, userId } = await request.json();
+    const { date, slots, userId, isBlocked } = await request.json();
 
-    if (!date || !slots || !userId) {
+    if (!date || !userId) {
       return NextResponse.json(
-        { error: "Date, slots, and userId are required" },
+        { error: "Date and userId are required" },
         { status: 400 }
       );
     }
 
     const selectedDate = new Date(date);
 
-    // Get existing custom slots first
-    const existingSlots = await client.customTimeSlot.findMany({
-      where: {
-        userId,
-        date: selectedDate,
-      },
-      select: {
-        id: true
-      }
-    });
-
-    // Create a set of IDs to keep track of which slots were processed
-    const processedIds = new Set();
-    
-    // Update or create slots
-    const slotsPromises = slots.map(async (slot: any) => {
-      if (slot.id) {
-        // Mark this ID as processed
-        processedIds.add(slot.id);
-        
-        // Update existing slot
-        return client.customTimeSlot.update({
-          where: { id: slot.id },
-          data: {
-            startTime: slot.startTime,
-            endTime: slot.endTime,
-            duration: slot.duration,
-            maxSlots: slot.maxSlots,
+    // Handle blocked date status
+    if (typeof isBlocked === 'boolean') {
+      if (isBlocked) {
+        // Create or update blocked date
+        await client.blockedDate.upsert({
+          where: {
+            userId_date: {
+              userId,
+              date: selectedDate,
+            },
           },
+          create: {
+            userId,
+            date: selectedDate,
+          },
+          update: {},
         });
       } else {
-        // Create new slot
-        return client.customTimeSlot.create({
-          data: {
-            date: selectedDate,
-            startTime: slot.startTime,
-            endTime: slot.endTime,
-            duration: slot.duration,
-            maxSlots: slot.maxSlots,
+        // Remove blocked date if it exists
+        await client.blockedDate.deleteMany({
+          where: {
             userId,
+            date: selectedDate,
           },
         });
       }
-    });
-    
-    // Delete slots that weren't included in the updated list
-    const idsToDelete = existingSlots
-      .map(slot => slot.id)
-      .filter(id => !processedIds.has(id));
-      
-    if (idsToDelete.length > 0) {
-      await client.customTimeSlot.deleteMany({
-        where: {
-          id: { in: idsToDelete }
-        }
-      });
     }
 
-    const updatedSlots = await Promise.all(slotsPromises);
+    // Only process slots if the date is not blocked
+    if (!isBlocked) {
+      // Get existing custom slots first
+      const existingSlots = await client.customTimeSlot.findMany({
+        where: {
+          userId,
+          date: selectedDate,
+        },
+        select: {
+          id: true,
+          startTime: true
+        }
+      });
 
-    return NextResponse.json({ slots: updatedSlots });
+      // Create a set of IDs to keep track of which slots were processed
+      const processedIds = new Set();
+      
+      // Update or create slots
+      const slotsPromises = slots.map(async (slot: any) => {
+        if (slot.id) {
+          // Mark this ID as processed
+          processedIds.add(slot.id);
+          
+          // Update existing slot
+          return client.customTimeSlot.update({
+            where: { id: slot.id },
+            data: {
+              startTime: slot.startTime,
+              endTime: slot.endTime,
+              duration: slot.duration,
+              maxSlots: slot.maxSlots,
+              overrideRegular: slot.overrideRegular || false
+            },
+          });
+        } else {
+          // Create new slot
+          return client.customTimeSlot.create({
+            data: {
+              date: selectedDate,
+              startTime: slot.startTime,
+              endTime: slot.endTime,
+              duration: slot.duration,
+              maxSlots: slot.maxSlots,
+              overrideRegular: slot.overrideRegular || false,
+              userId,
+            },
+          });
+        }
+      });
+      
+      // Delete slots that weren't included in the updated list
+      const idsToDelete = existingSlots
+        .map(slot => slot.id)
+        .filter(id => !processedIds.has(id));
+        
+      if (idsToDelete.length > 0) {
+        await client.customTimeSlot.deleteMany({
+          where: {
+            id: { in: idsToDelete }
+          }
+        });
+      }
+
+      await Promise.all(slotsPromises);
+    }
+
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error saving custom slots:", error);
     return NextResponse.json(
