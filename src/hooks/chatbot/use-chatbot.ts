@@ -63,6 +63,9 @@ export const useChatBot = (userId?: string, initialChatBot?: {
   const [onRealTime, setOnRealTime] = useState<
     { chatroom: string; mode: boolean } | undefined
   >(undefined);
+  const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([]);
+  const [message, setMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const onScrollToBottom = () => {
     messageWindowRef.current?.scroll({
@@ -161,20 +164,18 @@ export const useChatBot = (userId?: string, initialChatBot?: {
   }, [userId, initialChatBot]);
 
   const onStartChatting = handleSubmit(async (values) => {
-    if (!values.content) {
-      reset();
+    if (!values.content?.trim()) {
       return;
     }
 
+    const userMessage = {
+      role: "user" as const,
+      content: values.content.trim(),
+    };
+
     // Add user message to chat
     if (!onRealTime?.mode) {
-      setOnChats((prev: any) => [
-        ...prev,
-        {
-          role: "user",
-          content: values.content,
-        },
-      ]);
+      setOnChats((prev) => [...prev, userMessage]);
     }
 
     setOnAiTyping(true);
@@ -184,6 +185,7 @@ export const useChatBot = (userId?: string, initialChatBot?: {
       
       if (userId) {
         // If we have a userId, use the user-specific chatbot assistant API
+        console.log("Sending message to assistant:", values.content);
         const userAssistantResponse = await fetch(`/api/user/${userId}/chatbot/assistant`, {
           method: 'POST',
           headers: {
@@ -194,13 +196,24 @@ export const useChatBot = (userId?: string, initialChatBot?: {
             chat: onChats,
           }),
         });
-        
-        if (userAssistantResponse.ok) {
-          const data = await userAssistantResponse.json();
-          response = data;
-        } else {
-          console.error('Error from chatbot assistant API:', await userAssistantResponse.text());
+
+        const data = await userAssistantResponse.json();
+        console.log("Received assistant response:", data);
+
+        if (!userAssistantResponse.ok) {
+          throw new Error(data.error || "Failed to get response from assistant");
         }
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        response = {
+          response: {
+            role: "assistant" as const,
+            content: data.response.content
+          }
+        };
       } else if (currentBotId) {
         // Otherwise use the domain-based chatbot API
         response = await onAiChatBotAssistant(
@@ -221,12 +234,20 @@ export const useChatBot = (userId?: string, initialChatBot?: {
             mode: response.live,
           }));
         } else {
-          setOnChats((prev: any) => [...prev, response.response]);
+          setOnChats((prev) => [...prev, response.response]);
         }
       }
     } catch (error) {
       console.error("Error in chatbot interaction:", error);
       setOnAiTyping(false);
+      // Add error message to chat
+      setOnChats((prev) => [
+        ...prev,
+        {
+          role: "assistant" as const,
+          content: error instanceof Error ? error.message : "I apologize, but I'm having trouble responding right now. Please try again in a moment.",
+        },
+      ]);
     }
     
     reset();

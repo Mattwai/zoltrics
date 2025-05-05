@@ -11,23 +11,26 @@ type Props = {
 };
 
 const Bubble = ({ message, createdAt }: Props) => {
+  const isUser = message.role === "user";
+  const content = message.content || "";
+  const link = message.link;
   let d = new Date();
-  const image = extractUUIDFromString(message.content);
-  console.log(message.link);
+  const image = extractUUIDFromString(content);
+  console.log(link);
 
   return (
     <div
       className={cn(
-        "flex gap-2 items-end",
-        message.role == "assistant" ? "self-start" : "self-end flex-row-reverse"
+        "flex w-full",
+        isUser ? "justify-end" : "justify-start"
       )}
     >
       <div
         className={cn(
-          "flex flex-col gap-3 min-w-[200px] max-w-[300px] p-4 rounded-t-md",
-          message.role == "assistant"
-            ? "bg-muted rounded-r-md"
-            : "bg-purple-300 rounded-l-md"
+          "flex max-w-[80%] flex-col gap-2 rounded-lg p-3",
+          isUser
+            ? "bg-royalPurple text-white"
+            : "bg-porcelain text-black"
         )}
       >
         {createdAt ? (
@@ -47,18 +50,17 @@ const Bubble = ({ message, createdAt }: Props) => {
             }`}
           </p>
         )}
-        <p className="text-sm">
-          {message.content.replace("(complete)", " ")}
-          {message.link && (
-            <Link
-              className="underline font-bold pl-2"
-              href={message.link}
-              target="_blank"
-            >
-              Your Link
-            </Link>
-          )}
-        </p>
+        <p className="text-sm">{content}</p>
+        {link && (
+          <a
+            href={link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs underline"
+          >
+            Click here
+          </a>
+        )}
       </div>
     </div>
   );

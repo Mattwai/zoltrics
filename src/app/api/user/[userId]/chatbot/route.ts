@@ -1,22 +1,18 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import OpenAI from "openai";
 import { ChatBot, HelpDesk, Prisma, User } from "@prisma/client";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 type HelpDeskQuestion = {
   id: string;
   userId: string | null;
   question: string;
   answer: string;
-  knowledgeBase?: string;
 };
 
 type UserWithRelations = {
   id: string;
+  name: string | null;
+  email: string;
   chatBot: ChatBot | null;
   helpdesk: HelpDeskQuestion[];
   knowledgeBase: {
@@ -79,6 +75,22 @@ export async function POST(
   try {
     const { message } = await request.json();
 
+      if (!process.env.DEEPSEEK_API_KEY) {
+        console.error("DeepSeek API key is not set");
+        return NextResponse.json(
+          { error: "DeepSeek API key is not configured" },
+          { status: 500 }
+        );
+      }
+
+      if (!process.env.DEEPSEEK_API_URL) {
+        console.error("DeepSeek API url is not set");
+        return NextResponse.json(
+          { error: "DeepSeek API url is not configured" },
+          { status: 500 }
+        );
+      }
+
     const user = await prisma.user.findUnique({
       where: {
         id: params.userId,
@@ -97,7 +109,7 @@ export async function POST(
     }
 
     // Search through knowledge base entries
-    const relevantEntries = (user as UserWithRelations).knowledgeBase.filter(entry => {
+    const relevantEntries = user.knowledgeBase.filter(entry => {
       const searchTerms = message.toLowerCase().split(' ');
       const entryText = `${entry.title} ${entry.content} ${entry.category || ''}`.toLowerCase();
       return searchTerms.some((term: string) => entryText.includes(term));
@@ -112,10 +124,71 @@ export async function POST(
       return NextResponse.json({ response });
     }
 
-    // If no relevant information found
-    return NextResponse.json({
-      response: "I apologize, but I don't have enough information in my knowledge base to answer that question. Please contact a human agent for assistance."
-    });
+    // If no relevant information found, use DeepSeek
+    try {
+      const response = await fetch(process.env.DEEPSEEK_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: [
+            {
+              role: "system",
+              content: `You are a helpful assistant for ${user.name || "the business"}. Your goal is to help users with their questions.
+              
+              Here is the information about FAQs:
+              
+              FAQs:
+              ${user.helpdesk?.map(hd => `Q: ${hd.question}\nA: ${hd.answer}`).join('\n\n') || "No FAQ information available"}
+              
+              Knowledge Base:
+              ${user.knowledgeBase?.map(kb => `${kb.title}:\n${kb.content}`).join('\n\n') || "No knowledge base information available"}
+              
+              Be friendly, professional, and direct in your responses.`
+            },
+            {
+              role: "user",
+              content: message,
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("DeepSeek API error:", errorData);
+        return NextResponse.json(
+          { error: errorData.error?.message || "Failed to generate response" },
+          { status: 500 }
+        );
+      }
+
+      const data = await response.json();
+      console.log("DeepSeek response received:", data);
+
+      if (!data.choices?.[0]?.message) {
+        return NextResponse.json(
+          { error: "Failed to generate response" },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({
+        response: {
+          role: "assistant",
+          content: data.choices[0].message.content
+        }
+      });
+    } catch (error) {
+      console.error("Error in DeepSeek API call:", error);
+      return NextResponse.json(
+        { error: "Failed to generate response" },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error("Error in POST /api/user/[userId]/chatbot:", error);
     return NextResponse.json(

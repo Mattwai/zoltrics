@@ -21,7 +21,7 @@ export const ChatBotMessageSchema: ZodType<ChatBotMessageProps> = z
   .object({
     content: z
       .string()
-      .min(1)
+      .min(1, { message: "Message cannot be empty" })
       .optional()
       .or(z.literal("").transform(() => undefined)),
     image: z.any().optional(),
