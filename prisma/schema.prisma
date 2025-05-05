@@ -42,6 +42,7 @@ model User {
   stripeId                String?
   emailVerified           DateTime?
   name                    String?
+  businessName            String?
   bookingLink             String?                  @unique
   accounts                Account[]
   subscription            Billings?
@@ -197,6 +198,7 @@ model Product {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String
   price     Int
+  isLive    Boolean  @default(true)
   createdAt DateTime @default(now())
   domainId  String?  @db.Uuid
   Domain    Domain?  @relation(fields: [domainId], references: [id], onDelete: Cascade)

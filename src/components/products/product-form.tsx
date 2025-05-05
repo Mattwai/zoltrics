@@ -39,7 +39,7 @@ export const CreateProductForm = ({ id, onProductAdded }: CreateProductFormProps
       <FormGenerator
         inputType="input"
         register={register}
-        label="Price"
+        label="Price (NZD)"
         name="price"
         errors={errors}
         placeholder="0.00"

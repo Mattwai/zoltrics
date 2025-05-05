@@ -743,3 +743,62 @@ export const onGetAllKnowledgeBaseEntries = async (userId: string) => {
     console.log(error);
   }
 };
+
+export const onUpdateProductStatus = async (productId: string, isLive: boolean) => {
+  try {
+    const product = await client.product.update({
+      where: {
+        id: productId,
+      },
+      data: {
+        isLive,
+      },
+    });
+
+    if (product) {
+      return {
+        status: 200,
+        message: `Product ${isLive ? 'activated' : 'deactivated'} successfully`,
+      };
+    }
+
+    return {
+      status: 400,
+      message: "Failed to update product status",
+    };
+  } catch (error) {
+    console.error("Error updating product status:", error);
+    return {
+      status: 400,
+      message: "Failed to update product status. Please try again.",
+    };
+  }
+};
+
+export const onDeleteProduct = async (productId: string) => {
+  try {
+    const product = await client.product.delete({
+      where: {
+        id: productId,
+      },
+    });
+
+    if (product) {
+      return {
+        status: 200,
+        message: "Product deleted successfully",
+      };
+    }
+
+    return {
+      status: 400,
+      message: "Failed to delete product",
+    };
+  } catch (error) {
+    console.error("Error deleting product:", error);
+    return {
+      status: 400,
+      message: "Failed to delete product. Please try again.",
+    };
+  }
+};
