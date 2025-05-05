@@ -121,7 +121,6 @@ export async function POST(
             content: `You are a helpful assistant for ${user.name || "the business"}. Your goal is to help users with their questions and book appointments.
 
             IMPORTANT: Follow these response guidelines:
-            Do not use markdown formatting (no ** or __)
 
             1. For service-related questions:
             - List all available services with their prices
@@ -138,7 +137,7 @@ export async function POST(
             - If asked about specific days, check if those days are in the available days list
             - If asked about next week, check the available days and provide appropriate slots
 
-            3. For FAQ/knowledge base questions:
+            3. For FAQ/knowledge base or other questions:
             - Search through the provided FAQs and knowledge base
             - Provide relevant answers based on the question
             - If no exact match, provide the most relevant information
@@ -190,7 +189,8 @@ export async function POST(
             - Keep responses focused on the user's question
             - Don't use a template format - respond naturally based on the question
             - For time slots, consider both current and future availability
-            - Do not use markdown formatting or emojis in responses`
+            - Do not use markdown formatting or emojis in responses
+            - Do not use markdown formatting (no ** or __)`
           },
           ...formattedChat,
           {
