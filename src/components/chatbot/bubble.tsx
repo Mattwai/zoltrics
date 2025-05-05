@@ -27,7 +27,7 @@ const Bubble = ({ message, createdAt }: Props) => {
           "flex flex-col gap-3 min-w-[200px] max-w-[300px] p-4 rounded-t-md",
           message.role == "assistant"
             ? "bg-muted rounded-r-md"
-            : "bg-royalPurple rounded-l-md"
+            : "bg-purple-300 rounded-l-md"
         )}
       >
         {createdAt ? (
@@ -36,13 +36,13 @@ const Bubble = ({ message, createdAt }: Props) => {
               {createdAt.getDate()} {getMonthName(createdAt.getMonth())}
             </p>
             <p>
-              {createdAt.getHours()}:{createdAt.getMinutes()}
+              {createdAt.getHours()}:{String(createdAt.getMinutes()).padStart(2, '0')}
               {createdAt.getHours() > 12 ? "PM" : "AM"}
             </p>
           </div>
         ) : (
           <p className="text-xs">
-            {`${d.getHours()}:${d.getMinutes()} ${
+            {`${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')} ${
               d.getHours() > 12 ? "pm" : "am"
             }`}
           </p>
