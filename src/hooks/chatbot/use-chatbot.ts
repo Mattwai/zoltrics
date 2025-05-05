@@ -8,7 +8,22 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 
-export const useChatBot = (userId?: string) => {
+export const useChatBot = (userId?: string, initialChatBot?: {
+  name: string;
+  chatBot: {
+    id: string;
+    welcomeMessage: string | null;
+    background: string | null;
+    textColor: string | null;
+    helpdesk: boolean;
+  } | null;
+  helpdesk: {
+    id: string;
+    question: string;
+    answer: string;
+    domainId: string | null;
+  }[];
+}) => {
   const {
     register,
     handleSubmit,
@@ -35,11 +50,11 @@ export const useChatBot = (userId?: string) => {
         }[];
       }
     | undefined
-  >();
+  >(initialChatBot);
   const messageWindowRef = useRef<HTMLDivElement | null>(null);
   const [botOpened, setBotOpened] = useState<boolean>(false);
   const onOpenChatBot = () => setBotOpened((prev) => !prev);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(!initialChatBot);
   const [onChats, setOnChats] = useState<
     { role: "assistant" | "user"; content: string; link?: string }[]
   >([]);
@@ -80,7 +95,7 @@ export const useChatBot = (userId?: string) => {
         ...prev,
         {
           role: "assistant",
-          content: chatbot.chatBot?.welcomeMessage!,
+          content: chatbot.chatBot?.welcomeMessage || "Hello! How can I assist you with your booking today?",
         },
       ]);
       setCurrentBot(chatbot);
@@ -122,7 +137,16 @@ export const useChatBot = (userId?: string) => {
   };
 
   useEffect(() => {
-    if (userId) {
+    if (initialChatBot) {
+      setOnChats((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: initialChatBot.chatBot?.welcomeMessage || "Hello! How can I assist you with your booking today?",
+        },
+      ]);
+      setLoading(false);
+    } else if (userId) {
       onGetUserChatBot(userId);
     } else {
       window.addEventListener("message", (e) => {
@@ -134,7 +158,7 @@ export const useChatBot = (userId?: string) => {
         }
       });
     }
-  }, [userId]);
+  }, [userId, initialChatBot]);
 
   const onStartChatting = handleSubmit(async (values) => {
     if (!values.content) {

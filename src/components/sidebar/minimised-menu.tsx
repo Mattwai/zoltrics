@@ -48,19 +48,19 @@ export const MinMenu = ({
             size="min"
             label="Chatbot"
             icon={<ChatIcon />}
-            path="settings"
+            path="chatbot-settings"
           />
           <MenuItem
             size="min"
             label="Products"
             icon={<HelpDeskIcon />}
-            path="settings"
+            path="product-settings"
           />
           <MenuItem
             size="min"
             label="Appointments"
             icon={<TimerIcon />}
-            path="settings"
+            path="appointment-settings"
           />
           <MenuItem
             size="min"

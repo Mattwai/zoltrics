@@ -2,25 +2,10 @@ import { SIDE_BAR_MENU } from "@/constants/menu";
 import SettingsIcon from "@/icons/settings-icon";
 import { LogOut, Menu } from "lucide-react";
 import Image from "next/image";
-import DomainMenu from "./domain-menu";
 import MenuItem from "./menu-item";
 import ChatIcon from "@/icons/chat-icon";
-import CalIcon from "@/icons/cal-icon";
-import BotIcon from "@/icons/bot-icon";
-import CopyIcon from "@/icons/copy-icon";
-import DashboardIcon from "@/icons/dashboard-icon";
-import DevicesIcon from "@/icons/devices-icon";
-import DocumentsIcon from "@/icons/documents-icon";
-import EmailIcon from "@/icons/email-icon";
 import HelpDeskIcon from "@/icons/help-desk-icon";
-import MenuLogo from "@/icons/menu-logo";
-import MoneyIcon from "@/icons/money-icon";
-import PersonIcon from "@/icons/person-icon";
-import PremiumBadge from "@/icons/premium-badge";
-import StarIcon from "@/icons/star-icon";
 import TimerIcon from "@/icons/timer-icon";
-import { TransactionsIcon } from "@/icons/transactions-icon";
-import { UrgentIcon } from "@/icons/urgent-icon";
 
 type Props = {
   onExpand(): void;

@@ -59,29 +59,42 @@ export const onStoreConversations = async (
 
 export const onGetCurrentChatBot = async (id: string) => {
   try {
-    const chatbot = await client.domain.findUnique({
+    const domain = await client.domain.findUnique({
       where: {
         id,
       },
       select: {
-        helpdesk: true,
         name: true,
-        chatBot: {
+        User: {
           select: {
-            id: true,
-            welcomeMessage: true,
-            textColor: true,
-            background: true,
-            helpdesk: true,
+            chatBot: true,
+            helpdesk: {
+              select: {
+                id: true,
+                question: true,
+                answer: true,
+              },
+            },
           },
         },
       },
     });
 
-    return chatbot; // Return the fetched chatbot or null if not found
+    if (!domain || !domain.User) {
+      return null;
+    }
+
+    return {
+      name: domain.name,
+      chatBot: domain.User.chatBot,
+      helpdesk: domain.User.helpdesk.map(h => ({
+        ...h,
+        domainId: null,
+      })),
+    };
   } catch (error) {
     console.log(error);
-    return null; // Return null in case of an error
+    return null;
   }
 };
 
@@ -114,18 +127,22 @@ export const onAiChatBotAssistant = async (
       },
       select: {
         name: true,
-        filterQuestions: {
-          where: {
-            answered: null,
-          },
+        User: {
           select: {
-            question: true,
+            filterQuestions: {
+              where: {
+                answered: null,
+              },
+              select: {
+                question: true,
+              },
+            },
           },
         },
       },
     });
 
-    if (!chatBotDomain) {
+    if (!chatBotDomain || !chatBotDomain.User) {
       throw new Error("Chatbot domain not found"); // Handle case where chatbot domain is null or undefined
     }
 
@@ -180,7 +197,7 @@ export const onAiChatBotAssistant = async (
               create: {
                 email: customerEmail,
                 questions: {
-                  create: chatBotDomain.filterQuestions,
+                  create: chatBotDomain.User.filterQuestions,
                 },
                 chatRoom: {
                   create: {},
@@ -261,7 +278,7 @@ export const onAiChatBotAssistant = async (
 
             Always maintain character and stay respectfull.
 
-            The array of questions : [${chatBotDomain.filterQuestions
+            The array of questions : [${chatBotDomain.User.filterQuestions
               .map((questions: FilterQuestion) => questions.question)
               .join(", ")}]
 

@@ -149,7 +149,7 @@ export const useHelpDesk = (id: string) => {
   };
 };
 
-export const useFilterQuestions = (id: string) => {
+export const useFilterQuestions = (userId: string) => {
   const {
     register,
     handleSubmit,
@@ -166,7 +166,7 @@ export const useFilterQuestions = (id: string) => {
 
   const onAddFilterQuestions = handleSubmit(async (values) => {
     setLoading(true);
-    const questions = await onCreateFilterQuestions(id, values.question);
+    const questions = await onCreateFilterQuestions(userId, values.question);
     if (questions) {
       setIsQuestions(questions.questions!);
       toast({
@@ -180,7 +180,7 @@ export const useFilterQuestions = (id: string) => {
 
   const onGetQuestions = async () => {
     setLoading(true);
-    const questions = await onGetAllFilterQuestions(id);
+    const questions = await onGetAllFilterQuestions(userId);
     if (questions) {
       setIsQuestions(questions.questions);
       setLoading(false);
