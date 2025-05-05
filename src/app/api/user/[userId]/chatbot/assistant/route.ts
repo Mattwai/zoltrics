@@ -25,42 +25,6 @@ type UserWithRelations = {
   } | null;
 };
 
-function reformatResponse(responseText: string, user: UserWithRelations): string {
-  const services = user.domains.flatMap(d => d.products).map(p => `${p.name} - $${p.price}`).join('<br>') || "No products available";
-  const availableDays = user.bookingCalendarSettings?.availableDays ? user.bookingCalendarSettings.availableDays.join(', ') : "No days available";
-  let timeSlots;
-  try {
-    const slots = typeof user.bookingCalendarSettings?.timeSlots === 'string' 
-      ? JSON.parse(user.bookingCalendarSettings.timeSlots)
-      : user.bookingCalendarSettings?.timeSlots;
-    timeSlots = Array.isArray(slots) ? slots.join(', ') : 'No time slots available';
-  } catch (e) {
-    timeSlots = 'No time slots available';
-  }
-  const faqs = user.helpdesk?.map(hd => `Q: ${hd.question}<br>A: ${hd.answer}`).join('<br><br>') || "No FAQ information available";
-
-  return `<div style="white-space: pre-wrap;">
-Hello! How can I assist you with your booking today?
-
-Quick Options:
-    - Popular Services: ${user.domains.flatMap(d => d.products)[0]?.name || "None"} ($${user.domains.flatMap(d => d.products)[0]?.price || "0"})
-    - Next Available Slots:
-        - No available slots
-
-Would you like to book one of these times? Or ask a question? Just say "book" or type your question!
-
-Available Services:
-    ${services}
-
-Business Hours:
-    Available days: ${availableDays}
-    Time slots: ${timeSlots}
-
-FAQs:
-    ${faqs}
-</div>`;
-}
-
 export async function POST(
   request: Request,
   { params }: { params: { userId: string } }
@@ -156,58 +120,77 @@ export async function POST(
             role: "system",
             content: `You are a helpful assistant for ${user.name || "the business"}. Your goal is to help users with their questions and book appointments.
 
-            IMPORTANT: Follow these response formats based on the context:
+            IMPORTANT: Follow these response guidelines:
 
-            1. For the initial welcome message, use ONLY:
-            ${user.chatBot?.welcomeMessage || "Hello! How can I assist you with your booking today?"}
+            1. For service-related questions:
+            - List all available services with their prices
+            - If asked about specific services, provide detailed information about those services
+            - Format services as: service name ($price)
+            - Example: "We offer the following service: test ($10)"
+            - Do not use markdown formatting (no ** or __)
+            - Keep the formatting simple and clean
 
-            2. When you don't know what else to say or need to show options, use this EXACT format:
-            Quick Options:
-                - Popular Services: [service name] ($[price])
-                - Next Available Slots:
-                    - [date]: [time] ([duration])
+            2. For availability questions:
+            - Show available days and time slots
+            - Format as: Available days: [days]
+            - Time slots: [slots]
+            - Example: "We're available on Wednesday, Thursday, Friday, and Tuesday. Our time slots are [list of slots]"
+            - If asked about specific days, check if those days are in the available days list
+            - If asked about next week, check the available days and provide appropriate slots
 
-            Would you like to book one of these times? Or ask a question? Just say "book" or type your question!
+            3. For FAQ/knowledge base questions:
+            - Search through the provided FAQs and knowledge base
+            - Provide relevant answers based on the question
+            - If no exact match, provide the most relevant information
 
-            Available Services:
-                ${user.domains.flatMap(d => d.products).map(p => `${p.name} - $${p.price}`).join('\n                ') || "No products available"}
+            4. For booking-related questions:
+            - Guide users through the booking process
+            - Show available slots and services
+            - Explain the booking requirements
 
-            Business Hours:
-                Available days: ${user.bookingCalendarSettings?.availableDays ? user.bookingCalendarSettings.availableDays.join(', ') : "No days available"}
-                Time slots: ${
-                  (() => {
-                    try {
-                      const slots = typeof user.bookingCalendarSettings?.timeSlots === 'string' 
-                        ? JSON.parse(user.bookingCalendarSettings.timeSlots)
-                        : user.bookingCalendarSettings?.timeSlots;
-                      return Array.isArray(slots) ? slots.join(', ') : 'No time slots available';
-                    } catch (e) {
-                      return 'No time slots available';
-                    }
-                  })()
-                }
-
-            FAQs:
-                ${user.helpdesk?.map(hd => `Q: ${hd.question}\n                A: ${hd.answer}`).join('\n\n                ') || "No FAQ information available"}
-
-            3. For all other responses:
+            5. For general questions:
             - Answer naturally and conversationally
-            - Use the available information about:
-                - Customer history
-                - Previous appointments
-                - Services used
-                - Knowledge base entries
-                - Available services
-                - Available appointment dates
+            - Use available information about services, availability, and FAQs
             - Keep responses concise and helpful
-            - Maintain a friendly, professional tone
+            - Do not use markdown formatting or emojis
+
+            6. For greeting questions:
+            - Greet the user with a friendly message
+            - Example: "Hello! How can I assist you today? <br><br>
+            If you're interested in our services, booking an appointment, or checking availability, just let me know. <br><br>
+            Currently, we offer the following service: <br> 
+              - test ($10). <br><br>
+            We're available on: <br>
+              - Monday <br>
+              - Tuesday <br>
+              - Wednesday <br>
+              - Thursday <br>
+              - Friday <br><br><br>
+            Let me know how I can help!"
+
+            Available Information:
+            Services: ${user.domains.flatMap(d => d.products).map(p => `${p.name} ($${p.price})`).join('\n') || "No products available"}
+            Available Days: ${user.bookingCalendarSettings?.availableDays ? user.bookingCalendarSettings.availableDays.join(', ') : "No days available"}
+            Time Slots: ${(() => {
+              try {
+                const slots = typeof user.bookingCalendarSettings?.timeSlots === 'string' 
+                  ? JSON.parse(user.bookingCalendarSettings.timeSlots)
+                  : user.bookingCalendarSettings?.timeSlots;
+                return Array.isArray(slots) ? slots.join(', ') : 'No time slots available';
+              } catch (e) {
+                return 'No time slots available';
+              }
+            })()}
+            FAQs: ${user.helpdesk?.map(hd => `Q: ${hd.question}\nA: ${hd.answer}`).join('\n\n') || "No FAQ information available"}
 
             Remember:
-            1. Use EXACTLY 4 spaces for indentation
-            2. Add TWO newlines between major sections
-            3. Add ONE newline between list items
-            4. Keep the exact format shown above for options display
-            5. Don't add any extra formatting or emojis`
+            - Be conversational and helpful
+            - Use the available information to answer questions
+            - If you don't know something, say so and offer to help with what you do know
+            - Keep responses focused on the user's question
+            - Don't use a template format - respond naturally based on the question
+            - For time slots, consider both current and future availability
+            - Do not use markdown formatting or emojis in responses`
           },
           ...formattedChat,
           {
@@ -237,13 +220,10 @@ export async function POST(
       );
     }
 
-    // Reformat the response to ensure correct formatting
-    const formattedResponse = reformatResponse(responseData.choices[0].message.content, user as UserWithRelations);
-
     return NextResponse.json({
       response: {
         role: "assistant",
-        content: formattedResponse
+        content: responseData.choices[0].message.content
       }
     });
   } catch (error) {
