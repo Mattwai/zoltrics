@@ -143,6 +143,7 @@ export const onAiChatBotAssistant = async (
                 category: true,
               },
             },
+            bookingLink: true,
           },
         },
       },
@@ -301,14 +302,9 @@ export const onAiChatBotAssistant = async (
             3. Maintain a natural conversation flow - don't just list questions
             4. If the customer asks about services, answer using the knowledge base first, then continue with the questions
             5. If the customer says something inappropriate, respond with "I apologize, but I need to transfer you to a real person to continue this conversation" and add (realtime) at the end
-
-            if the customer agrees to book an appointment send them this link ${
-              process.env.NEXT_PUBLIC_BASE_URL
-            }/portal/${id}/appointment/${checkCustomer?.customer[0].id}
-
-            if the customer wants to buy a product redirect them to the payment page ${
-              process.env.NEXT_PUBLIC_BASE_URL
-            }/portal/${id}/payment/${checkCustomer?.customer[0].id}
+            6. If the customer wants to book an appointment or asks about booking, ALWAYS direct them to the booking link: ${process.env.NEXT_PUBLIC_BASE_URL}/booking/${chatBotDomain.User.bookingLink}
+            7. Never try to book appointments directly - always use the booking link
+            8. If the customer wants to buy a product, direct them to the payment page: ${process.env.NEXT_PUBLIC_BASE_URL}/portal/${id}/payment/${checkCustomer?.customer[0].id}
 
             Right now you are talking to a customer. Start by giving them a warm welcome on behalf of ${chatBotDomain.name} and make them feel welcomed.
           `,
@@ -431,6 +427,8 @@ export const onAiChatBotAssistant = async (
           5. If the customer asks about services, provide specific details from the knowledge base
           6. Your primary goal is to collect the customer's email address naturally
           7. If the customer says something inappropriate, respond with "I apologize, but I need to transfer you to a real person to continue this conversation" and add (realtime) at the end
+          8. If the customer wants to book an appointment or asks about booking, ALWAYS direct them to the booking link: ${process.env.NEXT_PUBLIC_BASE_URL}/booking/${chatBotDomain.User.bookingLink}
+          9. Never try to book appointments directly - always use the booking link
 
           Right now you are talking to a customer for the first time. Start by giving them a warm welcome on behalf of ${chatBotDomain.name} and make them feel welcomed. Your first priority is to naturally collect their email address.
         `,
