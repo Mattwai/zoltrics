@@ -10,24 +10,24 @@ const Page = (props: Props) => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await fetch("/api/user");
-        if (!response.ok) {
-          throw new Error("Failed to fetch user data");
-        }
-        const userData = await response.json();
-        if (userData) {
-          setUser(userData);
-        }
-      } catch (error) {
-        console.error("Error fetching user:", error);
-      } finally {
-        setLoading(false);
+  const fetchUser = async () => {
+    try {
+      const response = await fetch("/api/user");
+      if (!response.ok) {
+        throw new Error("Failed to fetch user data");
       }
-    };
+      const userData = await response.json();
+      if (userData) {
+        setUser(userData);
+      }
+    } catch (error) {
+      console.error("Error fetching user:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchUser();
   }, []);
 
@@ -51,6 +51,7 @@ const Page = (props: Props) => {
         <ProductTable 
           id={user.id}
           products={allProducts}
+          onProductAdded={fetchUser}
         />
       </div>
     </>
