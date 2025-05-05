@@ -19,7 +19,7 @@ import {
   DialogFooter 
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { generateTimeOptions, calculateDuration } from "@/lib/time-slots";
+import { generateTimeOptions, calculateDuration, calculateEndTime } from "@/lib/time-slots";
 import { Switch } from "@/components/ui/switch";
 import { AlertCircle, Clock, Calendar as CalendarIcon, X } from "lucide-react";
 
@@ -198,16 +198,11 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
   const handleRemoveSlot = async (slotId: string) => {
     if (!selectedDate) return;
     
-    // Find the slot to be removed
-    const slotToRemove = customSlots.find(slot => slot.id === slotId);
-    if (!slotToRemove) return;
-    
-    
-    const formattedDate = format(selectedDate, "yyyy-MM-dd");
-    const remainingSlots = customSlots.filter(slot => slot.id !== slotId);
-    
     setLoading(true);
     try {
+      const formattedDate = format(selectedDate, "yyyy-MM-dd");
+      const remainingSlots = customSlots.filter(slot => slot.id !== slotId);
+      
       const response = await fetch("/api/bookings/custom-slots", {
         method: "POST",
         headers: {
@@ -227,6 +222,9 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
         description: "Time slot removed successfully",
       });
       
+      // Update the local state
+      setCustomSlots(remainingSlots);
+      // Refresh the available slots
       fetchTimeSlots(formattedDate);
     } catch (error) {
       console.error("Error removing time slot:", error);
@@ -393,10 +391,24 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
                   {availableSlots.map((slot, index) => {
                     const isCustomSlot = slot.isCustom;
                     return (
-                      <div key={index} className="p-3 border rounded-md flex items-center justify-between">
+                      <div 
+                        key={index} 
+                        className="p-3 border rounded-md flex items-center justify-between hover:border-blue-300 transition-colors cursor-pointer"
+                        onClick={() => {
+                          setEditingSlot(slot);
+                          setNewSlot({
+                            id: slot.id,
+                            startTime: slot.slot,
+                            endTime: calculateEndTime(slot.slot, slot.duration),
+                            duration: slot.duration,
+                            maxSlots: slot.maxSlots || 1
+                          });
+                          setIsDialogOpen(true);
+                        }}
+                      >
                         <div className="space-y-1">
                           <div className="font-medium flex items-center gap-2">
-                            {slot.slot} ({slot.duration} min)
+                            {slot.slot} - {calculateEndTime(slot.slot, slot.duration)} ({slot.duration} min)
                             {isCustomSlot ? (
                               <Badge variant="outline" className="bg-blue-50 text-blue-800">Custom</Badge>
                             ) : (
@@ -407,24 +419,6 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
                             Max bookings: {slot.maxSlots || 1}
                           </div>
                         </div>
-                        {isCustomSlot && (
-                          <div className="flex gap-2">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => handleEditSlot(slot)}
-                            >
-                              Edit
-                            </Button>
-                            <Button 
-                              variant="destructive" 
-                              size="sm"
-                              onClick={() => handleRemoveSlot(slot.id!)}
-                            >
-                              Remove
-                            </Button>
-                          </div>
-                        )}
                       </div>
                     );
                   })}
@@ -442,71 +436,25 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingSlot ? "Edit Time Slot" : "Add Time Slot"}</DialogTitle>
+            <DialogTitle>Time Slot Settings</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="startTime">Start Time</Label>
-                <select
-                  id="startTime"
-                  value={newSlot.startTime}
-                  onChange={(e) => {
-                    const newStartTime = e.target.value;
-                    const calculatedDuration = calculateDuration(newStartTime, newSlot.endTime);
-                    setNewSlot({
-                      ...newSlot, 
-                      startTime: newStartTime,
-                      duration: calculatedDuration
-                    });
-                  }}
-                  className="w-full mt-1 rounded-md"
-                >
-                  {TIME_OPTIONS.map((time) => (
-                    <option key={time} value={time}>
-                      {time}
-                    </option>
-                  ))}
-                </select>
+            <div className="space-y-2">
+              <div className="font-medium">Time</div>
+              <div className="text-sm text-muted-foreground">
+                {newSlot.startTime} - {newSlot.endTime}
               </div>
-              <div>
-                <Label htmlFor="endTime">End Time</Label>
-                <select
-                  id="endTime"
-                  value={newSlot.endTime}
-                  onChange={(e) => {
-                    const newEndTime = e.target.value;
-                    const calculatedDuration = calculateDuration(newSlot.startTime, newEndTime);
-                    setNewSlot({
-                      ...newSlot, 
-                      endTime: newEndTime,
-                      duration: calculatedDuration
-                    });
-                  }}
-                  className="w-full mt-1 rounded-md"
-                >
-                  {TIME_OPTIONS.map((time) => (
-                    <option key={time} value={time}>
-                      {time}
-                    </option>
-                  ))}
-                </select>
+            </div>
+
+            <div className="space-y-2">
+              <div className="font-medium">Duration</div>
+              <div className="text-sm text-muted-foreground">
+                {newSlot.duration} minutes
               </div>
             </div>
 
             <div>
-              <Label htmlFor="duration">Duration (minutes)</Label>
-              <Input
-                id="duration"
-                type="number"
-                value={newSlot.duration}
-                disabled
-                className="w-full mt-1 bg-gray-100 text-gray-600"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="maxSlots">Maximum Bookings</Label>
+              <Label htmlFor="maxSlots">Maximum Concurrent Bookings</Label>
               <Input
                 id="maxSlots"
                 type="number"
@@ -518,11 +466,20 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
             </div>
           </div>
           <DialogFooter>
+            <Button 
+              variant="destructive" 
+              onClick={() => {
+                handleRemoveSlot(editingSlot!.id!);
+                setIsDialogOpen(false);
+              }}
+            >
+              Delete Slot
+            </Button>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleSaveSlot}>
-              <Loader loading={loading}>Save</Loader>
+              <Loader loading={loading}>Save Changes</Loader>
             </Button>
           </DialogFooter>
         </DialogContent>

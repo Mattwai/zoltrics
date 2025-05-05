@@ -50,7 +50,7 @@ export const generateTimeSlots = (
    * Generate a formatted time slot for display
    */
   export const formatTimeSlot = (startTime: string, endTime: string) => {
-    return `${startTime} - ${endTime}`;
+    return `${startTime}`;
   };
   
   /**
@@ -83,3 +83,13 @@ export const generateTimeSlots = (
   export const generateTimeSlotId = (date: string, startTime: string, endTime: string) => {
     return `${date}_${startTime}_${endTime}`;
   };
+
+export const calculateEndTime = (startTime: string, durationMinutes: number) => {
+  const [hours, minutes] = startTime.split(':').map(Number);
+  
+  let totalMinutes = hours * 60 + minutes + durationMinutes;
+  const endHours = Math.floor(totalMinutes / 60);
+  const endMinutes = totalMinutes % 60;
+  
+  return `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
+};
