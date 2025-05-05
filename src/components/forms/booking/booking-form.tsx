@@ -121,6 +121,11 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
       }
       const data = await response.json();
       
+      // If no slots are returned, the date might be blocked
+      if (!data.slots || data.slots.length === 0) {
+        return [];
+      }
+      
       // Process the slots to include formatted duration and calculate slots remaining
       const processedSlots = data.slots.map((slot: any) => {
         // Calculate end time if not provided

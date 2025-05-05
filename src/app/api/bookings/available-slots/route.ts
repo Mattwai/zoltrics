@@ -53,22 +53,6 @@ export async function GET(request: NextRequest) {
     
     const dayOfWeek = selectedDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
 
-    // Check if the date is blocked
-    const blockedDate = await client.blockedDate.findFirst({
-      where: {
-        userId,
-        date: {
-          equals: selectedDate
-        }
-      },
-    });
-
-    // If the date is blocked, return empty slots array
-    if (blockedDate) {
-      console.log('Date is blocked, returning empty slots array');
-      return NextResponse.json({ slots: [] });
-    }
-
     // Set up start and end of the selected day to query for custom slots
     const startOfDay = new Date(selectedDate);
     startOfDay.setHours(0, 0, 0, 0);
@@ -248,6 +232,23 @@ export async function GET(request: NextRequest) {
         const [hour, minute] = slot.split(':').map(Number);
         return hour > currentHour || (hour === currentHour && minute > currentMinute);
       });
+    }
+
+    // Check if the date is blocked
+    const blockedDate = await client.blockedDate.findFirst({
+      where: {
+        userId,
+        date: {
+          gte: startOfDay,
+          lte: endOfDay
+        }
+      },
+    });
+
+    // If the date is blocked, return empty slots array
+    if (blockedDate) {
+      console.log('Date is blocked, returning empty slots array');
+      return NextResponse.json({ slots: [] });
     }
 
     // Final logging of what we're returning
