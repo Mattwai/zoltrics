@@ -148,15 +148,23 @@ export async function GET(request: NextRequest) {
               
               const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
               
-              // Add this slot to available slots
-              availableSlots.push({
-                slot: timeSlot,
-                startTime: timeSlot,
-                endTime: endTime,
-                duration: duration,
-                maxSlots: slot.maxBookings,
-                isCustom: false
-              });
+              // Check if this regular slot is overridden by a custom slot
+              const isOverridden = customSlots.some((customSlot: any) => 
+                customSlot.startTime === timeSlot && 
+                (customSlot.overrideRegular || customSlot.maxSlots === 0)
+              );
+              
+              if (!isOverridden) {
+                // Add this slot to available slots
+                availableSlots.push({
+                  slot: timeSlot,
+                  startTime: timeSlot,
+                  endTime: endTime,
+                  duration: duration,
+                  maxSlots: slot.maxBookings,
+                  isCustom: false
+                });
+              }
               
               // Increment to the next slot based on duration
               currentMinute += duration;
@@ -174,29 +182,32 @@ export async function GET(request: NextRequest) {
     
     // Now add custom slots - these are additional slots for specific dates
     if (customSlots.length > 0) {
-      customSlots.forEach(slot => {
-        // Calculate end time based on start time and duration
-        const [startHour, startMinute] = slot.startTime.split(':').map(Number);
-        let endHour = startHour;
-        let endMinute = startMinute + slot.duration;
-        
-        // Adjust if minutes overflow
-        while (endMinute >= 60) {
-          endHour++;
-          endMinute -= 60;
+      customSlots.forEach((slot: any) => {
+        // Only add custom slots that aren't marked for deletion (maxSlots > 0)
+        if (slot.maxSlots > 0) {
+          // Calculate end time based on start time and duration
+          const [startHour, startMinute] = slot.startTime.split(':').map(Number);
+          let endHour = startHour;
+          let endMinute = startMinute + slot.duration;
+          
+          // Adjust if minutes overflow
+          while (endMinute >= 60) {
+            endHour++;
+            endMinute -= 60;
+          }
+          
+          const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+          
+          availableSlots.push({
+            slot: slot.startTime,
+            startTime: slot.startTime,
+            endTime: endTime,
+            duration: slot.duration,
+            maxSlots: slot.maxSlots,
+            id: slot.id,
+            isCustom: true
+          });
         }
-        
-        const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
-        
-        availableSlots.push({
-          slot: slot.startTime,
-          startTime: slot.startTime,
-          endTime: endTime,
-          duration: slot.duration,
-          maxSlots: slot.maxSlots,
-          id: slot.id,
-          isCustom: true
-        });
       });
       
       console.log('After adding custom slots, available slots include:', 

@@ -451,8 +451,7 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
                       variant={field.value === slot.slot ? "default" : "outline"}
                       className={cn(
                         "justify-start text-left h-auto py-2 flex flex-col items-start",
-                        field.value === slot.slot && "bg-grandis text-black",
-                        slot.isCustom && "border-blue-400 border-2"
+                        field.value === slot.slot && "bg-grandis text-black"
                       )}
                       onClick={() => {
                         handleTimeSlotClick(slot);
@@ -468,9 +467,6 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
                           <span className="ml-auto">{slot.slotsRemaining} {slot.slotsRemaining === 1 ? 'slot' : 'slots'} left</span>
                         )}
                       </div>
-                      {slot.isCustom && (
-                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded mt-1 font-medium">Custom Slot</span>
-                      )}
                     </Button>
                   ))
                 ) : (
