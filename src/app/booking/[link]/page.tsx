@@ -20,7 +20,7 @@ const BookingPage = async ({ params }: Props) => {
     <div className="min-h-screen flex items-center justify-center p-4 relative">
       <div className="w-full max-w-md">
         <h1 className="text-2xl font-bold mb-6 text-center">
-          Book an Appointment with {user.name || "Us"}
+          Book an Appointment with {user.businessName || user.name || "Us"}
         </h1>
         <BookingForm userId={user.id} />
       </div>
@@ -28,7 +28,7 @@ const BookingPage = async ({ params }: Props) => {
         <AiChatBot 
           userId={user.id} 
           initialChatBot={{
-            name: user.name || "BookerBuddy",
+            name: user.businessName || user.name || "BookerBuddy",
             chatBot: user.chatBot,
             helpdesk: (user.helpdesk || []).map(h => ({
               ...h,

@@ -54,6 +54,7 @@ model User {
   knowledgeBase           KnowledgeBase[]
   sessions                Session[]
   bookingCalendarSettings BookingCalendarSettings?
+  businessName            String?
 }
 
 model VerificationRequest {
@@ -78,13 +79,14 @@ model Domain {
 }
 
 model ChatBot {
-  id             String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   welcomeMessage String?
   background     String?
   textColor      String?
-  helpdesk       Boolean @default(false)
-  userId         String? @unique @db.Uuid
-  User           User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  helpdesk       Boolean   @default(false)
+  businessName   String?
+  userId         String?   @unique @db.Uuid
+  User           User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Billings {
