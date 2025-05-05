@@ -20,6 +20,7 @@ import { TabsContent } from "@/components/ui/tabs";
 import { HELP_DESK_TABS_MENU } from "@/constants/menu";
 import HelpDesk from "@/components/forms/settings/help-desk";
 import FilterQuestions from "@/components/forms/settings/filter-questions";
+import KnowledgeBase from "@/components/forms/settings/knowledge-base";
 import { User } from "@prisma/client";
 
 type UserWithChatBot = User & {
@@ -111,13 +112,10 @@ const Page = async (props: Props) => {
               <TabsContent value="questions">
                 <FilterQuestions id={user.id} />
               </TabsContent>
+              <TabsContent value="knowledge base">
+                <KnowledgeBase id={user.id} />
+              </TabsContent>
             </TabsMenu>
-          </div>
-
-          <div className="flex gap-5 justify-end">
-            <Button type="submit" className="w-[100px] h-[50px]">
-              <Loader loading={false}>Save</Loader>
-            </Button>
           </div>
         </div>
       </div>

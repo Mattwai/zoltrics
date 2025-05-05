@@ -30,7 +30,11 @@ const BookingPage = async ({ params }: Props) => {
           initialChatBot={{
             name: user.name || "BookerBuddy",
             chatBot: user.chatBot,
-            helpdesk: user.helpdesk || [],
+            helpdesk: (user.helpdesk || []).map(h => ({
+              ...h,
+              domainId: null,
+              userId: undefined
+            })),
           }}
         />
       </div>

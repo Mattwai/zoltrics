@@ -12,11 +12,12 @@ export type DomainSettingsProps = {
 export type HelpDeskQuestionsProps = {
   question: string;
   answer: string;
+  knowledgeBase?: string;
 };
 
 export type AddProductProps = {
   name: string;
-  image: any;
+  image?: any;
   price: string;
 };
 
@@ -85,7 +86,8 @@ export const DomainSettingsSchema = z
 
 export const HelpDeskQuestionsSchema = z.object({
   question: z.string().min(1, { message: "Question cannot be left empty" }),
-  answer: z.string().min(1, { message: "Question cannot be left empty" }),
+  answer: z.string().min(1, { message: "Answer cannot be left empty" }),
+  knowledgeBase: z.string().optional(),
 });
 
 export const FilterQuestionsSchema = z.object({

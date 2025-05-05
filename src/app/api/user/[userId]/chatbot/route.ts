@@ -7,9 +7,24 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-type UserWithRelations = User & {
+type HelpDeskQuestion = {
+  id: string;
+  userId: string | null;
+  question: string;
+  answer: string;
+  knowledgeBase?: string;
+};
+
+type UserWithRelations = {
+  id: string;
   chatBot: ChatBot | null;
-  helpdesk: HelpDesk[];
+  helpdesk: HelpDeskQuestion[];
+  knowledgeBase: {
+    id: string;
+    title: string;
+    content: string;
+    category?: string;
+  }[];
 };
 
 export async function GET(
@@ -70,56 +85,42 @@ export async function POST(
       },
       include: {
         chatBot: true,
-        helpdesk: true,
+        knowledgeBase: true,
       },
     }) as UserWithRelations | null;
 
     if (!user) {
       return NextResponse.json(
         { error: "User not found" },
-        {
-          status: 404,
-        }
+        { status: 404 }
       );
     }
 
-    const chatBot = user.chatBot;
-    const helpdesk = user.helpdesk;
-
-    if (chatBot?.helpdesk && helpdesk.length > 0) {
-      // Use helpdesk questions for responses
-      const matchingQuestion = helpdesk.find(
-        (q: HelpDesk) => q.question.toLowerCase() === message.toLowerCase()
-      );
-
-      if (matchingQuestion) {
-        return NextResponse.json({ response: matchingQuestion.answer });
-      }
-    }
-
-    // If no matching helpdesk question or helpdesk is disabled, use OpenAI
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a helpful AI assistant for a booking system. Help users with their booking-related questions.",
-        },
-        { role: "user", content: message },
-      ],
+    // Search through knowledge base entries
+    const relevantEntries = (user as UserWithRelations).knowledgeBase.filter(entry => {
+      const searchTerms = message.toLowerCase().split(' ');
+      const entryText = `${entry.title} ${entry.content} ${entry.category || ''}`.toLowerCase();
+      return searchTerms.some((term: string) => entryText.includes(term));
     });
 
+    if (relevantEntries.length > 0) {
+      // Combine relevant information
+      const response = relevantEntries
+        .map(entry => `${entry.title}:\n${entry.content}`)
+        .join('\n\n');
+      
+      return NextResponse.json({ response });
+    }
+
+    // If no relevant information found
     return NextResponse.json({
-      response: completion.choices[0].message?.content,
+      response: "I apologize, but I don't have enough information in my knowledge base to answer that question. Please contact a human agent for assistance."
     });
   } catch (error) {
     console.error("Error in POST /api/user/[userId]/chatbot:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 } 

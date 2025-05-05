@@ -49,10 +49,11 @@ model User {
   chatBot                 ChatBot?
   customTimeSlots         CustomTimeSlot[]
   domains                 Domain[]
+  filterQuestions         FilterQuestions[]
   helpdesk                HelpDesk[]
+  knowledgeBase           KnowledgeBase[]
   sessions                Session[]
   bookingCalendarSettings BookingCalendarSettings?
-  filterQuestions         FilterQuestions[]
 }
 
 model VerificationRequest {
@@ -67,13 +68,13 @@ model VerificationRequest {
 }
 
 model Domain {
-  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name            String
-  userId          String?           @db.Uuid
-  customer        Customer[]
-  User            User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  products        Product[]
-  Campaign        Campaign[]        @relation("CampaignToDomain")
+  id       String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name     String
+  userId   String?    @db.Uuid
+  customer Customer[]
+  User     User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products Product[]
+  Campaign Campaign[] @relation("CampaignToDomain")
 }
 
 model ChatBot {
@@ -98,6 +99,15 @@ model HelpDesk {
   id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   question String
   answer   String
+  userId   String? @db.Uuid
+  User     User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model KnowledgeBase {
+  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title    String
+  content  String
+  category String?
   userId   String? @db.Uuid
   User     User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

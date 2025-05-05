@@ -1,6 +1,8 @@
 import {
   onCreateFilterQuestions,
   onCreateHelpDeskQuestion,
+  onCreateKnowledgeBaseEntry,
+  onGetAllKnowledgeBaseEntries,
   onCreateNewDomainProduct,
   onDeleteUserDomain,
   onGetAllFilterQuestions,
@@ -24,6 +26,7 @@ import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 export const useThemeMode = () => {
   const { setTheme, theme } = useTheme();
@@ -234,4 +237,66 @@ export const useProducts = (domainId: string) => {
   });
 
   return { onCreateNewProduct, register, errors, loading };
+};
+
+const KnowledgeBaseSchema = z.object({
+  title: z.string().min(1, { message: "Title cannot be empty" }),
+  content: z.string().min(1, { message: "Content cannot be empty" }),
+  category: z.string().optional(),
+});
+
+type KnowledgeBaseProps = z.infer<typeof KnowledgeBaseSchema>;
+
+export const useKnowledgeBase = (id: string) => {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<KnowledgeBaseProps>({
+    resolver: zodResolver(KnowledgeBaseSchema),
+  });
+  const { toast } = useToast();
+  const [loading, setLoading] = useState<boolean>(false);
+  const [entries, setEntries] = useState<{ id: string; title: string; content: string; category?: string }[]>([]);
+
+  const onSubmitEntry = handleSubmit(async (values) => {
+    setLoading(true);
+    const entry = await onCreateKnowledgeBaseEntry(
+      id,
+      values.title,
+      values.content,
+      values.category
+    );
+    if (entry) {
+      setEntries(entry.entries!);
+      toast({
+        title: entry.status === 200 ? "Success" : "Error",
+        description: entry.message,
+      });
+      reset();
+    }
+    setLoading(false);
+  });
+
+  const onGetEntries = async () => {
+    setLoading(true);
+    const result = await onGetAllKnowledgeBaseEntries(id);
+    if (result) {
+      setEntries(result.entries);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    onGetEntries();
+  }, []);
+
+  return {
+    register,
+    errors,
+    onSubmitEntry,
+    entries,
+    loading,
+  };
 };

@@ -73,6 +73,9 @@ export const HELP_DESK_TABS_MENU: TABS_MENU_PROPS[] = [
   {
     label: "questions",
   },
+  {
+    label: "knowledge base",
+  },
 ];
 
 export const APPOINTMENT_TABLE_HEADER = [

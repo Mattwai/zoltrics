@@ -580,3 +580,79 @@ export const onGetWeeklySettings = async (userId: string) => {
     return null;
   }
 };
+
+export const onCreateKnowledgeBaseEntry = async (
+  userId: string,
+  title: string,
+  content: string,
+  category?: string
+) => {
+  try {
+    const entry = await client.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        knowledgeBase: {
+          create: {
+            title,
+            content,
+            category,
+          },
+        },
+      },
+      include: {
+        knowledgeBase: {
+          select: {
+            id: true,
+            title: true,
+            content: true,
+            category: true,
+          },
+        },
+      },
+    });
+
+    if (entry) {
+      return {
+        status: 200,
+        message: "New knowledge base entry added",
+        entries: entry.knowledgeBase,
+      };
+    }
+
+    return {
+      status: 400,
+      message: "Oops! something went wrong",
+    };
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const onGetAllKnowledgeBaseEntries = async (userId: string) => {
+  try {
+    const entries = await client.knowledgeBase.findMany({
+      where: {
+        userId: userId,
+      },
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        category: true,
+      },
+      orderBy: {
+        title: "asc",
+      },
+    });
+
+    return {
+      status: 200,
+      message: "Knowledge base entries retrieved",
+      entries: entries,
+    };
+  } catch (error) {
+    console.log(error);
+  }
+};
