@@ -2,10 +2,10 @@ import { onGetSubscriptionPlan } from "@/actions/settings";
 import { pricingCards } from "@/constants/landing-page";
 import { CheckCircle2, Plus } from "lucide-react";
 import Image from "next/image";
-import SubscriptionForm from "../forms/settings/subscription-form";
-import Modal from "../modal";
-import Section from "../section-label";
-import { Card, CardContent, CardDescription } from "../ui/card";
+import SubscriptionForm from "@/components/forms/settings/subscription-form";
+import Modal from "@/components/modal";
+import Section from "@/components/section-label";
+import { Card, CardContent, CardDescription } from "@/components/ui/card";
 
 type Props = {};
 

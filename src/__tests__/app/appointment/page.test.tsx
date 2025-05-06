@@ -18,7 +18,7 @@ jest.mock('@/components/appointment/all-appointment', () => ({
   )
 }));
 
-jest.mock('@/components/settings/booking-link', () => ({
+jest.mock('@/app/(dashboard)/appointment-settings/booking-link', () => ({
   __esModule: true,
   default: ({ userId, initialBookingLink, baseUrl }: { userId: string, initialBookingLink: string | null, baseUrl: string }) => (
     <div data-testid="mock-booking-link">

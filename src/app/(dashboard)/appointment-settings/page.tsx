@@ -1,7 +1,7 @@
 import InfoBar from "@/components/infobar";
-import BookingLink from "@/components/settings/booking-link";
-import { BookingCalendarSettings } from "@/components/settings/booking-calendar-settings";
-import { CustomTimeSlots } from "@/components/settings/custom-time-slots";
+import BookingLink from "@/app/(dashboard)/appointment-settings/booking-link";
+import { BookingCalendarSettings } from "@/app/(dashboard)/appointment-settings/booking-calendar-settings";
+import { CustomTimeSlots } from "@/app/(dashboard)/appointment-settings/custom-time-slots";
 import { authConfig } from "@/lib/auth";
 import { onGetUser } from "@/actions/settings";
 import { getServerSession } from "next-auth";

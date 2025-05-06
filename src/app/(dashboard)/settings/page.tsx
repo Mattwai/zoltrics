@@ -1,7 +1,6 @@
 import InfoBar from "@/components/infobar";
-import BillingSettings from "@/components/settings/billing-settings";
-import ChangePassword from "@/components/settings/change-password";
-import DarkModetoggle from "@/components/settings/dark-mode";
+import BillingSettings from "./billing-settings";
+import DarkModetoggle from "./dark-mode";
 import { authConfig } from "@/lib/auth";
 import { onGetUser } from "@/actions/settings";
 import { getServerSession } from "next-auth";
@@ -21,7 +20,6 @@ const Page = async (props: Props) => {
       <div className="overflow-y-auto w-full chat-window flex-1 h-0 flex flex-col gap-10 px-2">
         <BillingSettings />
         <DarkModetoggle />
-        {/* <ChangePassword /> */}
       </div>
     </>
   );

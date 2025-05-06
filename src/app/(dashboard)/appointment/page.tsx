@@ -2,7 +2,7 @@ import { onGetAllBookingsForCurrentUser } from "@/actions/appointment";
 import { onGetUser } from "@/actions/settings";
 import AllAppointments from "@/components/appointment/all-appointment";
 import InfoBar from "@/components/infobar";
-import BookingLink from "@/components/settings/booking-link";
+import BookingLink from "@/app/(dashboard)/appointment-settings/booking-link";
 import Section from "@/components/section-label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";

@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 // screen and waitFor are already exported by testing-library/jest-dom
-import BookingLink from '@/components/settings/booking-link';
+import BookingLink from '@/app/(dashboard)/appointment-settings/booking-link';
 import userEvent from '@testing-library/user-event';
 
 // Mock the fetch function

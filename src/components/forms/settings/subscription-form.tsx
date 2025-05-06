@@ -1,7 +1,7 @@
 "use client";
 import { Loader } from "@/components/loader";
-import { StripeElements } from "@/components/settings/stripe-elements";
-import SubscriptionCard from "@/components/settings/subscription-card";
+import { StripeElements } from "@/components/subscription/stripe-elements";
+import SubscriptionCard from "@/components/subscription/subscription-card";
 import { Button } from "@/components/ui/button";
 import { useSubscriptions } from "@/hooks/billing/use-billing";
 
@@ -19,7 +19,7 @@ const SubscriptionForm = ({ plan }: Props) => {
         <div className="flex flex-col gap-3">
           <SubscriptionCard
             title="STANDARD"
-            description="Perfect if you’re just getting started with Zoltrics"
+            description="Perfect if you're just getting started with Zoltrics"
             price="0"
             payment={payment}
             onPayment={onSetPayment}
@@ -28,7 +28,7 @@ const SubscriptionForm = ({ plan }: Props) => {
 
           <SubscriptionCard
             title="PRO"
-            description="Perfect if you’re just getting started with Zoltrics"
+            description="Perfect if you're just getting started with Zoltrics"
             price="15"
             payment={payment}
             onPayment={onSetPayment}
@@ -37,7 +37,7 @@ const SubscriptionForm = ({ plan }: Props) => {
 
           <SubscriptionCard
             title="BUSINESS"
-            description="Perfect if you’re just getting started with Zoltrics"
+            description="Perfect if you're just getting started with Zoltrics"
             price="35"
             payment={payment}
             onPayment={onSetPayment}

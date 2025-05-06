@@ -1,10 +1,10 @@
 "use client";
 import { useThemeMode } from "@/hooks/settings/use-settings";
 import { cn } from "@/lib/utils";
-import Section from "../section-label";
-import { DarkMode } from "../themes/dark-mode";
-import { LightMode } from "../themes/light-mode";
-import { SystemMode } from "../themes/system-mode";
+import Section from "@/components/section-label";
+import { DarkMode } from "@/components/themes/dark-mode";
+import { LightMode } from "@/components/themes/light-mode";
+import { SystemMode } from "@/components/themes/system-mode";
 
 type Props = {};
 

@@ -1,7 +1,7 @@
 "use client";
 import { useStripe } from "@/hooks/billing/use-billing";
-import { Loader } from "../loader";
-import { Button } from "../ui/button";
+import { Loader } from "@/components/loader";
+import { Button } from "@/components/ui/button";
 
 type StripeConnectProps = {
   connected: boolean;
