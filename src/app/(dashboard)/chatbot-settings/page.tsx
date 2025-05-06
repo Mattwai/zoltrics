@@ -3,17 +3,6 @@ import { authConfig } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import InfoBar from "@/components/infobar";
 import { Separator } from "@/components/ui/separator";
-import { useSettings } from "@/hooks/settings/use-settings";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { DomainSettingsSchema } from "@/schemas/settings-schema";
-import { Button } from "@/components/ui/button";
-import { Loader } from "@/components/loader";
-import { onUpdateWelcomeMessage } from "@/actions/settings";
-import { useToast } from "@/components/ui/use-toast";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import Image from "next/image";
 import PremiumBadge from "@/icons/premium-badge";
 import TabsMenu from "@/components/tabs";
 import { TabsContent } from "@/components/ui/tabs";
@@ -23,15 +12,12 @@ import FilterQuestions from "@/components/forms/settings/filter-questions";
 import KnowledgeBase from "@/components/forms/settings/knowledge-base";
 import { SideSheet } from "@/components/sheet";
 import { Plus } from "lucide-react";
-import { User } from "@prisma/client";
+import { User, Billings, Plans, ChatBot } from "@prisma/client";
+import { checkChatbotFeature } from "@/lib/subscription-checks";
 
 type UserWithChatBot = User & {
-  chatBot: {
-    welcomeMessage: string;
-    background: string;
-    textColor: string;
-    helpdesk: any[];
-  };
+  chatBot: ChatBot | null;
+  subscription: Billings | null;
 };
 
 type Props = {};
@@ -45,6 +31,11 @@ const Page = async (props: Props) => {
   if (!user) return null;
 
   const chatBot = user.chatBot;
+  const plan = user.subscription?.plan || "STANDARD";
+
+  // Check feature availability
+  const canCustomizeWelcome = checkChatbotFeature(plan, "welcomeMessage");
+  const canCustomizeAppearance = checkChatbotFeature(plan, "appearance");
 
   return (
     <>
@@ -56,7 +47,7 @@ const Page = async (props: Props) => {
               <h2 className="font-bold text-2xl">Chatbot Settings</h2>
               <div className="flex gap-1 bg-cream rounded-full px-3 py-1 text-xs items-center font-bold">
                 <PremiumBadge />
-                Premium
+                {plan.charAt(0) + plan.slice(1).toLowerCase()}
               </div>
             </div>
             <Separator orientation="horizontal" />
@@ -65,11 +56,17 @@ const Page = async (props: Props) => {
                 <div className="space-y-4">
                   <h3 className="font-semibold">Welcome Message</h3>
                   <textarea
-                    className="w-full p-2 border rounded-md"
+                    className="w-full p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
                     rows={4}
                     placeholder="Enter your chatbot's welcome message..."
                     defaultValue={chatBot?.welcomeMessage || "Hello! How can I help you with your booking today?"}
+                    disabled={!canCustomizeWelcome}
                   />
+                  {!canCustomizeWelcome && (
+                    <p className="text-sm text-amber-600">
+                      Upgrade to Professional or Business plan to customize the welcome message.
+                    </p>
+                  )}
                   <p className="text-sm text-gray-500">
                     This message will be shown to users when they first interact with your chatbot.
                   </p>
@@ -81,19 +78,26 @@ const Page = async (props: Props) => {
                       <label className="block text-sm font-medium text-gray-700">Background Color</label>
                       <input
                         type="color"
-                        className="mt-1 block w-full"
+                        className="mt-1 block w-full disabled:opacity-50 disabled:cursor-not-allowed"
                         defaultValue={chatBot?.background || "#ffffff"}
+                        disabled={!canCustomizeAppearance}
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Text Color</label>
                       <input
                         type="color"
-                        className="mt-1 block w-full"
+                        className="mt-1 block w-full disabled:opacity-50 disabled:cursor-not-allowed"
                         defaultValue={chatBot?.textColor || "#000000"}
+                        disabled={!canCustomizeAppearance}
                       />
                     </div>
                   </div>
+                  {!canCustomizeAppearance && (
+                    <p className="text-sm text-amber-600">
+                      Upgrade to Professional or Business plan to customize the chatbot appearance.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -122,19 +126,19 @@ const Page = async (props: Props) => {
                       </>
                     }
                   >
-                    <KnowledgeBase id={user.id} />
+                    <KnowledgeBase id={user.id} plan={plan} />
                   </SideSheet>
                 </div>
               }
             >
               <TabsContent value="help desk" className="w-full">
-                <HelpDesk id={user.id} />
+                <HelpDesk id={user.id} plan={plan} />
               </TabsContent>
               <TabsContent value="questions">
-                <FilterQuestions id={user.id} />
+                <FilterQuestions id={user.id} plan={plan} />
               </TabsContent>
               <TabsContent value="knowledge base">
-                <KnowledgeBase id={user.id} />
+                <KnowledgeBase id={user.id} plan={plan} />
               </TabsContent>
             </TabsMenu>
           </div>

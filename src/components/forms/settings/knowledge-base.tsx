@@ -10,13 +10,18 @@ import {
 } from "@/components/ui/card";
 import { useKnowledgeBase } from "@/hooks/settings/use-settings";
 import FormGenerator from "../form-generator";
+import { Plans } from "@prisma/client";
+import { checkHelpdeskFeature } from "@/lib/subscription-checks";
 
 type Props = {
   id: string;
+  plan: Plans;
 };
 
-const KnowledgeBase = ({ id }: Props) => {
+const KnowledgeBase = ({ id, plan }: Props) => {
   const { register, errors, onSubmitEntry, entries, loading } = useKnowledgeBase(id);
+
+  const hasKnowledgeBase = checkHelpdeskFeature(plan, "knowledgeBase");
 
   return (
     <Card className="w-full grid grid-cols-1 lg:grid-cols-2">
@@ -36,6 +41,7 @@ const KnowledgeBase = ({ id }: Props) => {
               name="title"
               placeholder="Type the title"
               type="text"
+              disabled={!hasKnowledgeBase}
             />
           </div>
           <div className="flex flex-col gap-3">
@@ -52,6 +58,7 @@ const KnowledgeBase = ({ id }: Props) => {
               placeholder="Type the content"
               type="text"
               lines={5}
+              disabled={!hasKnowledgeBase}
             />
           </div>
           <div className="flex flex-col gap-3">
@@ -67,11 +74,18 @@ const KnowledgeBase = ({ id }: Props) => {
               name="category"
               placeholder="Type the category"
               type="text"
+              disabled={!hasKnowledgeBase}
             />
           </div>
+          {!hasKnowledgeBase && (
+            <p className="text-sm text-amber-600">
+              Upgrade to Professional or Business plan to use the knowledge base feature.
+            </p>
+          )}
           <Button
             type="submit"
             className="bg-purple hover:bg-purple hover:opacity-70 transition duration-150 ease-in-out text-white font-semibold"
+            disabled={!hasKnowledgeBase}
           >
             Create
           </Button>

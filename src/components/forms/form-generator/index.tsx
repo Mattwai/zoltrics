@@ -16,6 +16,7 @@ type Props = {
   lines?: number;
   form?: string;
   defaultValue?: string;
+  disabled?: boolean;
 };
 
 const FormGenerator = ({
@@ -30,6 +31,7 @@ const FormGenerator = ({
   label,
   lines,
   options,
+  disabled,
 }: Props) => {
   switch (inputType) {
     case "input":
@@ -43,6 +45,7 @@ const FormGenerator = ({
             placeholder={placeholder}
             form={form}
             defaultValue={defaultValue}
+            disabled={disabled}
             {...register(name)}
           />
           <ErrorMessage
@@ -60,7 +63,7 @@ const FormGenerator = ({
       return (
         <Label htmlFor={`select-${label}`}>
           {label && label}
-          <select form={form} id={`select-${label}`} {...register(name)}>
+          <select form={form} id={`select-${label}`} disabled={disabled} {...register(name)}>
             {options?.length &&
               options.map((option) => (
                 <option value={option.value} key={option.id}>
@@ -87,6 +90,7 @@ const FormGenerator = ({
             form={form}
             id={`input-${label}`}
             placeholder={placeholder}
+            disabled={disabled}
             {...register(name)}
             rows={lines}
             defaultValue={defaultValue}

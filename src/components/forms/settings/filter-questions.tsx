@@ -10,14 +10,19 @@ import {
 } from "@/components/ui/card";
 import { useFilterQuestions } from "@/hooks/settings/use-settings";
 import FormGenerator from "../form-generator";
+import { Plans } from "@prisma/client";
+import { checkHelpdeskFeature } from "@/lib/subscription-checks";
 
 type Props = {
   id: string;
+  plan: Plans;
 };
 
-const FilterQuestions = ({ id }: Props) => {
+const FilterQuestions = ({ id, plan }: Props) => {
   const { register, errors, onAddFilterQuestions, isQuestions, loading } =
     useFilterQuestions(id);
+
+  const canCustomizeQuestions = checkHelpdeskFeature(plan, "customQuestions");
 
   return (
     <Card className="w-full grid grid-cols-1 lg:grid-cols-2">
@@ -40,12 +45,13 @@ const FilterQuestions = ({ id }: Props) => {
               name="question"
               placeholder="Type your question"
               type="text"
+              disabled={!canCustomizeQuestions}
             />
           </div>
           <div className="flex flex-col gap-3">
             <Section
               label="Answer to question"
-              message="The anwer for the question above"
+              message="The answer for the question above"
             />
             <FormGenerator
               inputType="textarea"
@@ -56,11 +62,18 @@ const FilterQuestions = ({ id }: Props) => {
               placeholder="Type your answer"
               type="text"
               lines={5}
+              disabled={!canCustomizeQuestions}
             />
           </div>
+          {!canCustomizeQuestions && (
+            <p className="text-sm text-amber-600">
+              Upgrade to Business plan to customize chatbot questions.
+            </p>
+          )}
           <Button
             type="submit"
             className="bg-purple hover:bg-purple hover:opacity-70 transition duration-150 ease-in-out text-white font-semibold"
+            disabled={!canCustomizeQuestions}
           >
             Create
           </Button>

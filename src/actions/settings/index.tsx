@@ -1,7 +1,7 @@
 "use server";
 import { authConfig } from "@/lib/auth";
 import { client } from "@/lib/prisma";
-import { User, ChatBot, HelpDesk, Domain } from "@prisma/client";
+import { User, ChatBot, HelpDesk, Domain, Billings } from "@prisma/client";
 import { getServerSession } from "next-auth";
 
 export const onIntegrateDomain = async (domain: string) => {
@@ -588,6 +588,7 @@ const generateBookingLink = async () => {
 export const onGetUser = async (): Promise<(User & {
   chatBot: ChatBot | null;
   helpdesk: HelpDesk[];
+  subscription: Billings | null;
   domains: (Domain & {
     products: {
       id: string;
@@ -617,6 +618,7 @@ export const onGetUser = async (): Promise<(User & {
         },
         chatBot: true,
         helpdesk: true,
+        subscription: true,
       },
     });
     
@@ -639,6 +641,7 @@ export const onGetUser = async (): Promise<(User & {
           },
           chatBot: true,
           helpdesk: true,
+          subscription: true,
         },
       });
       return updatedUser;
