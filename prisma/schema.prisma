@@ -62,7 +62,7 @@ model User {
   customers              Customer[]
   chatRooms              ChatRoom[]
   chatMessages           ChatMessage[]
-  bookings               Bookings[]
+  bookings               Booking[]
 
   @@index([email])
   @@index([createdAt])
@@ -185,7 +185,6 @@ model FilterQuestions {
   User     User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([createdAt])
 }
 
 model CustomerResponses {
@@ -205,7 +204,7 @@ model Customer {
   updatedAt DateTime            @updatedAt
   
   // Relations
-  booking   Bookings[]
+  booking   Booking[]
   chatRoom  ChatRoom[]
   Domain    Domain?             @relation(fields: [domainId], references: [id], onDelete: Cascade)
   User      User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -357,7 +356,7 @@ model Product {
   // Relations
   User      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
   Domain    Domain?   @relation(fields: [domainId], references: [id], onDelete: Cascade)
-  bookings  Bookings[]
+  bookings  Booking[]
   pricing   ProductPricing?
   status    ProductStatus?
 
@@ -398,7 +397,7 @@ model BookingCalendarSettings {
   startDate     DateTime
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userSettings  UserSettings @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("booking_calendar_settings")
 }
