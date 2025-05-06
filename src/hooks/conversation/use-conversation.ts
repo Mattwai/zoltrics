@@ -40,10 +40,12 @@ export const useConversation = () => {
     const search = watch(async (value) => {
       setLoading(true);
       try {
-        const rooms = await onGetDomainChatRooms(value.domain);
-        if (rooms) {
-          setLoading(false);
-          setChatRooms(rooms.customer);
+        if (value.domain) {
+          const rooms = await onGetDomainChatRooms(value.domain);
+          if (rooms) {
+            setLoading(false);
+            setChatRooms(rooms.customer);
+          }
         }
       } catch (error) {
         console.log(error);
@@ -152,22 +154,20 @@ export const useChatWindow = () => {
   const onHandleSentMessage = handleSubmit(async (values) => {
     try {
       reset();
-      const message = await onOwnerSendMessage(
-        chatRoom!,
-        values.content,
-        "assistant"
-      );
-      //WIP: Remove this line
-      if (message) {
-        //remove this
-        // setChats((prev) => [...prev, message.message[0]])
-
-        await onRealTimeChat(
+      if (values.content) {
+        const message = await onOwnerSendMessage(
           chatRoom!,
-          message.message[0].message,
-          message.message[0].id,
+          values.content,
           "assistant"
         );
+        if (message) {
+          await onRealTimeChat(
+            chatRoom!,
+            message.message[0].message,
+            message.message[0].id,
+            "assistant"
+          );
+        }
       }
     } catch (error) {
       console.log(error);
