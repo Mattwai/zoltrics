@@ -39,11 +39,14 @@ async function fetchWeatherData(date: Date, city: string = "Auckland") {
 }
 
 async function getCustomerBookingHistory(email: string) {
-  const bookings = await prisma.bookings.findMany({
+  const bookings = await prisma.booking.findMany({
     where: { email },
+    include: {
+      bookingMetadata: true
+    },
     orderBy: { date: "desc" },
   });
-  const cancellations = bookings.filter((b) => b.no_show).length;
+  const cancellations = bookings.filter((b) => b.bookingMetadata?.no_show).length;
   const totalBookings = bookings.length;
   const clientReliability =
     totalBookings > 0 ? (totalBookings - cancellations) / totalBookings : 1;
@@ -81,12 +84,13 @@ async function predictCancellationRisk(features: any): Promise<number> {
   const options: Options = {
     mode: "text",
     pythonOptions: ["-u"], // Unbuffered output
-    scriptPath: "src/models",
+    scriptPath: "py",
+    pythonPath: ".venv/bin/python3", // Use Python from virtual environment
     args: [JSON.stringify(features)],
   };
 
   return new Promise((resolve, reject) => {
-    const pythonScript = path.join(__dirname, "../py/script.py");
+    const pythonScript = "predict.py";
     const shell = new PythonShell(pythonScript, options);
 
     let output = "";
@@ -202,7 +206,7 @@ export async function POST(req: NextRequest) {
     const depositRequired = riskScore > 50;
 
     // Create booking
-    const booking = await prisma.bookings.create({
+    const booking = await prisma.booking.create({
       data: {
         date: appointmentDate,
         slot,
@@ -210,11 +214,19 @@ export async function POST(req: NextRequest) {
         name,
         domainId: null,
         customerId: customer.id,
-        source: "direct_link",
-        depositRequired,
-        riskScore,
-        isAuthenticated: !!isAuthenticated,
-        googleUserId: googleUserId || null,
+        bookingMetadata: {
+          create: {
+            source: "direct_link",
+            riskScore,
+            isAuthenticated: !!isAuthenticated,
+            googleUserId: googleUserId || null,
+          }
+        },
+        bookingPayment: {
+          create: {
+            depositRequired,
+          }
+        }
       },
     });
 
