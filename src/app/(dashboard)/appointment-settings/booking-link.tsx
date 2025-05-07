@@ -36,7 +36,7 @@ const BookingLink = ({ initialBookingLink, userId, baseUrl }: BookingLinkProps) 
           onClick={handleCopy}
           disabled={!fullUrl}
         >
-          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          {copied ? <Check className="h-4 w-4" data-testid="check-icon" /> : <Copy className="h-4 w-4" data-testid="copy-icon" />}
         </Button>
       </div>
       <p className="text-sm text-muted-foreground">

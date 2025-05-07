@@ -51,11 +51,13 @@ describe('BookingLink Component', () => {
     expect(screen.getByRole('button')).toBeInTheDocument();
   });
 
-  it('handles link generation correctly', async () => {
-    const mockNewLink = 'new-generated-link';
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ bookingLink: mockNewLink }),
+  it('handles copy functionality correctly', async () => {
+    const initialLink = 'test-booking-link';
+    const mockClipboard = {
+      writeText: jest.fn().mockResolvedValue(undefined),
+    };
+    Object.assign(navigator, {
+      clipboard: mockClipboard,
     });
 
     const user = userEvent.setup();
@@ -63,41 +65,28 @@ describe('BookingLink Component', () => {
     render(
       <BookingLink 
         userId="test-user-id" 
-        initialBookingLink={null} 
+        initialBookingLink={initialLink} 
         baseUrl="https://example.com" 
       />
     );
     
-    // Click the generate button
-    await user.click(screen.getByRole('button', { name: /Generate/i }));
+    // Click the copy button
+    await user.click(screen.getByRole('button'));
     
-    // Check if fetch was called with the right parameters
-    expect(global.fetch).toHaveBeenCalledWith(
-      '/api/user/booking-link',
-      expect.objectContaining({
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: expect.any(String),
-      })
-    );
+    // Check if clipboard.writeText was called with the correct URL
+    expect(mockClipboard.writeText).toHaveBeenCalledWith(`https://example.com/booking/${initialLink}`);
     
-    // Wait for the link to be updated
-    await waitFor(() => {
-      expect(screen.getByDisplayValue(`https://example.com/booking/${mockNewLink}`)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Regenerate/i })).toBeInTheDocument();
-    });
+    // Check if the copy icon changes to check icon
+    expect(screen.getByRole('button')).toContainElement(screen.getByTestId('check-icon'));
+    
+    // Fast-forward timers to test the copy state reset
+    jest.advanceTimersByTime(2000);
+    
+    // Check if the icon changes back to copy icon
+    expect(screen.getByRole('button')).toContainElement(screen.getByTestId('copy-icon'));
   });
 
-  it('handles API error gracefully', async () => {
-    // Mock console.error to prevent it from displaying in tests
-    jest.spyOn(console, 'error').mockImplementation(() => {});
-    
-    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('API Error'));
-
-    const user = userEvent.setup();
-    
+  it('disables copy button when no link is available', () => {
     render(
       <BookingLink 
         userId="test-user-id" 
@@ -106,16 +95,6 @@ describe('BookingLink Component', () => {
       />
     );
     
-    // Click the generate button
-    await user.click(screen.getByRole('button', { name: /Generate/i }));
-    
-    // Wait for the error handling to complete
-    await waitFor(() => {
-      expect(console.error).toHaveBeenCalled();
-      expect(screen.getByDisplayValue("No booking link generated yet")).toBeInTheDocument();
-    });
-    
-    // Restore console.error
-    (console.error as jest.Mock).mockRestore();
+    expect(screen.getByRole('button')).toBeDisabled();
   });
 }); 
