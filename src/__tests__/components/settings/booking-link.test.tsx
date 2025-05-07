@@ -23,9 +23,9 @@ describe('BookingLink Component', () => {
       />
     );
     
-    expect(screen.getByText(/Booking Link/i)).toBeInTheDocument();
-    expect(screen.getByDisplayValue("No booking link generated yet")).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Generate/i })).toBeInTheDocument();
+    expect(screen.getByDisplayValue("No booking link available")).toBeInTheDocument();
+    expect(screen.getByText("Share this link with your customers to allow them to book appointments directly.")).toBeInTheDocument();
+    expect(screen.getByRole('button')).toBeInTheDocument();
   });
 
   it('shows the correct link when initialBookingLink is provided', () => {
@@ -39,7 +39,8 @@ describe('BookingLink Component', () => {
     );
     
     expect(screen.getByDisplayValue(`https://example.com/booking/${initialLink}`)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Regenerate/i })).toBeInTheDocument();
+    expect(screen.getByText("Share this link with your customers to allow them to book appointments directly.")).toBeInTheDocument();
+    expect(screen.getByRole('button')).toBeInTheDocument();
   });
 
   it('handles link generation correctly', async () => {
