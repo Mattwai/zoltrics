@@ -15,13 +15,15 @@ const Page = async (props: Props) => {
   const user = await onGetUser();
   
   return (
-    <>
-      <InfoBar />
-      <div className="overflow-y-auto w-full chat-window flex-1 h-0 flex flex-col gap-10 px-2">
-        <BillingSettings />
-        <DarkModetoggle />
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto py-8 px-4">
+        <InfoBar />
+        <div className="flex flex-col gap-10">
+          <BillingSettings />
+          <DarkModetoggle />
+        </div>
       </div>
-    </>
+    </div>
   );
 };
 

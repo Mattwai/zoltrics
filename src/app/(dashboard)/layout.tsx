@@ -20,7 +20,7 @@ const Layout = async ({ children }: Props) => {
     <ChatProvider>
       <div className="flex h-screen w-full">
         <SideBar domains={domains} />
-        <div className="w-full h-screen flex flex-col pl-20 md:pl-4">
+        <div className="w-full h-screen overflow-y-auto">
           {children}
         </div>
       </div>

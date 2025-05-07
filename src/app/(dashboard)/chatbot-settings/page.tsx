@@ -38,13 +38,12 @@ const Page = async (props: Props) => {
   const canCustomizeAppearance = checkChatbotFeature(plan, "appearance");
 
   return (
-    <>
-      <InfoBar />
-      <div className="overflow-y-auto w-full chat-window flex-1 h-0">
-        <div className="flex flex-col gap-8 pb-10">
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto py-8 px-4">
+        <InfoBar />
+        <div className="flex flex-col gap-8">
           <div className="flex flex-col gap-3">
             <div className="flex gap-4 items-center">
-              <h2 className="font-bold text-2xl">Chatbot Settings</h2>
               <div className="flex gap-1 bg-cream rounded-full px-3 py-1 text-xs items-center font-bold">
                 <PremiumBadge />
                 {plan.charAt(0) + plan.slice(1).toLowerCase()}
@@ -103,14 +102,7 @@ const Page = async (props: Props) => {
             </div>
           </div>
 
-          <div className="py-5 mb-10 flex flex-col gap-5 items-start">
-            <div className="flex flex-col gap-2">
-              <h2 className="font-bold text-2xl">Bot Training</h2>
-              <p className="text-sm font-light">
-                Set FAQ questions, create questions for capturing lead information and
-                train your bot to act the way you want it to.
-              </p>
-            </div>
+          <div className="flex flex-col gap-5 items-start">
             <TabsMenu
               triggers={HELP_DESK_TABS_MENU}
               button={
@@ -144,7 +136,7 @@ const Page = async (props: Props) => {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

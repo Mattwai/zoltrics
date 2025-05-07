@@ -39,22 +39,16 @@ const Page = (props: Props) => {
   const allProducts = user.domains.flatMap((domain: any) => domain.products);
 
   return (
-    <>
-      <InfoBar />
-      <div className="overflow-y-auto w-full chat-window flex-1 h-0 flex flex-col gap-10 px-2">
-        <div className="flex flex-col gap-4">
-          <h2 className="font-bold text-2xl">Product Settings</h2>
-          <p className="text-sm font-light">
-            Manage your products and set them live to accept payments from customers.
-          </p>
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto py-8 px-4">
+        <InfoBar />
         <ProductTable 
           id={user.id}
           products={allProducts}
           onProductAdded={fetchUser}
         />
       </div>
-    </>
+    </div>
   );
 };
 

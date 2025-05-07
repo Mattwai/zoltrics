@@ -60,10 +60,11 @@ const Page = async (props: Props) => {
     );
 
     return (
-      <>
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto py-8 px-4">
         <InfoBar />
-        <div className="grid grid-cols-1 lg:grid-cols-3 flex-1 h-0 gap-3">
-          <div className="lg:col-span-2 overflow-y-auto px-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <div className="lg:col-span-2">
             <Section
               label="Direct Booking Link" 
               message="Create and share a unique booking link with your customers."
@@ -78,7 +79,7 @@ const Page = async (props: Props) => {
             <h2 className="text-lg font-semibold">All Appointments</h2>
             <AllAppointments bookings={typedBookings} />
           </div>
-          <div className="col-span-1 pr-5">
+          <div className="col-span-1">
             <Section
               label="Bookings For Today"
               message="All your bookings for today are below:"
@@ -120,7 +121,8 @@ const Page = async (props: Props) => {
             )}
           </div>
         </div>
-      </>
+      </div>
+    </div>
     );
   } catch (error) {
     console.error("Error in appointment page:", error);

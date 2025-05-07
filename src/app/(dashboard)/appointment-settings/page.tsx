@@ -16,17 +16,19 @@ const Page = async (props: Props) => {
   const user = await onGetUser();
   
   return (
-    <>
-      <InfoBar />
-      <div className="overflow-y-auto w-full chat-window flex-1 h-0 flex flex-col gap-10 px-2">
-        <BookingLink               
-          userId={session.user.id}
-          initialBookingLink={user?.bookingLink || null}
-          baseUrl={process.env.NEXT_PUBLIC_BASE_URL || ""}/>
-        <BookingCalendarSettings userId={session.user.id} />
-        <CustomTimeSlots userId={session.user.id} />
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto py-8 px-4">
+        <InfoBar />
+        <div className="flex flex-col gap-10">
+          <BookingLink               
+            userId={session.user.id}
+            initialBookingLink={user?.bookingLink || null}
+            baseUrl={process.env.NEXT_PUBLIC_BASE_URL || ""}/>
+          <BookingCalendarSettings userId={session.user.id} />
+          <CustomTimeSlots userId={session.user.id} />
+        </div>
       </div>
-    </>
+    </div>
   );
 };
 
