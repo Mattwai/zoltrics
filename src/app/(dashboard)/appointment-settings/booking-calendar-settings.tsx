@@ -11,6 +11,7 @@ import { generateTimeSlots, calculateDuration, generateTimeOptions } from "@/lib
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Clock, Calendar, Copy } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface TimeSlot {
   startTime: string;
@@ -70,6 +71,7 @@ export const BookingCalendarSettings = ({ userId }: BookingCalendarSettingsProps
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [availableDays, setAvailableDays] = useState<string[]>([]);
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [dayTimeSlots, setDayTimeSlots] = useState<Record<string, TimeSlot>>({
     "Monday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
     "Tuesday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
@@ -81,6 +83,36 @@ export const BookingCalendarSettings = ({ userId }: BookingCalendarSettingsProps
   });
   const [activeDay, setActiveDay] = useState<string>("Monday");
   const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
+
+  // Add function to check if current schedule matches a preset
+  const checkMatchingPreset = (slots: Record<string, TimeSlot>, days: string[]) => {
+    for (const [presetName, presetHours] of Object.entries(BUSINESS_HOURS_PRESETS)) {
+      const presetDays = Object.keys(presetHours);
+      
+      // Check if days match
+      if (days.length !== presetDays.length || 
+          !days.every(day => presetDays.includes(day))) {
+        continue;
+      }
+
+      // Check if time slots match for each day
+      const isMatching = days.every(day => {
+        const currentSlot = slots[day];
+        const presetSlot = presetHours[day as keyof typeof presetHours];
+        return (
+          currentSlot.startTime === presetSlot.startTime &&
+          currentSlot.endTime === presetSlot.endTime &&
+          currentSlot.duration === presetSlot.duration &&
+          currentSlot.maxBookings === presetSlot.maxBookings
+        );
+      });
+
+      if (isMatching) {
+        return presetName;
+      }
+    }
+    return null;
+  };
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -118,6 +150,10 @@ export const BookingCalendarSettings = ({ userId }: BookingCalendarSettingsProps
               });
 
               setDayTimeSlots(newDayTimeSlots);
+              
+              // Check if the loaded schedule matches any preset
+              const matchingPreset = checkMatchingPreset(newDayTimeSlots, data.availableDays || []);
+              setSelectedPreset(matchingPreset);
             } catch (error) {
               console.error("Error parsing time slots:", error);
             }
@@ -235,6 +271,7 @@ export const BookingCalendarSettings = ({ userId }: BookingCalendarSettingsProps
     const presetHours = BUSINESS_HOURS_PRESETS[preset as keyof typeof BUSINESS_HOURS_PRESETS];
     setDayTimeSlots(presetHours);
     setAvailableDays(Object.keys(presetHours));
+    setSelectedPreset(preset);
   };
 
   return (
@@ -262,8 +299,16 @@ export const BookingCalendarSettings = ({ userId }: BookingCalendarSettingsProps
           <TabsContent value="presets" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {Object.keys(BUSINESS_HOURS_PRESETS).map((preset) => (
-                <Card key={preset} className="cursor-pointer hover:border-blue-500 transition-colors"
-                      onClick={() => applyPreset(preset)}>
+                <Card 
+                  key={preset} 
+                  className={cn(
+                    "cursor-pointer transition-all duration-200",
+                    selectedPreset === preset 
+                      ? "border-blue-500 bg-blue-50 shadow-md" 
+                      : "hover:border-blue-500 hover:bg-blue-50/50"
+                  )}
+                  onClick={() => applyPreset(preset)}
+                >
                   <CardHeader>
                     <CardTitle className="text-lg">{preset}</CardTitle>
                   </CardHeader>

@@ -15,10 +15,21 @@ export async function POST(req: Request) {
 
     const { availableDays, timeSlots, startDate } = await req.json();
     
-    // Update or create booking calendar settings
-    const settings = await prisma.bookingCalendarSettings.upsert({
+    // First ensure UserSettings exists
+    const userSettings = await prisma.userSettings.upsert({
       where: {
         userId: session.user.id,
+      },
+      create: {
+        userId: session.user.id,
+      },
+      update: {},
+    });
+
+    // Now create or update booking calendar settings
+    const settings = await prisma.bookingCalendarSettings.upsert({
+      where: {
+        userId: userSettings.id, // Use the UserSettings.id
       },
       update: {
         availableDays,
@@ -26,7 +37,7 @@ export async function POST(req: Request) {
         startDate: new Date(startDate),
       },
       create: {
-        userId: session.user.id,
+        userId: userSettings.id, // Use the UserSettings.id
         availableDays,
         timeSlots: JSON.stringify(timeSlots),
         startDate: new Date(startDate),
@@ -53,9 +64,20 @@ export async function GET(req: Request) {
       );
     }
 
-    const settings = await prisma.bookingCalendarSettings.findUnique({
+    // First get the UserSettings
+    const userSettings = await prisma.userSettings.findUnique({
       where: {
         userId: session.user.id,
+      },
+    });
+
+    if (!userSettings) {
+      return NextResponse.json(null);
+    }
+
+    const settings = await prisma.bookingCalendarSettings.findUnique({
+      where: {
+        userId: userSettings.id,
       },
     });
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { client } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { generateTimeSlots, formatTimeSlot } from "@/lib/time-slots";
 
 interface CustomTimeSlot {
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     console.log('Querying custom slots from', startOfDay, 'to', endOfDay);
 
     // Get existing bookings for the selected date
-    const existingBookings = await client.bookings.findMany({
+    const existingBookings = await prisma.booking.findMany({
       where: {
         date: {
           gte: startOfDay,
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Get custom time slots for this date
-    const customSlots = await client.customTimeSlot.findMany({
+    const customSlots = await prisma.customTimeSlot.findMany({
       where: {
         userId,
         date: {
@@ -102,9 +102,19 @@ export async function GET(request: NextRequest) {
     }
     
     // Get weekly booking calendar settings
-    const calendarSettings = await client.bookingCalendarSettings.findUnique({
+    const userSettings = await prisma.userSettings.findUnique({
       where: {
-        userId,
+        userId: userId,
+      },
+    });
+
+    if (!userSettings) {
+      return NextResponse.json({ slots: [] });
+    }
+
+    const calendarSettings = await prisma.bookingCalendarSettings.findUnique({
+      where: {
+        userId: userSettings.id,
       },
     });
 
@@ -228,7 +238,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Filter out booked slots
-    const bookedSlots = new Set(existingBookings.map((booking) => booking.slot));
+    const bookedSlots = new Set(existingBookings.map((booking: { slot: string }) => booking.slot));
     availableSlots = availableSlots.filter((slot) => !bookedSlots.has(slot.slot));
 
     // Filter slots based on current time for same-day bookings
@@ -246,7 +256,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if the date is blocked
-    const blockedDate = await client.blockedDate.findFirst({
+    const blockedDate = await prisma.blockedDate.findFirst({
       where: {
         userId,
         date: {
