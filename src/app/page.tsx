@@ -1,5 +1,4 @@
 import { HeroParallax } from "@/components/global/connect-parallax";
-import { ContainerScroll } from "@/components/global/container-scroll-animation";
 import NavBar from "@/components/navbar";
 import {
   Card,
@@ -75,7 +74,7 @@ export default async function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20">
+      <section id="features" className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-5xl font-bold text-center text-white mb-16">
             Everything You Need to Scale Your Business
@@ -218,7 +217,7 @@ export default async function Home() {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20">
+      <section id="pricing" className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">

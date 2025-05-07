@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { SmoothScrollLink } from "../global/smooth-scroll";
 
 function NavBar() {
   return (
@@ -23,10 +24,10 @@ function NavBar() {
       <nav className="absolute left-[50%] top-[50%] transform translate-x-[-50%] translate-y-[-50%] hidden md:block">
         <ul className="gap-5 justify-between self-stretch my-auto text-sm leading-5 text-neutral-300 max-md:flex-wrap max-md:max-w-full font-normal hidden md:flex">
           <li>
-            <Link href="#">Pricing</Link>
+            <SmoothScrollLink href="#pricing">Pricing</SmoothScrollLink>
           </li>
           <li>
-            <Link href="#">Features</Link>
+            <SmoothScrollLink href="#features">Features</SmoothScrollLink>
           </li>
           <li>
             <Link href="#">Contact Us</Link>

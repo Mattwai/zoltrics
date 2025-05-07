@@ -66,36 +66,16 @@ export const getMonthName = (month: number) => {
     : month == 12 && "Dec";
 };
 
-export const getDefaultTimeSlots = () => {
-  return {
-    startTime: "09:00",
-    endTime: "16:30",
-    duration: 30,
-  };
-};
+export function smoothScrollTo(elementId: string) {
+  const element = document.getElementById(elementId);
+  if (element) {
+    const headerOffset = 80; // Adjust this value based on your navbar height
+    const elementPosition = element.getBoundingClientRect().top;
+    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
 
-export const generateTimeSlots = (startTime: string, endTime: string, duration: number) => {
-  if (!startTime || !endTime) return [];
-  
-  const slots = [];
-  const [startHour, startMinute] = startTime.split(':').map(Number);
-  const [endHour, endMinute] = endTime.split(':').map(Number);
-  
-  let currentHour = startHour;
-  let currentMinute = startMinute;
-  
-  while (currentHour < endHour || (currentHour === endHour && currentMinute <= endMinute)) {
-    slots.push({
-      slot: `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`,
-      duration,
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: 'smooth'
     });
-    
-    currentMinute += duration;
-    if (currentMinute >= 60) {
-      currentHour++;
-      currentMinute = 0;
-    }
   }
-  
-  return slots;
-};
+}
