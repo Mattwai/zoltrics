@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
@@ -15,13 +15,18 @@ const BookingLink = ({ initialBookingLink, userId, baseUrl }: BookingLinkProps) 
   const [copied, setCopied] = useState(false);
   const fullUrl = initialBookingLink ? `${baseUrl}/booking/${initialBookingLink}` : "";
 
-  const handleCopy = async () => {
+  const handleCopy = useCallback(async () => {
     if (fullUrl) {
-      await navigator.clipboard.writeText(fullUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      try {
+        await navigator.clipboard.writeText(fullUrl);
+        setCopied(true);
+        const timer = setTimeout(() => setCopied(false), 2000);
+        return () => clearTimeout(timer);
+      } catch (error) {
+        console.error('Failed to copy text:', error);
+      }
     }
-  };
+  }, [fullUrl]);
   
   return (
     <div className="space-y-1">
