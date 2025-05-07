@@ -1,9 +1,14 @@
+"use client";
+
 import { APPOINTMENT_TABLE_HEADER } from "@/constants/menu";
 import { getMonthName } from "@/lib/utils";
 import { DataTable } from "../table";
 import { CardDescription } from "../ui/card";
 import { TableCell, TableRow } from "../ui/table";
 import { cn } from "@/lib/utils";
+import { Button } from "../ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
 
 type Props = {
   bookings: {
@@ -31,11 +36,24 @@ type Props = {
   }[] | undefined;
 };
 
+const ITEMS_PER_PAGE = 10;
+
 const AllAppointments = ({ bookings }: Props) => {
+  const [currentPage, setCurrentPage] = useState(1);
+
+  if (!bookings) {
+    return <CardDescription>No Appointments</CardDescription>;
+  }
+
+  const totalPages = Math.ceil(bookings.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentBookings = bookings.slice(startIndex, endIndex);
+
   return (
-    <DataTable headers={APPOINTMENT_TABLE_HEADER}>
-      {bookings ? (
-        bookings.map((booking) => (
+    <div className="space-y-4">
+      <DataTable headers={APPOINTMENT_TABLE_HEADER}>
+        {currentBookings.map((booking) => (
           <TableRow key={booking.id}>
             <TableCell>{booking.name}</TableCell>
             <TableCell>{booking.email}</TableCell>
@@ -71,11 +89,38 @@ const AllAppointments = ({ bookings }: Props) => {
             </TableCell>
             <TableCell>{booking.bookingPayment?.depositPaid ? "Yes" : "No"}</TableCell>
           </TableRow>
-        ))
-      ) : (
-        <CardDescription>No Appointments</CardDescription>
+        ))}
+      </DataTable>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-2">
+          <div className="text-sm text-gray-500">
+            Showing {startIndex + 1} to {Math.min(endIndex, bookings.length)} of {bookings.length} appointments
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="text-sm">
+              Page {currentPage} of {totalPages}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       )}
-    </DataTable>
+    </div>
   );
 };
 
