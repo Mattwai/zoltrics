@@ -7,14 +7,20 @@ import { CardDescription } from "../ui/card";
 import { TableCell, TableRow } from "../ui/table";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreVertical } from "lucide-react";
 import { useState } from "react";
 import { Booking } from "@/types/booking";
 import { format } from "date-fns";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Props {
   bookings: Booking[];
-  onDelete?: (bookingId: string) => Promise<void>;
+  onDelete?: (bookingId: string) => void;
   isDeleting?: string | null;
 }
 
@@ -72,22 +78,30 @@ const AllAppointments = ({ bookings, onDelete, isDeleting }: Props) => {
             <TableCell>{booking.bookingPayment?.depositPaid ? "Yes" : "No"}</TableCell>
             {onDelete && (
               <TableCell>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  onClick={() => onDelete(booking.id)}
-                  disabled={isDeleting === booking.id}
-                >
-                  {isDeleting === booking.id ? (
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
-                  ) : (
-                    <>
-                      <X className="h-4 w-4 mr-1" />
-                      Delete
-                    </>
-                  )}
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      className="text-red-600 focus:text-red-600"
+                      onClick={() => onDelete(booking.id)}
+                      disabled={isDeleting === booking.id}
+                    >
+                      {isDeleting === booking.id ? (
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
+                      ) : (
+                        "Delete"
+                      )}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </TableCell>
             )}
           </TableRow>
