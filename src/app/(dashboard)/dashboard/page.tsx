@@ -38,7 +38,7 @@ const Page = async (props: Props) => {
           />
           <DashboardCard
             value={bookings || 0}
-            title="Upcoming Appointments"
+            title="Appointments"
             icon={<Calendar className="w-5 h-5" />}
           />
           <DashboardCard
