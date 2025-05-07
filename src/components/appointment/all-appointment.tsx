@@ -7,38 +7,20 @@ import { CardDescription } from "../ui/card";
 import { TableCell, TableRow } from "../ui/table";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useState } from "react";
+import { Booking } from "@/types/booking";
+import { format } from "date-fns";
 
-type Props = {
-  bookings: {
-    id: string;
-    name: string;
-    email: string;
-    date: Date;
-    slot: string;
-    createdAt: Date;
-    domainId: string | null;
-    bookingMetadata: {
-      source: string | null;
-      no_show: boolean;
-      riskScore: number | null;
-    } | null;
-    bookingPayment: {
-      depositRequired: boolean;
-      depositPaid: boolean;
-    } | null;
-    Customer: {
-      Domain: {
-        name: string;
-      } | null;
-    } | null;
-  }[] | undefined;
-};
+interface Props {
+  bookings: Booking[];
+  onDelete?: (bookingId: string) => Promise<void>;
+  isDeleting?: string | null;
+}
 
 const ITEMS_PER_PAGE = 10;
 
-const AllAppointments = ({ bookings }: Props) => {
+const AllAppointments = ({ bookings, onDelete, isDeleting }: Props) => {
   const [currentPage, setCurrentPage] = useState(1);
 
   if (!bookings) {
@@ -88,6 +70,26 @@ const AllAppointments = ({ bookings }: Props) => {
               )}
             </TableCell>
             <TableCell>{booking.bookingPayment?.depositPaid ? "Yes" : "No"}</TableCell>
+            {onDelete && (
+              <TableCell>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => onDelete(booking.id)}
+                  disabled={isDeleting === booking.id}
+                >
+                  {isDeleting === booking.id ? (
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
+                  ) : (
+                    <>
+                      <X className="h-4 w-4 mr-1" />
+                      Delete
+                    </>
+                  )}
+                </Button>
+              </TableCell>
+            )}
           </TableRow>
         ))}
       </DataTable>
@@ -118,6 +120,12 @@ const AllAppointments = ({ bookings }: Props) => {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
+        </div>
+      )}
+
+      {bookings.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          No appointments found
         </div>
       )}
     </div>

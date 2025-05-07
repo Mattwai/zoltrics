@@ -11,6 +11,7 @@ import { Booking } from "@/types/booking";
 import AllAppointments from "@/components/appointment/all-appointment";
 import Section from "@/components/section-label";
 import BookingLink from "@/app/(dashboard)/appointment-settings/booking-link";
+import { toast } from "sonner";
 
 interface AppointmentClientProps {
   initialBookings: Booking[];
@@ -27,6 +28,8 @@ export const AppointmentClient = ({
 }: AppointmentClientProps) => {
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleDateChange = (date: Date | undefined) => {
     setSelectedDate(date);
@@ -45,7 +48,44 @@ export const AppointmentClient = ({
     }
   };
 
-  const todayBookings = bookings.filter((booking) => {
+  const handleDelete = async (bookingId: string) => {
+    try {
+      setIsDeleting(bookingId);
+      const response = await fetch(`/api/appointments/${bookingId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || "Failed to delete appointment");
+      }
+
+      // Update local state
+      setBookings((prev) => prev.filter((booking) => booking.id !== bookingId));
+      toast.success("Appointment deleted successfully");
+    } catch (error) {
+      console.error("Error deleting appointment:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete appointment");
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
+  const filteredBookings = bookings.filter((booking) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      booking.name.toLowerCase().includes(query) ||
+      booking.email.toLowerCase().includes(query) ||
+      booking.slot.toLowerCase().includes(query) ||
+      (booking.Customer?.Domain?.name || "").toLowerCase().includes(query)
+    );
+  });
+
+  const todayBookings = filteredBookings.filter((booking) => {
     const today = new Date();
     const bookingDate = new Date(booking.date);
     return (
@@ -76,13 +116,17 @@ export const AppointmentClient = ({
                       variant="ghost"
                       size="sm"
                       className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => {
-                        // TODO: Implement cancel appointment
-                        console.log("Cancel appointment:", booking.id);
-                      }}
+                      onClick={() => handleDelete(booking.id)}
+                      disabled={isDeleting === booking.id}
                     >
-                      <X className="h-4 w-4 mr-1" />
-                      Cancel
+                      {isDeleting === booking.id ? (
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
+                      ) : (
+                        <>
+                          <X className="h-4 w-4 mr-1" />
+                          Delete
+                        </>
+                      )}
                     </Button>
                   </div>
                 </CardHeader>
@@ -152,7 +196,8 @@ export const AppointmentClient = ({
                     <Input
                       placeholder="Search appointments..."
                       className="pl-8"
-                      // TODO: Implement search functionality
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </div>
                   <DatePicker onDateChange={handleDateChange} />
@@ -160,7 +205,11 @@ export const AppointmentClient = ({
               </div>
             </div>
             <div className="p-6">
-              <AllAppointments bookings={bookings} />
+              <AllAppointments 
+                bookings={filteredBookings} 
+                onDelete={handleDelete}
+                isDeleting={isDeleting}
+              />
             </div>
           </div>
         </div>

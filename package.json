@@ -36,6 +36,7 @@
     "react-dom": "^18",
     "react-hook-form": "^7.55.0",
     "shadcn": "^2.4.1",
+    "sonner": "^2.0.3",
     "sooner": "^1.1.4",
     "stripe": "^15.11.0",
     "tailwind-merge": "^2.3.0",
