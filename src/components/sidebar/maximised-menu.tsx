@@ -6,6 +6,7 @@ import MenuItem from "./menu-item";
 import ChatIcon from "@/icons/chat-icon";
 import HelpDeskIcon from "@/icons/help-desk-icon";
 import TimerIcon from "@/icons/timer-icon";
+import { Separator } from "../ui/separator";
 
 type Props = {
   onExpand(): void;
@@ -45,6 +46,7 @@ const MaxMenu = ({ current, domains, onExpand, onSignOut }: Props) => {
       <div className="animate-fade-in opacity-0 delay-300 fill-mode-forwards flex flex-col justify-between h-full pt-10">
         <div className="flex flex-col">
           <p className="text-xs text-gray-500 mb-3">MENU</p>
+          <Separator orientation="horizontal" />
           {SIDE_BAR_MENU.map((menu, key) => (
             <MenuItem size="max" {...menu} key={key} current={current} />
           ))}
@@ -52,6 +54,7 @@ const MaxMenu = ({ current, domains, onExpand, onSignOut }: Props) => {
         </div>
         <div className="flex flex-col">
           <p className="text-xs text-gray-500 mb-3">SETTINGS</p>
+          <Separator orientation="horizontal" />
           <MenuItem
             size="max"
             label="Chatbot"
@@ -76,6 +79,7 @@ const MaxMenu = ({ current, domains, onExpand, onSignOut }: Props) => {
             icon={<SettingsIcon />}
             path="settings"
           />
+          <Separator orientation="horizontal" />
           <MenuItem
             size="max"
             label="Sign out"

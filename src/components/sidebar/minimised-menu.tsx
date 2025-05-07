@@ -7,6 +7,7 @@ import MenuItem from "./menu-item";
 import ChatIcon from "@/icons/chat-icon";
 import HelpDeskIcon from "@/icons/help-desk-icon";
 import TimerIcon from "@/icons/timer-icon";
+import { Separator } from "../ui/separator";
 
 type MinMenuProps = {
   onShrink(): void;
@@ -38,12 +39,14 @@ export const MinMenu = ({
       </span>
       <div className="animate-fade-in opacity-0 delay-300 fill-mode-forwards flex flex-col justify-between h-full pt-10">
         <div className="flex flex-col">
+        <Separator orientation="horizontal" />
           {SIDE_BAR_MENU.map((menu, key) => (
             <MenuItem size="min" {...menu} key={key} current={current} />
           ))}
           {/* <DomainMenu min domains={domains} /> */}
         </div>
         <div className="flex flex-col">
+        <Separator orientation="horizontal" />
           <MenuItem
             size="min"
             label="Chatbot"
@@ -68,6 +71,7 @@ export const MinMenu = ({
             icon={<SettingsIcon />}
             path="settings"
           />
+          <Separator orientation="horizontal" />
           <MenuItem
             size="min"
             label="Sign out"
