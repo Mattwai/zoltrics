@@ -6,28 +6,29 @@ import { TableCell, TableRow } from "../ui/table";
 import { cn } from "@/lib/utils";
 
 type Props = {
-  bookings:
-    | {
-        Customer: {
-          Domain: {
-            name: string;
-          } | null;
-        } | null;
-        id: string;
+  bookings: {
+    id: string;
+    name: string;
+    email: string;
+    date: Date;
+    slot: string;
+    createdAt: Date;
+    domainId: string | null;
+    bookingMetadata: {
+      source: string | null;
+      no_show: boolean;
+      riskScore: number | null;
+    } | null;
+    bookingPayment: {
+      depositRequired: boolean;
+      depositPaid: boolean;
+    } | null;
+    Customer: {
+      Domain: {
         name: string;
-        email: string;
-        domainId: string | null;
-        source?: string;
-        date: Date;
-        slot: string;
-        createdAt: Date;
-        depositRequired: boolean;
-        depositPaid: boolean;
-        no_show: boolean;
-        riskScore: number;
-        updatedAt: Date;
-      }[]
-    | undefined;
+      } | null;
+    } | null;
+  }[] | undefined;
 };
 
 const AllAppointments = ({ bookings }: Props) => {
@@ -64,11 +65,11 @@ const AllAppointments = ({ bookings }: Props) => {
                   "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold",
                   "bg-purple/10 text-purple border-transparent"
                 )}>
-                  {booking.source === "direct_link" ? "Direct Booking" : "Booking Link"}
+                  {booking.bookingMetadata?.source === "direct_link" ? "Direct Booking" : "Booking Link"}
                 </span>
               )}
             </TableCell>
-            <TableCell>{booking.depositPaid ? "Yes" : "No"}</TableCell>
+            <TableCell>{booking.bookingPayment?.depositPaid ? "Yes" : "No"}</TableCell>
           </TableRow>
         ))
       ) : (

@@ -15,10 +15,10 @@ type Props = {};
 interface Booking {
   id: string;
   name: string;
+  email: string;
+  date: Date;
   slot: string;
   createdAt: Date;
-  date: Date;
-  email: string;
   domainId: string | null;
   bookingMetadata: {
     source: string | null;
