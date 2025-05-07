@@ -21,33 +21,28 @@ type Props = {
 const KnowledgeBase = ({ id, plan }: Props) => {
   const { register, errors, onSubmitEntry, entries, loading } = useKnowledgeBase(id);
 
-  const hasKnowledgeBase = checkHelpdeskFeature(plan, "knowledgeBase");
+  const canUseKnowledgeBase = checkHelpdeskFeature(plan, "knowledgeBase");
 
   return (
     <Card className="w-full grid grid-cols-1 lg:grid-cols-2">
       <CardContent className="p-6 border-r-[1px]">
         <CardTitle>Knowledge Base</CardTitle>
-        <form onSubmit={onSubmitEntry} className="flex flex-col gap-6 mt-10">
-          <div className="flex flex-col gap-3">
-            <Section
-              label="Title"
-              message="Add a title for this knowledge base entry"
-            />
-            <FormGenerator
-              inputType="input"
-              register={register}
-              errors={errors}
-              form="knowledge-base-form"
-              name="title"
-              placeholder="Type the title"
-              type="text"
-              disabled={!hasKnowledgeBase}
-            />
+        {!canUseKnowledgeBase && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4">
+            <p className="text-sm text-amber-800">
+              Knowledge Base is only available on Professional and Business plans. Upgrade to unlock this feature:
+            </p>
+            <ul className="list-disc list-inside mt-2 text-sm text-amber-800">
+              <li>Professional plan: Basic knowledge base</li>
+              <li>Business plan: Advanced knowledge base with AI integration</li>
+            </ul>
           </div>
+        )}
+        <form onSubmit={onSubmitEntry} className="flex flex-col gap-6 mt-4">
           <div className="flex flex-col gap-3">
             <Section
-              label="Content"
-              message="Add the content for this knowledge base entry"
+              label="Knowledge Base Content"
+              message="Add content to your knowledge base to help your chatbot answer questions."
             />
             <FormGenerator
               inputType="textarea"
@@ -55,39 +50,18 @@ const KnowledgeBase = ({ id, plan }: Props) => {
               errors={errors}
               form="knowledge-base-form"
               name="content"
-              placeholder="Type the content"
+              placeholder="Enter your knowledge base content..."
               type="text"
-              lines={5}
-              disabled={!hasKnowledgeBase}
+              lines={10}
+              disabled={!canUseKnowledgeBase}
             />
           </div>
-          <div className="flex flex-col gap-3">
-            <Section
-              label="Category"
-              message="Optional category for organizing entries"
-            />
-            <FormGenerator
-              inputType="input"
-              register={register}
-              errors={errors}
-              form="knowledge-base-form"
-              name="category"
-              placeholder="Type the category"
-              type="text"
-              disabled={!hasKnowledgeBase}
-            />
-          </div>
-          {!hasKnowledgeBase && (
-            <p className="text-sm text-amber-600">
-              Upgrade to Professional or Business plan to use the knowledge base feature.
-            </p>
-          )}
           <Button
             type="submit"
             className="bg-purple hover:bg-purple hover:opacity-70 transition duration-150 ease-in-out text-white font-semibold"
-            disabled={!hasKnowledgeBase}
+            disabled={!canUseKnowledgeBase}
           >
-            Create
+            Save
           </Button>
         </form>
       </CardContent>
@@ -95,14 +69,12 @@ const KnowledgeBase = ({ id, plan }: Props) => {
         <Loader loading={loading}>
           {entries.length ? (
             entries.map((entry) => (
-              <div key={entry.id} className="mb-4 p-4 border rounded">
-                <h3 className="font-bold">{entry.title}</h3>
-                <p className="text-sm text-gray-600">{entry.category}</p>
-                <p className="mt-2">{entry.content}</p>
+              <div key={entry.id} className="prose max-w-none">
+                <pre className="whitespace-pre-wrap">{entry.content}</pre>
               </div>
             ))
           ) : (
-            <CardDescription>No knowledge base entries</CardDescription>
+            <CardDescription>No knowledge base content to show</CardDescription>
           )}
         </Loader>
       </CardContent>

@@ -53,7 +53,22 @@ export const useChatBot = (userId?: string, initialChatBot?: {
   >(initialChatBot);
   const messageWindowRef = useRef<HTMLDivElement | null>(null);
   const [botOpened, setBotOpened] = useState<boolean>(false);
-  const onOpenChatBot = () => setBotOpened((prev) => !prev);
+  const onOpenChatBot = () => {
+    setBotOpened((prev) => {
+      const newState = !prev;
+      // Send welcome message when opening the chatbot
+      if (newState && currentBot?.chatBot?.welcomeMessage) {
+        setOnChats((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: currentBot.chatBot.welcomeMessage
+          }
+        ]);
+      }
+      return newState;
+    });
+  };
   const [loading, setLoading] = useState<boolean>(!initialChatBot);
   const [onChats, setOnChats] = useState<
     { role: "assistant" | "user"; content: string; link?: string }[]

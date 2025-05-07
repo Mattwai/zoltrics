@@ -384,6 +384,64 @@ export const onGetAllHelpDeskQuestions = async (userId: string) => {
   }
 };
 
+export const onDeleteHelpDeskQuestion = async (questionId: string) => {
+  try {
+    await client.helpDesk.delete({
+      where: {
+        id: questionId,
+      },
+    });
+
+    return {
+      status: 200,
+      message: "Question deleted successfully",
+    };
+  } catch (error) {
+    console.log(error);
+    return {
+      status: 400,
+      message: "Failed to delete question",
+    };
+  }
+};
+
+export const onUpdateHelpDeskQuestion = async (
+  questionId: string,
+  question: string,
+  answer: string
+) => {
+  try {
+    const updatedQuestion = await client.helpDesk.update({
+      where: {
+        id: questionId,
+      },
+      data: {
+        question,
+        answer,
+      },
+    });
+
+    if (updatedQuestion) {
+      return {
+        status: 200,
+        message: "Question updated successfully",
+        question: updatedQuestion,
+      };
+    }
+
+    return {
+      status: 400,
+      message: "Failed to update question",
+    };
+  } catch (error) {
+    console.log(error);
+    return {
+      status: 400,
+      message: "Failed to update question",
+    };
+  }
+};
+
 export const onCreateFilterQuestions = async (userId: string, question: string) => {
   try {
     const filterQuestion = await client.user.update({

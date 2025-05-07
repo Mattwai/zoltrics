@@ -12,6 +12,7 @@ import { useFilterQuestions } from "@/hooks/settings/use-settings";
 import FormGenerator from "../form-generator";
 import { Plans } from "@prisma/client";
 import { checkHelpdeskFeature } from "@/lib/subscription-checks";
+import Accordion from "@/components/accordian";
 
 type Props = {
   id: string;
@@ -28,9 +29,16 @@ const FilterQuestions = ({ id, plan }: Props) => {
     <Card className="w-full grid grid-cols-1 lg:grid-cols-2">
       <CardContent className="p-6 border-r-[1px]">
         <CardTitle>Bot Questions</CardTitle>
+        {!canCustomizeQuestions && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4">
+            <p className="text-sm text-amber-800">
+              Custom bot questions are only available on the Professional and Business plan. Upgrade to unlock this feature:
+            </p>
+          </div>
+        )}
         <form
           onSubmit={onAddFilterQuestions}
-          className="flex flex-col gap-6 mt-10"
+          className="flex flex-col gap-6 mt-4"
         >
           <div className="flex flex-col gap-3">
             <Section
@@ -65,11 +73,6 @@ const FilterQuestions = ({ id, plan }: Props) => {
               disabled={!canCustomizeQuestions}
             />
           </div>
-          {!canCustomizeQuestions && (
-            <p className="text-sm text-amber-600">
-              Upgrade to Business plan to customize chatbot questions.
-            </p>
-          )}
           <Button
             type="submit"
             className="bg-purple hover:bg-purple hover:opacity-70 transition duration-150 ease-in-out text-white font-semibold"
@@ -83,12 +86,14 @@ const FilterQuestions = ({ id, plan }: Props) => {
         <Loader loading={loading}>
           {isQuestions.length ? (
             isQuestions.map((question) => (
-              <p key={question.id} className="font-bold">
-                {question.question}
-              </p>
+              <Accordion
+                key={question.id}
+                trigger={question.question}
+                content="Answer will be provided by the AI chatbot"
+              />
             ))
           ) : (
-            <CardDescription>No Questions</CardDescription>
+            <CardDescription>No questions to show</CardDescription>
           )}
         </Loader>
       </CardContent>

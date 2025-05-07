@@ -36,6 +36,7 @@ const Page = async (props: Props) => {
   // Check feature availability
   const canCustomizeWelcome = checkChatbotFeature(plan, "welcomeMessage");
   const canCustomizeAppearance = checkChatbotFeature(plan, "appearance");
+  const canUseAI = checkChatbotFeature(plan, "aiPowered");
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -52,6 +53,13 @@ const Page = async (props: Props) => {
             <Separator orientation="horizontal" />
             <div className="grid md:grid-cols-2">
               <div className="col-span-1 flex flex-col gap-5 order-last md:order-first">
+                {!canUseAI && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                    <p className="text-sm text-amber-800">
+                      AI-powered chatbot is only available on the Business plan. Upgrade to unlock advanced AI capabilities.
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-4">
                   <h3 className="font-semibold">Welcome Message</h3>
                   <textarea

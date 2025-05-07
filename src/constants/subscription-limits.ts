@@ -29,7 +29,7 @@ export const SUBSCRIPTION_LIMITS: Record<Plans, FeatureLimits> = {
   STANDARD: {
     chatbot: {
       customization: false,
-      aiPowered: true,
+      aiPowered: false,
       welcomeMessage: false,
       appearance: false
     },
@@ -40,7 +40,7 @@ export const SUBSCRIPTION_LIMITS: Record<Plans, FeatureLimits> = {
       advancedScheduling: false
     },
     helpdesk: {
-      maxFaqs: 10,
+      maxFaqs: 3,
       knowledgeBase: false,
       customQuestions: false
     },
@@ -53,7 +53,7 @@ export const SUBSCRIPTION_LIMITS: Record<Plans, FeatureLimits> = {
   PROFESSIONAL: {
     chatbot: {
       customization: true,
-      aiPowered: true,
+      aiPowered: false,
       welcomeMessage: true,
       appearance: true
     },
@@ -64,9 +64,9 @@ export const SUBSCRIPTION_LIMITS: Record<Plans, FeatureLimits> = {
       advancedScheduling: true
     },
     helpdesk: {
-      maxFaqs: 50,
+      maxFaqs: 10,
       knowledgeBase: true,
-      customQuestions: false
+      customQuestions: true
     },
     email: {
       monthlyCredits: 500,
