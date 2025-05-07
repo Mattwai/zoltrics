@@ -20,13 +20,15 @@ interface Booking {
   date: Date;
   email: string;
   domainId: string | null;
-  customerId: string | null;
-  source?: string;
-  depositRequired: boolean;
-  depositPaid: boolean;
-  no_show: boolean;
-  riskScore: number;
-  updatedAt: Date;
+  bookingMetadata: {
+    source: string | null;
+    no_show: boolean;
+    riskScore: number | null;
+  } | null;
+  bookingPayment: {
+    depositRequired: boolean;
+    depositPaid: boolean;
+  } | null;
   Customer: {
     Domain: {
       name: string;

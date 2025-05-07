@@ -29,15 +29,15 @@ const BreadCrumb = (props: Props) => {
           </Loader>
         )}
         <p className="text-gray-600 mt-2">
-        {page == "settings"
+        {page == "Settings"
           ? "Manage your account settings, preferences and integrations"
-          : page == "dashboard"
+          : page == "Dashboard"
           ? "Welcome back! Here's what's happening with your business today."
-          : page == "appointment"
+          : page == "Appointments"
           ? "View and edit all your appointments"
-          : page == "appointment-settings"
+          : page == "Appointment Settings"
           ? "Configure your booking link, calendar availability, and custom time slots"
-          : page == "integration"
+          : page == "Integration"
           ? "Connect third-party applications into Zoltrics"
           : "Modify domain settings, change chatbot options, enter sales questions and train your bot to do what you want it to."}
       </p>
