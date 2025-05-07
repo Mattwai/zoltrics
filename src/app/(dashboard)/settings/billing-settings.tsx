@@ -28,27 +28,24 @@ const BillingSettings = async (props: Props) => {
       <div className="lg:col-span-2 flex justify-start lg:justify-center ">
         <Modal
           title="Choose A Plan"
-          description="Tell us about yourself! What do you do? Let’s tailor your experience so it best suits you."
+          description="Tell us about yourself! What do you do? Let's tailor your experience so it best suits you."
           trigger={
-            plan && plan === "STANDARD" ? (
               <Card className="border-dashed bg-cream border-gray-400 w-full cursor-pointer h-[270px] flex justify-center items-center">
                 <CardContent className="flex gap-2 items-center">
                   <div className="rounded-full border-2 p-1">
                     <Plus className="text-gray-400" />
                   </div>
-                  <CardDescription className="font-semibold">
-                    Upgrade Plan
-                  </CardDescription>
+                  {plan && plan === "STANDARD" ? (
+                    <CardDescription className="font-semibold">
+                      Upgrade Plan
+                    </CardDescription>
+                  ) : (
+                    <CardDescription className="font-semibold">
+                      Change Plan
+                    </CardDescription>
+                  )}
                 </CardContent>
               </Card>
-            ) : (
-              <Image
-                src="/images/creditcard.png"
-                width={400}
-                height={400}
-                alt="image"
-              />
-            )
           }
         >
           <SubscriptionForm plan={plan!} />

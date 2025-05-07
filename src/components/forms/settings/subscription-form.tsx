@@ -30,7 +30,7 @@ const SubscriptionForm = ({ plan }: Props) => {
             />
           ))}
         </div>
-        <StripeElements payment={payment} />
+        {payment !== "STANDARD" && <StripeElements payment={payment} />}
         {payment === "STANDARD" && (
           <Button onClick={onUpdatetToFreTier}>
             <Loader loading={loading}>Confirm</Loader>
