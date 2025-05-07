@@ -1,5 +1,5 @@
 import { onGetSubscriptionPlan } from "@/actions/settings";
-import { pricingCards } from "@/constants/landing-page";
+import { pricingCards } from "@/constants/pricing-cards";
 import { CheckCircle2, Plus } from "lucide-react";
 import Image from "next/image";
 import SubscriptionForm from "@/components/forms/settings/subscription-form";
