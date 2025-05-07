@@ -2,27 +2,21 @@ import { authConfig } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
+import { User, Domain, Product, ProductPricing, ProductStatus, ChatBot, HelpDesk, KnowledgeBase, BookingCalendarSettings, UserSettings } from "@prisma/client";
 
-type UserWithRelations = {
-  id: string;
-  name: string | null;
-  domains: {
-    products: {
-      name: string;
-      price: number;
-    }[];
-  }[];
-  bookingCalendarSettings?: {
-    availableDays: string[];
-    timeSlots: any;
-  } | null;
-  helpdesk?: {
-    question: string;
-    answer: string;
-  }[];
-  chatBot?: {
-    welcomeMessage: string;
-  } | null;
+type UserWithRelations = User & {
+  domains: (Domain & {
+    products: (Product & {
+      pricing: ProductPricing | null;
+      status: ProductStatus | null;
+    })[];
+  })[];
+  chatBot: ChatBot | null;
+  helpdesk: HelpDesk[];
+  knowledgeBase: KnowledgeBase[];
+  userSettings: (UserSettings & {
+    bookingCalendarSettings: BookingCalendarSettings | null;
+  }) | null;
 };
 
 export async function POST(
@@ -83,27 +77,43 @@ export async function POST(
         domains: {
           select: {
             products: {
-              where: { isLive: true },
+              where: {
+                status: {
+                  isLive: true
+                }
+              },
               select: {
                 name: true,
-                price: true
+                pricing: {
+                  select: {
+                    price: true
+                  }
+                }
               }
             }
           }
         },
-        bookingCalendarSettings: {
+        userSettings: {
           select: {
-            availableDays: true,
-            timeSlots: true
+            bookingCalendarSettings: {
+              select: {
+                availableDays: true,
+                timeSlots: true
+              }
+            }
           }
         }
       },
-    });
+    }) as UserWithRelations | null;
     console.log("Found user:", user?.id);
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+
+    // Update the references to bookingCalendarSettings to use the new path
+    const availableDays = user?.userSettings?.bookingCalendarSettings?.availableDays || [];
+    const timeSlots = user?.userSettings?.bookingCalendarSettings?.timeSlots || {};
 
     // Create booking assistant conversation
     console.log("Creating DeepSeek chat completion...");
@@ -168,13 +178,13 @@ export async function POST(
             Let me know how I can help!"
 
             Available Information:
-            Services: ${user.domains.flatMap(d => d.products).map(p => `${p.name} ($${p.price})`).join('\n') || "No products available"}
-            Available Days: ${user.bookingCalendarSettings?.availableDays ? user.bookingCalendarSettings.availableDays.join(', ') : "No days available"}
+            Services: ${user.domains.flatMap(d => d.products).map(p => `${p.name} ($${p.pricing?.price})`).join('\n') || "No products available"}
+            Available Days: ${availableDays.join(', ')}
             Time Slots: ${(() => {
               try {
-                const slots = typeof user.bookingCalendarSettings?.timeSlots === 'string' 
-                  ? JSON.parse(user.bookingCalendarSettings.timeSlots)
-                  : user.bookingCalendarSettings?.timeSlots;
+                const slots = typeof timeSlots === 'string' 
+                  ? JSON.parse(timeSlots)
+                  : timeSlots;
                 return Array.isArray(slots) ? slots.join(', ') : 'No time slots available';
               } catch (e) {
                 return 'No time slots available';
