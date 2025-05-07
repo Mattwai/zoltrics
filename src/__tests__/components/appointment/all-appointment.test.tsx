@@ -75,7 +75,7 @@ describe('AllAppointments Component', () => {
     );
     
     expect(getByTestId('mock-data-table')).toBeInTheDocument();
-    expect(getByTestId('mock-headers')).toHaveTextContent('Name,Email,Date,Created At,Domain');
+    expect(getByTestId('mock-headers')).toHaveTextContent('Name,Email,Date,Created At,Booking Type,Deposit Paid');
     
     // Should have two table rows (one for each booking)
     const tableRows = getAllByTestId('mock-table-row');
