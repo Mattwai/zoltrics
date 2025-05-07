@@ -21,11 +21,11 @@ const SubscriptionCard = ({
   id,
 }: Props) => {
   return (
-    <Label htmlFor={id}>
+    <div onClick={() => onPayment(id)}>
       <Card
         className={cn(
-          "w-full cursor-pointer",
-          payment == id && "border-purple"
+          "w-full cursor-pointer transition-colors hover:border-purple",
+          payment === id && "border-purple"
         )}
       >
         <CardContent className="flex justify-between p-2">
@@ -44,20 +44,21 @@ const SubscriptionCard = ({
             <div
               className={cn(
                 "w-4 h-4 rounded-full",
-                payment == id ? "bg-orchid" : "bg-platinum"
+                payment === id ? "bg-orchid" : "bg-platinum"
               )}
             />
             <Input
-              onClick={() => onPayment(title)}
               value={id}
               id={id}
               className="hidden"
               type="radio"
+              checked={payment === id}
+              onChange={() => onPayment(id)}
             />
           </div>
         </CardContent>
       </Card>
-    </Label>
+    </div>
   );
 };
 

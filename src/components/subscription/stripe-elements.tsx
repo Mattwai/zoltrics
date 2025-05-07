@@ -15,8 +15,7 @@ export const StripeElements = ({ payment }: StripeElementsProps) => {
   const { stripeSecret, loadForm } = useStripeElements(payment);
   return (
     stripeSecret &&
-    StripePromise &&
-    (payment == "PROFESSIONAL" || payment == "BUSINESS") && (
+    StripePromise && (
       <Loader loading={loadForm}>
         <Elements
           stripe={StripePromise}
