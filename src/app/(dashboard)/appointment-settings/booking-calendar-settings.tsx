@@ -248,7 +248,7 @@ export const BookingCalendarSettings = ({ userId }: BookingCalendarSettingsProps
       <div className="lg:col-span-4 space-y-6">
         <div className="p-4 bg-blue-50 rounded-md mb-6">
           <p className="text-sm text-blue-800">
-            <strong>Quick Start:</strong> Choose a preset schedule or customize your own availability.
+            <strong>Quick Start:</strong> Choose a preset schedule or customise your own availability.
             Your settings will determine when customers can book appointments with you.
           </p>
         </div>

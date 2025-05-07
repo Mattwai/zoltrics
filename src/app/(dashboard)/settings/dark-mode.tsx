@@ -16,7 +16,7 @@ const DarkModetoggle = (props: Props) => {
       <div className="lg:col-span-1">
         <Section
           label="Interface Theme"
-          message="Select or customize your UI theme "
+          message="Select or customise your UI theme "
         />
       </div>
       <div className="lg:col-span-4 flex lg:flex-row flex-col items-start gap-5">

@@ -34,8 +34,8 @@ const Page = async (props: Props) => {
   const plan = user.subscription?.plan || "STANDARD";
 
   // Check feature availability
-  const canCustomizeWelcome = checkChatbotFeature(plan, "welcomeMessage");
-  const canCustomizeAppearance = checkChatbotFeature(plan, "appearance");
+  const canCustomiseWelcome = checkChatbotFeature(plan, "welcomeMessage");
+  const canCustomiseAppearance = checkChatbotFeature(plan, "appearance");
   const canUseAI = checkChatbotFeature(plan, "aiPowered");
 
   return (
@@ -67,11 +67,11 @@ const Page = async (props: Props) => {
                     rows={4}
                     placeholder="Enter your chatbot's welcome message..."
                     defaultValue={chatBot?.welcomeMessage || "Hello! How can I help you with your booking today?"}
-                    disabled={!canCustomizeWelcome}
+                    disabled={!canCustomiseWelcome}
                   />
-                  {!canCustomizeWelcome && (
+                  {!canCustomiseWelcome && (
                     <p className="text-sm text-amber-600">
-                      Upgrade to Professional or Business plan to customize the welcome message.
+                      Upgrade to Professional or Business plan to customise the welcome message.
                     </p>
                   )}
                   <p className="text-sm text-gray-500">
@@ -87,7 +87,7 @@ const Page = async (props: Props) => {
                         type="color"
                         className="mt-1 block w-full disabled:opacity-50 disabled:cursor-not-allowed"
                         defaultValue={chatBot?.background || "#ffffff"}
-                        disabled={!canCustomizeAppearance}
+                        disabled={!canCustomiseAppearance}
                       />
                     </div>
                     <div>
@@ -96,13 +96,13 @@ const Page = async (props: Props) => {
                         type="color"
                         className="mt-1 block w-full disabled:opacity-50 disabled:cursor-not-allowed"
                         defaultValue={chatBot?.textColor || "#000000"}
-                        disabled={!canCustomizeAppearance}
+                        disabled={!canCustomiseAppearance}
                       />
                     </div>
                   </div>
-                  {!canCustomizeAppearance && (
+                  {!canCustomiseAppearance && (
                     <p className="text-sm text-amber-600">
-                      Upgrade to Professional or Business plan to customize the chatbot appearance.
+                      Upgrade to Professional or Business plan to customise the chatbot appearance.
                     </p>
                   )}
                 </div>

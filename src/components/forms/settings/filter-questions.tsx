@@ -23,13 +23,13 @@ const FilterQuestions = ({ id, plan }: Props) => {
   const { register, errors, onAddFilterQuestions, isQuestions, loading } =
     useFilterQuestions(id);
 
-  const canCustomizeQuestions = checkHelpdeskFeature(plan, "customQuestions");
+  const canCustomiseQuestions = checkHelpdeskFeature(plan, "customQuestions");
 
   return (
     <Card className="w-full grid grid-cols-1 lg:grid-cols-2">
       <CardContent className="p-6 border-r-[1px]">
         <CardTitle>Bot Questions</CardTitle>
-        {!canCustomizeQuestions && (
+        {!canCustomiseQuestions && (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4">
             <p className="text-sm text-amber-800">
               Custom bot questions are only available on the Professional and Business plan. Upgrade to unlock this feature:
@@ -53,7 +53,7 @@ const FilterQuestions = ({ id, plan }: Props) => {
               name="question"
               placeholder="Type your question"
               type="text"
-              disabled={!canCustomizeQuestions}
+              disabled={!canCustomiseQuestions}
             />
           </div>
           <div className="flex flex-col gap-3">
@@ -70,13 +70,13 @@ const FilterQuestions = ({ id, plan }: Props) => {
               placeholder="Type your answer"
               type="text"
               lines={5}
-              disabled={!canCustomizeQuestions}
+              disabled={!canCustomiseQuestions}
             />
           </div>
           <Button
             type="submit"
             className="bg-purple hover:bg-purple hover:opacity-70 transition duration-150 ease-in-out text-white font-semibold"
-            disabled={!canCustomizeQuestions}
+            disabled={!canCustomiseQuestions}
           >
             Create
           </Button>
