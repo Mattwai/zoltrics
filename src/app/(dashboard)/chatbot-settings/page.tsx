@@ -105,23 +105,6 @@ const Page = async (props: Props) => {
           <div className="flex flex-col gap-5 items-start">
             <TabsMenu
               triggers={HELP_DESK_TABS_MENU}
-              button={
-                <div className="flex-1 flex justify-end">
-                  <SideSheet
-                    title="Add Knowledge Base Entry"
-                    description="Create a new entry for your chatbot's knowledge base."
-                    className="flex items-center gap-2 bg-purple px-4 py-2 text-black font-semibold rounded-lg text-sm"
-                    trigger={
-                      <>
-                        <Plus size={20} className="text-white" />
-                        <p className="text-white">Add Entry</p>
-                      </>
-                    }
-                  >
-                    <KnowledgeBase id={user.id} plan={plan} />
-                  </SideSheet>
-                </div>
-              }
             >
               <TabsContent value="help desk" className="w-full">
                 <HelpDesk id={user.id} plan={plan} />
