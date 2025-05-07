@@ -120,25 +120,21 @@ export const onGetAllAccountDomains = async () => {
       where: {
         id: session.user.id,
       },
-      select: {
-        id: true,
+      include: {
         domains: {
-          select: {
-            name: true,
-            id: true,
+          include: {
             customer: {
-              select: {
+              include: {
                 chatRoom: {
-                  select: {
-                    id: true,
-                    live: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+                  include: {
+                    status: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     });
     // Return the domains data if found
     if (userWithDomains) {
@@ -508,7 +504,11 @@ export const onCreateNewDomainProduct = async (
           products: {
             create: {
               name,
-              price: priceNum,
+              pricing: {
+                create: {
+                  price: priceNum
+                }
+              }
             },
           },
         },
@@ -541,7 +541,11 @@ export const onCreateNewDomainProduct = async (
               products: {
                 create: {
                   name,
-                  price: priceNum,
+                  pricing: {
+                    create: {
+                      price: priceNum
+                    }
+                  }
                 },
               },
             },
@@ -576,10 +580,10 @@ const generateBookingLink = async () => {
 
   while (exists) {
     link = Math.random().toString(36).substring(2, 15);
-    const user = await client.user.findUnique({
+    const userProfile = await client.userBusinessProfile.findUnique({
       where: { bookingLink: link },
     });
-    exists = !!user;
+    exists = !!userProfile;
   }
 
   return link;
@@ -593,11 +597,20 @@ export const onGetUser = async (): Promise<(User & {
     products: {
       id: string;
       name: string;
-      price: number;
       createdAt: Date;
       domainId: string | null;
+      pricing: {
+        id: string;
+        price: number;
+        currency: string;
+      } | null;
     }[];
   })[];
+  userBusinessProfile: {
+    id: string;
+    bookingLink: string | null;
+    businessName: string | null;
+  } | null;
 }) | null> => {
   try {
     const session = await getServerSession(authConfig);
@@ -613,12 +626,17 @@ export const onGetUser = async (): Promise<(User & {
       include: {
         domains: {
           include: {
-            products: true
+            products: {
+              include: {
+                pricing: true
+              }
+            }
           }
         },
         chatBot: true,
         helpdesk: true,
         subscription: true,
+        userBusinessProfile: true
       },
     });
     
@@ -628,20 +646,32 @@ export const onGetUser = async (): Promise<(User & {
     }
 
     // If booking link is null, generate a new one
-    if (!user.bookingLink) {
+    if (!user.userBusinessProfile?.bookingLink) {
       const newBookingLink = await generateBookingLink();
       const updatedUser = await client.user.update({
         where: { id: user.id },
-        data: { bookingLink: newBookingLink },
+        data: {
+          userBusinessProfile: {
+            upsert: {
+              create: { bookingLink: newBookingLink },
+              update: { bookingLink: newBookingLink }
+            }
+          }
+        },
         include: {
           domains: {
             include: {
-              products: true
+              products: {
+                include: {
+                  pricing: true
+                }
+              }
             }
           },
           chatBot: true,
           helpdesk: true,
           subscription: true,
+          userBusinessProfile: true
         },
       });
       return updatedUser;
@@ -754,7 +784,12 @@ export const onUpdateProductStatus = async (productId: string, isLive: boolean) 
         id: productId,
       },
       data: {
-        isLive,
+        status: {
+          upsert: {
+            create: { isLive },
+            update: { isLive }
+          }
+        }
       },
     });
 

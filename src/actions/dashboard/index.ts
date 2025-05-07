@@ -110,12 +110,16 @@ export const getUserTotalProductPrices = async () => {
         },
       },
       select: {
-        price: true,
+        pricing: {
+          select: {
+            price: true
+          }
+        }
       },
     });
 
-    const total = products.reduce((total: number, next: { price: number }) => {
-      return total + next.price;
+    const total = products.reduce((total: number, next: { pricing: { price: number } | null }) => {
+      return total + (next.pricing?.price || 0);
     }, 0);
 
     return total;

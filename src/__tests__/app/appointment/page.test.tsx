@@ -43,6 +43,17 @@ jest.mock('next-auth', () => ({
   })
 }));
 
+// Mock the settings actions
+jest.mock('@/actions/settings', () => ({
+  onGetUser: jest.fn().mockResolvedValue({
+    id: 'test-user-id',
+    name: 'Test User',
+    userBusinessProfile: {
+      bookingLink: 'test-booking-link'
+    }
+  })
+}));
+
 // Mock the appointment actions
 jest.mock('@/actions/appointment', () => ({
   onGetAllBookingsForCurrentUser: jest.fn().mockResolvedValue({

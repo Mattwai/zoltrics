@@ -22,20 +22,33 @@ export const onGetDomainProductsAndConnectedAccountId = async (id: string) => {
         domainId: id,
       },
       select: {
-        price: true,
         name: true,
+        pricing: {
+          select: {
+            price: true
+          }
+        },
+        status: {
+          select: {
+            isLive: true
+          }
+        }
       },
     });
 
     if (products) {
       const totalAmount = products.reduce(
-        (current: number, next: { price: number }) => {
-          return current + next.price;
+        (current: number, next: { pricing: { price: number } | null, status: { isLive: boolean } | null }) => {
+          return current + (next.pricing?.price || 0);
         },
         0
       );
       return {
-        products: products,
+        products: products.map(p => ({
+          name: p.name,
+          price: p.pricing?.price || 0,
+          isLive: p.status?.isLive || false
+        })),
         amount: totalAmount,
         stripeId: connectedAccount?.User?.stripeId ?? null,
       };
