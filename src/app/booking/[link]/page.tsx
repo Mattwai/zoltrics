@@ -32,6 +32,9 @@ type UserWithRelations = User & {
     answer: string;
     domainId: string | null;
   }[];
+  userBusinessProfile?: {
+    businessName: string;
+  };
 };
 
 type BookingFormProduct = {
@@ -60,7 +63,8 @@ const BookingPage = async ({ params }: Props) => {
         }
       },
       chatBot: true,
-      helpdesk: true
+      helpdesk: true,
+      userBusinessProfile: true
     }
   }) as UserWithRelations | null;
 
@@ -80,10 +84,10 @@ const BookingPage = async ({ params }: Props) => {
     })) as BookingFormProduct[];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold text-center mb-8">
-          Book an Appointment with {user.name || "Us"}
+          Book an Appointment with {user.userBusinessProfile?.businessName || user.name || "Us"}
         </h1>
         <BookingForm userId={user.id} products={products} />
       </div>
@@ -91,7 +95,7 @@ const BookingPage = async ({ params }: Props) => {
         <AiChatBot
           userId={user.id}
           initialChatBot={{
-            name: user.name || "BookerBuddy",
+            name: user.userBusinessProfile?.businessName || user.name || "BookerBuddy",
             chatBot: user.chatBot,
             helpdesk: user.helpdesk
           }}

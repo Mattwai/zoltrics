@@ -1,7 +1,7 @@
 import InfoBar from "@/components/infobar";
-import BookingLink from "@/app/(dashboard)/appointment-settings/booking-link";
-import { BookingCalendarSettings } from "@/app/(dashboard)/appointment-settings/booking-calendar-settings";
-import { CustomTimeSlots } from "@/app/(dashboard)/appointment-settings/custom-time-slots";
+import BookingLink from "./booking-link";
+import { BookingCalendarSettings } from "./booking-calendar-settings";
+import { CustomTimeSlots } from "./custom-time-slots";
 import { authConfig } from "@/lib/auth";
 import { onGetUser } from "@/actions/settings";
 import { getServerSession } from "next-auth";
@@ -16,7 +16,7 @@ const Page = async (props: Props) => {
   const user = await onGetUser();
   
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto py-8 px-4">
         <InfoBar />
         <div className="flex flex-col gap-10">
