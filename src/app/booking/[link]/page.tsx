@@ -1,5 +1,5 @@
 import { client } from "@/lib/prisma";
-import { User, Domain, Product } from "@prisma/client";
+import { User, Domain, Product, ProductPricing, ProductStatus } from "@prisma/client";
 import BookingForm from "@/components/forms/booking/booking-form";
 import AiChatBot from "@/components/chatbot";
 import { redirect } from "next/navigation";
@@ -10,9 +10,14 @@ type Props = {
   };
 };
 
+type ProductWithRelations = Product & {
+  pricing: ProductPricing | null;
+  status: ProductStatus | null;
+};
+
 type UserWithRelations = User & {
   domains: (Domain & {
-    products: Product[];
+    products: ProductWithRelations[];
   })[];
   chatBot: {
     id: string;
@@ -37,14 +42,21 @@ type BookingFormProduct = {
 };
 
 const BookingPage = async ({ params }: Props) => {
-  const user = await client.user.findUnique({
+  const user = await client.user.findFirst({
     where: {
-      bookingLink: params.link,
+      userBusinessProfile: {
+        bookingLink: params.link
+      }
     },
     include: {
       domains: {
         include: {
-          products: true
+          products: {
+            include: {
+              pricing: true,
+              status: true
+            }
+          }
         }
       },
       chatBot: true,
@@ -59,12 +71,12 @@ const BookingPage = async ({ params }: Props) => {
   // Get all live products from all domains
   const allProducts = user.domains.flatMap(domain => domain.products);
   const products = allProducts
-    .filter(product => (product as Product & { isLive: boolean }).isLive)
+    .filter(product => product.status?.isLive)
     .map(product => ({
       id: product.id,
       name: product.name,
-      price: product.price,
-      isLive: (product as Product & { isLive: boolean }).isLive
+      price: product.pricing?.price || 0,
+      isLive: product.status?.isLive || false
     })) as BookingFormProduct[];
 
   return (
