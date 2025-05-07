@@ -12,6 +12,14 @@ describe('BookingLink Component', () => {
   beforeEach(() => {
     // Reset the fetch mock before each test
     (global.fetch as jest.Mock).mockReset();
+    // Clear all timers
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    // Clean up timers
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
   });
 
   it('renders without crashing', () => {
