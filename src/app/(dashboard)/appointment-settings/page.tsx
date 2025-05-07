@@ -22,7 +22,7 @@ const Page = async (props: Props) => {
         <div className="flex flex-col gap-10">
           <BookingLink               
             userId={session.user.id}
-            initialBookingLink={user?.bookingLink || null}
+            initialBookingLink={user?.userBusinessProfile?.bookingLink || null}
             baseUrl={process.env.NEXT_PUBLIC_BASE_URL || ""}/>
           <BookingCalendarSettings userId={session.user.id} />
           <CustomTimeSlots userId={session.user.id} />
