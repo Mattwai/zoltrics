@@ -43,6 +43,6 @@ const BreadCrumb = (props: Props) => {
       </p>
       </div>
   );
-};
+};                                                                                                                                                                                                                                                                                                                                                                                                                                               
 
 export default BreadCrumb;

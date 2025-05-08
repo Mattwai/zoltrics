@@ -6,6 +6,7 @@ export interface Booking {
   slot: string;
   createdAt: Date;
   domainId: string | null;
+  notes?: string;
   bookingMetadata: {
     source: string | null;
     no_show: boolean;

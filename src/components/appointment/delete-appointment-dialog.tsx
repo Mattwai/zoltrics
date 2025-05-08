@@ -22,7 +22,7 @@ export const DeleteAppointmentDialog = ({
   isOpen,
   onClose,
   onConfirm,
-  isDeleting,
+  isDeleting
 }: DeleteAppointmentDialogProps) => {
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DatePicker } from "./date-picker";
+import { DatePicker } from "@/components/appointment/date-picker";
 import { Booking } from "@/types/booking";
 import AllAppointments from "@/components/appointment/all-appointment";
 import Section from "@/components/section-label";
@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DeleteAppointmentDialog } from "@/components/appointment/delete-appointment-dialog";
+import { BookingOptionsDialog } from "@/components/appointment/booking-options-dialog";
 
 interface AppointmentClientProps {
   initialBookings: Booking[];
@@ -35,10 +36,11 @@ export const AppointmentClient = ({
 }: AppointmentClientProps) => {
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   const handleDateChange = (date: Date | undefined) => {
     setSelectedDate(date);
@@ -57,10 +59,31 @@ export const AppointmentClient = ({
     }
   };
 
-  const handleDelete = async (bookingId: string) => {
+  const openBookingDialog = (bookingId: string) => {
+    setSelectedBookingId(bookingId);
+    setBookingDialogOpen(true);
+  };
+
+  const closeBookingDialog = () => {
+    setBookingDialogOpen(false);
+    setSelectedBookingId(null);
+  };
+
+  const openDeleteDialog = () => {
+    setDeleteDialogOpen(true);
+    setBookingDialogOpen(false);
+  };
+
+  const closeDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedBookingId) return;
+    
     try {
-      setIsDeleting(bookingId);
-      const response = await fetch(`/api/appointments/${bookingId}`, {
+      setIsDeleting(selectedBookingId);
+      const response = await fetch(`/api/appointments/${selectedBookingId}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -73,7 +96,7 @@ export const AppointmentClient = ({
       }
 
       // Update local state
-      setBookings((prev) => prev.filter((booking) => booking.id !== bookingId));
+      setBookings((prev) => prev.filter((booking) => booking.id !== selectedBookingId));
       toast.success("Appointment deleted successfully");
     } catch (error) {
       console.error("Error deleting appointment:", error);
@@ -83,16 +106,6 @@ export const AppointmentClient = ({
       setDeleteDialogOpen(false);
       setSelectedBookingId(null);
     }
-  };
-
-  const openDeleteDialog = (bookingId: string) => {
-    setSelectedBookingId(bookingId);
-    setDeleteDialogOpen(true);
-  };
-
-  const closeDeleteDialog = () => {
-    setDeleteDialogOpen(false);
-    setSelectedBookingId(null);
   };
 
   const filteredBookings = bookings.filter((booking) => {
@@ -116,6 +129,10 @@ export const AppointmentClient = ({
     );
   });
 
+  const selectedBooking = selectedBookingId 
+    ? bookings.find(booking => booking.id === selectedBookingId) || null 
+    : null;
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Left Column - Today's Bookings */}
@@ -133,25 +150,6 @@ export const AppointmentClient = ({
                     <CardTitle className="text-lg font-semibold">
                       {booking.slot}
                     </CardTitle>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          className="text-red-600 focus:text-red-600"
-                          onClick={() => openDeleteDialog(booking.id)}
-                        >
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-4">
@@ -231,7 +229,7 @@ export const AppointmentClient = ({
             <div className="p-6">
               <AllAppointments 
                 bookings={filteredBookings} 
-                onDelete={openDeleteDialog}
+                onBookingOptions={openBookingDialog}
                 isDeleting={isDeleting}
               />
             </div>
@@ -239,14 +237,21 @@ export const AppointmentClient = ({
         </div>
       </div>
 
-      {deleteDialogOpen && (
-        <DeleteAppointmentDialog
-          isOpen={deleteDialogOpen}
-          onClose={closeDeleteDialog}
-          onConfirm={() => selectedBookingId && handleDelete(selectedBookingId)}
-          isDeleting={isDeleting === selectedBookingId}
+      {selectedBooking && (
+        <BookingOptionsDialog
+          isOpen={bookingDialogOpen}
+          onClose={closeBookingDialog}
+          booking={selectedBooking}
+          onCancel={openDeleteDialog}
         />
       )}
+
+      <DeleteAppointmentDialog
+        isOpen={deleteDialogOpen}
+        onClose={closeDeleteDialog}
+        onConfirm={handleDelete}
+        isDeleting={!!isDeleting}
+      />
     </div>
   );
 }; 

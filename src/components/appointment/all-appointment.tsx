@@ -5,28 +5,20 @@ import { getMonthName } from "@/lib/utils";
 import { DataTable } from "../table";
 import { CardDescription } from "../ui/card";
 import { TableCell, TableRow } from "../ui/table";
-import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { ChevronLeft, ChevronRight, MoreVertical } from "lucide-react";
 import { useState } from "react";
 import { Booking } from "@/types/booking";
-import { format } from "date-fns";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 interface Props {
   bookings: Booking[];
-  onDelete?: (bookingId: string) => void;
+  onBookingOptions?: (bookingId: string) => void;
   isDeleting?: string | null;
 }
 
 const ITEMS_PER_PAGE = 10;
 
-const AllAppointments = ({ bookings, onDelete, isDeleting }: Props) => {
+const AllAppointments = ({ bookings, onBookingOptions, isDeleting }: Props) => {
   const [currentPage, setCurrentPage] = useState(1);
 
   if (!bookings) {
@@ -47,63 +39,26 @@ const AllAppointments = ({ bookings, onDelete, isDeleting }: Props) => {
             <TableCell>{booking.email}</TableCell>
             <TableCell>
               <div>
-                {getMonthName(booking.date.getMonth())} {booking.date.getDate()}{" "}
-                {booking.date.getFullYear()}
+                {getMonthName(new Date(booking.date).getMonth())} {new Date(booking.date).getDate()}{" "}
+                {new Date(booking.date).getFullYear()}
               </div>
               <div className="uppercase">{booking.slot}</div>
             </TableCell>
-            <TableCell>
-              <div>
-                {getMonthName(booking.createdAt.getMonth())}{" "}
-                {booking.createdAt.getDate()} {booking.createdAt.getFullYear()}
-              </div>
-              <div>
-                {String(booking.createdAt.getHours()).padStart(2, '0')}:
-                {String(booking.createdAt.getMinutes()).padStart(2, '0')}{" "}
-                {booking.createdAt.getHours() > 12 ? "PM" : "AM"}
-              </div>
+            <TableCell>            
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => onBookingOptions && onBookingOptions(booking.id)}
+                disabled={isDeleting === booking.id}
+              >
+                {isDeleting === booking.id ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
+                ) : (
+                  <MoreVertical className="h-4 w-4" />
+                )}
+              </Button>
             </TableCell>
-            <TableCell className="text-right">
-              {booking.Customer?.Domain?.name ? (
-                booking.Customer.Domain.name
-              ) : (
-                <span className={cn(
-                  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold",
-                  "bg-purple/10 text-purple border-transparent"
-                )}>
-                  {booking.bookingMetadata?.source === "direct_link" ? "Direct Booking" : "Booking Link"}
-                </span>
-              )}
-            </TableCell>
-            <TableCell>{booking.bookingPayment?.depositPaid ? "Yes" : "No"}</TableCell>
-            {onDelete && (
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      className="text-red-600 focus:text-red-600"
-                      onClick={() => onDelete(booking.id)}
-                      disabled={isDeleting === booking.id}
-                    >
-                      {isDeleting === booking.id ? (
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
-                      ) : (
-                        "Delete"
-                      )}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            )}
           </TableRow>
         ))}
       </DataTable>

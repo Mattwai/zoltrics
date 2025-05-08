@@ -81,10 +81,8 @@ export const HELP_DESK_TABS_MENU: TABS_MENU_PROPS[] = [
 export const APPOINTMENT_TABLE_HEADER = [
   "Name",
   "Email",
-  "Requested Time",
-  "Added Time",
-  "Booking Type",
-  "Deposit Paid"
+  "Appointment Time",
+  "Serice Type"
 ];
 
 export const EMAIL_MARKETING_HEADER = ["Id", "Email", "Answers", "Domain"];

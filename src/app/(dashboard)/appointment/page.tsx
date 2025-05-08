@@ -1,20 +1,8 @@
 import { onGetAllBookingsForCurrentUser } from "@/actions/appointment";
 import { onGetUser } from "@/actions/settings";
-import AllAppointments from "@/components/appointment/all-appointment";
 import InfoBar from "@/components/infobar";
-import BookingLink from "@/app/(dashboard)/appointment-settings/booking-link";
-import Section from "@/components/section-label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { authConfig } from "@/lib/auth";
 import { getServerSession } from "next-auth";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search, Calendar as CalendarIcon, X } from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
-import { DatePicker } from "./date-picker";
-import { Booking } from "@/types/booking";
 import { AppointmentClient } from "./appointment-client";
 
 type Props = {};
