@@ -108,6 +108,22 @@ export const AppointmentClient = ({
     }
   };
 
+  // Handle updates to booking information (notes, rescheduling, etc.)
+  const handleBookingUpdate = (updatedBooking: Booking) => {
+    // Update the local state with the updated booking
+    setBookings(prevBookings => 
+      prevBookings.map(booking => 
+        booking.id === updatedBooking.id ? updatedBooking : booking
+      )
+    );
+    
+    // Also update in the initialBookings reference if it exists
+    const index = initialBookings.findIndex(b => b.id === updatedBooking.id);
+    if (index !== -1) {
+      initialBookings[index] = updatedBooking;
+    }
+  };
+
   const filteredBookings = bookings.filter((booking) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
@@ -179,6 +195,12 @@ export const AppointmentClient = ({
                         </p>
                       </div>
                     )}
+                    {booking.notes && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">Notes</p>
+                        <p className="text-base">{booking.notes}</p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -243,6 +265,7 @@ export const AppointmentClient = ({
           onClose={closeBookingDialog}
           booking={selectedBooking}
           onCancel={openDeleteDialog}
+          onBookingUpdate={handleBookingUpdate}
         />
       )}
 

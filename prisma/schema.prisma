@@ -263,6 +263,7 @@ model Booking {
   slot            String
   email           String
   name            String
+  notes           String?
   customerId      String?          @db.Uuid
   domainId        String?          @db.Uuid
   productId       String?          @db.Uuid

@@ -6,9 +6,10 @@ import { DataTable } from "../table";
 import { CardDescription } from "../ui/card";
 import { TableCell, TableRow } from "../ui/table";
 import { Button } from "../ui/button";
-import { ChevronLeft, ChevronRight, MoreVertical } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreVertical, StickyNote } from "lucide-react";
 import { useState } from "react";
 import { Booking } from "@/types/booking";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Props {
   bookings: Booking[];
@@ -43,6 +44,27 @@ const AllAppointments = ({ bookings, onBookingOptions, isDeleting }: Props) => {
                 {new Date(booking.date).getFullYear()}
               </div>
               <div className="uppercase">{booking.slot}</div>
+              {booking.notes && (
+                <div className="mt-1 flex items-center text-xs text-gray-500">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1">
+                          <StickyNote className="h-3 w-3" />
+                          <span>Has notes</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="w-[200px] whitespace-normal break-words">
+                          {booking.notes.length > 100 
+                            ? `${booking.notes.substring(0, 100)}...` 
+                            : booking.notes}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              )}
             </TableCell>
             <TableCell>            
               <Button

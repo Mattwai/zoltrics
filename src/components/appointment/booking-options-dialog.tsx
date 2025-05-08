@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +40,7 @@ interface BookingOptionsDialogProps {
   onClose: () => void;
   booking: Booking | null;
   onCancel: () => void;
+  onBookingUpdate?: (updatedBooking: Booking) => void;
 }
 
 export const BookingOptionsDialog = ({
@@ -47,6 +48,7 @@ export const BookingOptionsDialog = ({
   onClose,
   booking,
   onCancel,
+  onBookingUpdate,
 }: BookingOptionsDialogProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
@@ -54,23 +56,84 @@ export const BookingOptionsDialog = ({
   );
   const [selectedSlot, setSelectedSlot] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
+  const [originalNotes, setOriginalNotes] = useState<string>("");
+  const [currentBooking, setCurrentBooking] = useState<Booking | null>(null);
+  const hasFetchedRef = useRef(false);
 
+  // Reset fetch flag when dialog closes
   useEffect(() => {
-    if (booking) {
-      setSelectedSlot(booking.slot);
-      setNotes(booking.notes || "");
-      setSelectedDate(new Date(booking.date));
+    if (!isOpen) {
+      hasFetchedRef.current = false;
     }
-  }, [booking]);
+  }, [isOpen]);
+
+  // Fetch latest booking data from the database when dialog opens
+  useEffect(() => {
+    // Only fetch once when the dialog opens for a booking
+    if (booking && isOpen && !hasFetchedRef.current) {
+      hasFetchedRef.current = true; // Set immediately to prevent duplicate fetches
+
+      const fetchBookingData = async () => {
+        try {
+          setIsLoading(true);
+          const response = await fetch(`/api/appointments/${booking.id}/details`);
+          
+          if (response.ok) {
+            const data = await response.json();
+            setCurrentBooking(data);
+            setSelectedSlot(data.slot);
+            const bookingNotes = data.notes || "";
+            setNotes(bookingNotes);
+            setOriginalNotes(bookingNotes);
+            setSelectedDate(new Date(data.date));
+            
+            // Update parent component with fresh data
+            if (onBookingUpdate) {
+              onBookingUpdate(data);
+            }
+          } else {
+            // Fall back to the booking data passed by props
+            setCurrentBooking(booking);
+            setSelectedSlot(booking.slot);
+            const bookingNotes = booking.notes || "";
+            setNotes(bookingNotes);
+            setOriginalNotes(bookingNotes);
+            setSelectedDate(new Date(booking.date));
+          }
+        } catch (error) {
+          console.error("Error fetching booking details:", error);
+          // Fall back to the booking data passed by props
+          setCurrentBooking(booking);
+          setSelectedSlot(booking.slot);
+          const bookingNotes = booking.notes || "";
+          setNotes(bookingNotes);
+          setOriginalNotes(bookingNotes);
+          setSelectedDate(new Date(booking.date));
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      
+      fetchBookingData();
+    }
+  }, [booking, isOpen, onBookingUpdate]);
+
+  // Handle date change manually since DatePicker manages its own state
+  const handleDateChange = (date: Date | undefined) => {
+    setSelectedDate(date);
+  };
 
   if (!booking) return null;
 
+  // Use currentBooking if available, otherwise use booking from props
+  const activeBooking = currentBooking || booking;
+
   const handleUpdateNotes = async () => {
-    if (!booking) return;
+    if (!activeBooking) return;
     
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/appointments/${booking.id}`, {
+      const response = await fetch(`/api/appointments/${activeBooking.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -83,6 +146,26 @@ export const BookingOptionsDialog = ({
         throw new Error(error || "Failed to update notes");
       }
 
+      // Get the updated booking data from the response
+      const updatedBooking = await response.json();
+      
+      // Update current booking with the new data
+      setCurrentBooking({
+        ...activeBooking,
+        notes: notes
+      });
+      
+      // Update original notes after successful save
+      setOriginalNotes(notes);
+      
+      // Update the parent component with the new booking data including notes
+      if (onBookingUpdate) {
+        onBookingUpdate({
+          ...activeBooking,
+          notes: notes
+        });
+      }
+      
       toast.success("Notes updated successfully");
     } catch (error) {
       console.error("Error updating notes:", error);
@@ -93,11 +176,11 @@ export const BookingOptionsDialog = ({
   };
 
   const handleReschedule = async () => {
-    if (!booking || !selectedDate || !selectedSlot) return;
+    if (!activeBooking || !selectedDate || !selectedSlot) return;
     
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/appointments/${booking.id}/reschedule`, {
+      const response = await fetch(`/api/appointments/${activeBooking.id}/reschedule`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -113,6 +196,28 @@ export const BookingOptionsDialog = ({
         throw new Error(error || "Failed to reschedule appointment");
       }
 
+      // Get the updated booking data from the response
+      const updatedBooking = await response.json();
+      
+      // Update current booking with the new data
+      setCurrentBooking({
+        ...activeBooking,
+        date: new Date(selectedDate),
+        slot: selectedSlot,
+        notes: notes
+      });
+      
+      // Update the parent component with the new booking data
+      if (onBookingUpdate) {
+        onBookingUpdate({
+          ...activeBooking,
+          date: new Date(selectedDate),
+          slot: selectedSlot,
+          // Preserve notes in case they were edited but not saved
+          notes: notes
+        });
+      }
+
       toast.success("Appointment rescheduled successfully");
       onClose();
     } catch (error) {
@@ -122,12 +227,17 @@ export const BookingOptionsDialog = ({
       setIsLoading(false);
     }
   };
+
+  const handleDialogClose = () => {
+    // Only close, no auto-save
+    onClose();
+  };
   
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleDialogClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Booking Options - {booking.name}</DialogTitle>
+          <DialogTitle>Booking Options - {activeBooking.name}</DialogTitle>
         </DialogHeader>
         
         <div className="grid gap-6 py-4">
@@ -137,25 +247,25 @@ export const BookingOptionsDialog = ({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm text-gray-500">Date</Label>
-                <p>{booking.date ? new Date(booking.date).toLocaleDateString() : "Not set"}</p>
+                <p>{activeBooking.date ? new Date(activeBooking.date).toLocaleDateString() : "Not set"}</p>
               </div>
               <div>
                 <Label className="text-sm text-gray-500">Time</Label>
-                <p>{booking.slot}</p>
+                <p>{activeBooking.slot}</p>
               </div>
               <div>
                 <Label className="text-sm text-gray-500">Email</Label>
-                <p>{booking.email}</p>
+                <p>{activeBooking.email}</p>
               </div>
               <div>
                 <Label className="text-sm text-gray-500">Type</Label>
-                <p>{booking.Customer?.Domain?.name || "Direct Booking"}</p>
+                <p>{activeBooking.Customer?.Domain?.name || "Direct Booking"}</p>
               </div>
             </div>
           </div>
 
           {/* Payment Status */}
-          {booking.bookingPayment && (
+          {activeBooking.bookingPayment && (
             <div className="grid gap-2">
               <h3 className="text-sm font-medium text-gray-500">Payment Status</h3>
               <div className="flex items-center gap-2">
@@ -163,16 +273,28 @@ export const BookingOptionsDialog = ({
                 <p
                   className={cn(
                     "text-sm font-medium",
-                    booking.bookingPayment.depositPaid
+                    activeBooking.bookingPayment.depositPaid
                       ? "text-green-600"
                       : "text-amber-600"
                   )}
                 >
-                  {booking.bookingPayment.depositPaid ? "Paid" : "Pending"}
+                  {activeBooking.bookingPayment.depositPaid ? "Paid" : "Pending"}
                 </p>
               </div>
             </div>
           )}
+
+          {/* Notes Section - Moved up before reschedule section */}
+          <div className="grid gap-2">
+            <h3 className="text-sm font-medium text-gray-500">Additional Notes</h3>
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add any additional notes or special requests..."
+              rows={4}
+              disabled={isLoading}
+            />
+          </div>
 
           {/* Reschedule Section */}
           <div className="grid gap-2">
@@ -181,12 +303,12 @@ export const BookingOptionsDialog = ({
               <div>
                 <Label htmlFor="reschedule-date">New Date</Label>
                 <DatePicker
-                  onDateChange={setSelectedDate}
+                  onDateChange={handleDateChange}
                 />
               </div>
               <div>
                 <Label htmlFor="reschedule-slot">New Time Slot</Label>
-                <Select value={selectedSlot} onValueChange={setSelectedSlot}>
+                <Select value={selectedSlot} onValueChange={setSelectedSlot} disabled={isLoading}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select time slot" />
                   </SelectTrigger>
@@ -200,17 +322,6 @@ export const BookingOptionsDialog = ({
                 </Select>
               </div>
             </div>
-          </div>
-
-          {/* Notes Section */}
-          <div className="grid gap-2">
-            <h3 className="text-sm font-medium text-gray-500">Additional Notes</h3>
-            <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add any additional notes or special requests..."
-              rows={4}
-            />
           </div>
         </div>
 
@@ -234,7 +345,7 @@ export const BookingOptionsDialog = ({
               </Button>
               <Button
                 onClick={handleUpdateNotes}
-                disabled={isLoading || !notes}
+                disabled={isLoading || notes === originalNotes}
               >
                 Save Notes
               </Button>
@@ -244,8 +355,8 @@ export const BookingOptionsDialog = ({
                   isLoading ||
                   !selectedDate ||
                   !selectedSlot ||
-                  (selectedDate.getTime() === new Date(booking.date).getTime() &&
-                   selectedSlot === booking.slot)
+                  (selectedDate.getTime() === new Date(activeBooking.date).getTime() &&
+                   selectedSlot === activeBooking.slot)
                 }
               >
                 Reschedule
