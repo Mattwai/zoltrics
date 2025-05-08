@@ -25,7 +25,7 @@ const Page = async (props: Props) => {
 
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="container mx-auto py-8 px-4">
+        <div className="container mx-auto py-4 px-4">
           <InfoBar />
           <AppointmentClient 
             initialBookings={allBookings?.bookings || []}
