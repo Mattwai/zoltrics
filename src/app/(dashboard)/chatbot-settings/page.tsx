@@ -40,7 +40,7 @@ const Page = async (props: Props) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto py-8 px-4">
+      <div className="container mx-auto py-4 px-4">
         <InfoBar />
         <div className="flex flex-col gap-8">
           <div className="flex flex-col gap-3">
@@ -51,15 +51,15 @@ const Page = async (props: Props) => {
               </div>
             </div>
             <Separator orientation="horizontal" />
-            <div className="grid md:grid-cols-2">
-              <div className="col-span-1 flex flex-col gap-5 order-last md:order-first">
-                {!canUseAI && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
-                    <p className="text-sm text-amber-800">
-                      AI-powered chatbot is only available on the Business plan. Upgrade to unlock advanced AI capabilities.
-                    </p>
-                  </div>
-                )}
+            <div className="w-full">
+              {!canUseAI && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-amber-800">
+                    AI-powered chatbot is only available on the Business plan. Upgrade to unlock advanced AI capabilities.
+                  </p>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-8">
                 <div className="space-y-4">
                   <h3 className="font-semibold">Welcome Message</h3>
                   <textarea
