@@ -73,6 +73,9 @@ const AllAppointments = ({ bookings, onBookingOptions, isDeleting }: Props) => {
                 </div>
               )}
             </TableCell>
+            <TableCell>
+              {booking.Product?.name || "No service specified"}
+            </TableCell>
             <TableCell>            
               <Button
                 variant="ghost"

@@ -118,7 +118,7 @@ async function predictCancellationRisk(features: any): Promise<number> {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, date, slot, userId, isAuthenticated, googleUserId } = body;
+    const { name, email, date, slot, userId, isAuthenticated, googleUserId, productId } = body;
 
     if (!name || !email || !date || !slot || !userId) {
       return NextResponse.json(
@@ -214,6 +214,7 @@ export async function POST(req: NextRequest) {
         name,
         domainId: null,
         customerId: customer.id,
+        productId: productId || null,
         bookingMetadata: {
           create: {
             source: "direct_link",

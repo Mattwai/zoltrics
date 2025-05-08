@@ -218,6 +218,7 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
           date: values.date,
           slot: values.time,
           userId: userId,
+          productId: values.productId,
           isAuthenticated: !!session,
           googleUserId: session?.user?.id || null,
         }),

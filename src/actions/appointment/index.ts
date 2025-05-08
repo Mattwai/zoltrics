@@ -163,6 +163,11 @@ export const onGetAllBookingsForCurrentUser = async (id: string) => {
             },
           },
         },
+        Product: {
+          select: {
+            name: true,
+          },
+        },
       },
     });
 
@@ -208,6 +213,11 @@ export const onGetAllBookingsForCurrentUser = async (id: string) => {
                 name: true,
               },
             },
+          },
+        },
+        Product: {
+          select: {
+            name: true,
           },
         },
       },

@@ -21,4 +21,7 @@ export interface Booking {
       name: string;
     } | null;
   } | null;
+  Product: {
+    name: string;
+  } | null;
 } 

@@ -82,7 +82,7 @@ export const APPOINTMENT_TABLE_HEADER = [
   "Name",
   "Email",
   "Appointment Time",
-  "Serice Type"
+  "Service"
 ];
 
 export const EMAIL_MARKETING_HEADER = ["Id", "Email", "Answers", "Domain"];
