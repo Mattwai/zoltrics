@@ -1,15 +1,16 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import React from "react";
+import * as React from "react";
 
 type Props = {
   triggers: {
     label: string;
-    icon?: JSX.Element;
+    icon?: React.ReactNode;
+    count?: number;
   }[];
   children: React.ReactNode;
   className?: string;
-  button?: JSX.Element;
+  button?: React.ReactNode;
 };
 
 const TabsMenu = ({ triggers, children, className, button }: Props) => {
@@ -24,6 +25,11 @@ const TabsMenu = ({ triggers, children, className, button }: Props) => {
           >
             {trigger.icon && trigger.icon}
             {trigger.label}
+            {trigger.count !== undefined && (
+              <span className="ml-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                {trigger.count}
+              </span>
+            )}
           </TabsTrigger>
         ))}
         {button}

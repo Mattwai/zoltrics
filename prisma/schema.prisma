@@ -357,7 +357,7 @@ model ProductPricing {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   productId String   @unique @db.Uuid
   price     Int
-  currency  String   @default("USD")
+  currency  String   @default("NZD")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)

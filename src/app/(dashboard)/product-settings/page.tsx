@@ -32,7 +32,14 @@ const Page = (props: Props) => {
   }, []);
 
   if (loading || !user) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-4 border-purple border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-gray-600">Loading your products...</p>
+        </div>
+      </div>
+    );
   }
 
   // Get all products from all domains
@@ -40,13 +47,17 @@ const Page = (props: Props) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto py-4 px-4">
-        <InfoBar />
-        <ProductTable 
-          id={user.id}
-          products={allProducts}
-          onProductAdded={fetchUser}
-        />
+      <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <div className="space-y-6">
+          <InfoBar />
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <ProductTable 
+              id={user.id}
+              products={allProducts}
+              onProductAdded={fetchUser}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

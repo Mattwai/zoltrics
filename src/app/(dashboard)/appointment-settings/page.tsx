@@ -12,7 +12,7 @@ const Page = async (props: Props) => {
   
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-8 px-4">
+      <div className="container mx-auto py-4 px-4">
         <InfoBar />
         <div className="flex flex-col gap-10">
           <BookingCalendarSettings userId={session.user.id} />

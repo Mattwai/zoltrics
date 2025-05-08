@@ -562,6 +562,7 @@ export const onCreateNewDomainProduct = async (
           products: {
             create: {
               name,
+              userId: domain.userId,
               pricing: {
                 create: {
                   price: priceNum
@@ -599,6 +600,7 @@ export const onCreateNewDomainProduct = async (
               products: {
                 create: {
                   name,
+                  userId: session.user.id,
                   pricing: {
                     create: {
                       price: priceNum
@@ -686,7 +688,8 @@ export const onGetUser = async (): Promise<(User & {
           include: {
             products: {
               include: {
-                pricing: true
+                pricing: true,
+                status: true
               }
             }
           }
@@ -721,7 +724,8 @@ export const onGetUser = async (): Promise<(User & {
             include: {
               products: {
                 include: {
-                  pricing: true
+                  pricing: true,
+                  status: true
                 }
               }
             }
@@ -837,18 +841,17 @@ export const onGetAllKnowledgeBaseEntries = async (userId: string) => {
 
 export const onUpdateProductStatus = async (productId: string, isLive: boolean) => {
   try {
-    const product = await client.product.update({
+    const product = await client.productStatus.upsert({
       where: {
-        id: productId,
+        productId
       },
-      data: {
-        status: {
-          upsert: {
-            create: { isLive },
-            update: { isLive }
-          }
-        }
+      create: {
+        productId,
+        isLive
       },
+      update: {
+        isLive
+      }
     });
 
     if (product) {

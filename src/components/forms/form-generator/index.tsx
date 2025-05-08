@@ -3,9 +3,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ErrorMessage } from "@hookform/error-message";
 import { FieldErrors, FieldValues, UseFormRegister } from "react-hook-form";
+import { cn } from "@/lib/utils";
 
 type Props = {
-  type: "text" | "email" | "password";
+  type: "text" | "email" | "password" | "number";
   inputType: "select" | "input" | "textarea";
   options?: { value: string; label: string; id: string }[];
   label?: string;
@@ -17,6 +18,9 @@ type Props = {
   form?: string;
   defaultValue?: string;
   disabled?: boolean;
+  className?: string;
+  step?: string;
+  min?: string;
 };
 
 const FormGenerator = ({
@@ -32,12 +36,15 @@ const FormGenerator = ({
   lines,
   options,
   disabled,
+  className,
+  step,
+  min,
 }: Props) => {
   switch (inputType) {
     case "input":
     default:
       return (
-        <Label className="flex flex-col gap-2" htmlFor={`input-${label}`}>
+        <Label className={cn("flex flex-col gap-2", className)} htmlFor={`input-${label}`}>
           {label && label}
           <Input
             id={`input-${label}`}
@@ -46,6 +53,8 @@ const FormGenerator = ({
             form={form}
             defaultValue={defaultValue}
             disabled={disabled}
+            step={step}
+            min={min}
             {...register(name)}
           />
           <ErrorMessage
@@ -61,7 +70,7 @@ const FormGenerator = ({
       );
     case "select":
       return (
-        <Label htmlFor={`select-${label}`}>
+        <Label className={cn("flex flex-col gap-2", className)} htmlFor={`select-${label}`}>
           {label && label}
           <select form={form} id={`select-${label}`} disabled={disabled} {...register(name)}>
             {options?.length &&
@@ -84,7 +93,7 @@ const FormGenerator = ({
       );
     case "textarea":
       return (
-        <Label className="flex flex-col gap-2" htmlFor={`input-${label}`}>
+        <Label className={cn("flex flex-col gap-2", className)} htmlFor={`input-${label}`}>
           {label && label}
           <Textarea
             form={form}
