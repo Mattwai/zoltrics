@@ -392,7 +392,7 @@ export const BookingOptionsDialog = ({
                   <SelectTrigger>
                     <SelectValue placeholder="Select time slot" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[200px] overflow-y-auto">
                     {availableSlots.map((slot) => (
                       <SelectItem key={slot} value={slot}>
                         {slot}
