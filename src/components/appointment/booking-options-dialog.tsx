@@ -23,17 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-// Sample time slots - replace with your application's actual available slots
-const AVAILABLE_SLOTS = [
-  "9:00 AM - 10:00 AM",
-  "10:00 AM - 11:00 AM",
-  "11:00 AM - 12:00 PM",
-  "1:00 PM - 2:00 PM",
-  "2:00 PM - 3:00 PM",
-  "3:00 PM - 4:00 PM",
-  "4:00 PM - 5:00 PM",
-];
+import { format, parseISO } from "date-fns";
+import { formatTimeSlot } from "@/lib/time-slots";
 
 interface BookingOptionsDialogProps {
   isOpen: boolean;
@@ -42,6 +33,30 @@ interface BookingOptionsDialogProps {
   onCancel: () => void;
   onBookingUpdate?: (updatedBooking: Booking) => void;
 }
+
+// Helper function to properly format dates from the API - using UTC to avoid timezone issues
+const formatAPIDate = (dateString: string | Date): Date => {
+  if (dateString instanceof Date) {
+    // Create a new date to avoid timezone issues
+    const d = new Date(dateString);
+    return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0));
+  }
+  
+  // For string dates, first parse as ISO, then create a new UTC date
+  try {
+    if (typeof dateString === 'string') {
+      // Parse the date string to get components
+      const d = parseISO(dateString);
+      // Create a new date with UTC to preserve the date parts
+      return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0));
+    }
+  } catch (e) {
+    console.error("Error parsing date:", e);
+  }
+  
+  // Fallback
+  return new Date();
+};
 
 export const BookingOptionsDialog = ({
   isOpen,
@@ -52,12 +67,13 @@ export const BookingOptionsDialog = ({
 }: BookingOptionsDialogProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    booking ? new Date(booking.date) : undefined
+    booking ? formatAPIDate(booking.date) : undefined
   );
   const [selectedSlot, setSelectedSlot] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
   const [originalNotes, setOriginalNotes] = useState<string>("");
   const [currentBooking, setCurrentBooking] = useState<Booking | null>(null);
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const hasFetchedRef = useRef(false);
 
   // Reset fetch flag when dialog closes
@@ -66,6 +82,8 @@ export const BookingOptionsDialog = ({
       hasFetchedRef.current = false;
     }
   }, [isOpen]);
+
+  console.log("Current date from booking:", booking?.date);
 
   // Fetch latest booking data from the database when dialog opens
   useEffect(() => {
@@ -80,12 +98,13 @@ export const BookingOptionsDialog = ({
           
           if (response.ok) {
             const data = await response.json();
+            console.log("Fetched booking date:", data.date);
             setCurrentBooking(data);
             setSelectedSlot(data.slot);
             const bookingNotes = data.notes || "";
             setNotes(bookingNotes);
             setOriginalNotes(bookingNotes);
-            setSelectedDate(new Date(data.date));
+            setSelectedDate(formatAPIDate(data.date));
             
             // Update parent component with fresh data
             if (onBookingUpdate) {
@@ -98,7 +117,7 @@ export const BookingOptionsDialog = ({
             const bookingNotes = booking.notes || "";
             setNotes(bookingNotes);
             setOriginalNotes(bookingNotes);
-            setSelectedDate(new Date(booking.date));
+            setSelectedDate(formatAPIDate(booking.date));
           }
         } catch (error) {
           console.error("Error fetching booking details:", error);
@@ -108,7 +127,7 @@ export const BookingOptionsDialog = ({
           const bookingNotes = booking.notes || "";
           setNotes(bookingNotes);
           setOriginalNotes(bookingNotes);
-          setSelectedDate(new Date(booking.date));
+          setSelectedDate(formatAPIDate(booking.date));
         } finally {
           setIsLoading(false);
         }
@@ -118,8 +137,61 @@ export const BookingOptionsDialog = ({
     }
   }, [booking, isOpen, onBookingUpdate]);
 
+  // Fetch available slots when date changes
+  useEffect(() => {
+    if (selectedDate) {
+      const fetchAvailableSlots = async () => {
+        try {
+          setIsLoading(true);
+          // Format date for API request
+          const formattedDate = selectedDate.toISOString().split('T')[0];
+          const response = await fetch(`/api/appointments/available-slots?date=${formattedDate}`);
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log("Available slots from API:", data.slots);
+            setAvailableSlots(data.slots);
+            
+            // If we don't have a selected slot yet or the current one is not available,
+            // and we have available slots, select the first one
+            if ((!selectedSlot || !data.slots.includes(selectedSlot)) && data.slots.length > 0) {
+              setSelectedSlot(data.slots[0]);
+            }
+          } else {
+            console.error("Failed to fetch available slots:", await response.text());
+            // If API fails, keep current slot only as fallback
+            if (selectedSlot) {
+              setAvailableSlots([selectedSlot]);
+            } else if (currentBooking?.slot) {
+              setAvailableSlots([currentBooking.slot]);
+              setSelectedSlot(currentBooking.slot);
+            } else {
+              setAvailableSlots([]);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching available slots:", error);
+          // If API fails, keep current slot only as fallback
+          if (selectedSlot) {
+            setAvailableSlots([selectedSlot]);
+          } else if (currentBooking?.slot) {
+            setAvailableSlots([currentBooking.slot]);
+            setSelectedSlot(currentBooking.slot);
+          } else {
+            setAvailableSlots([]);
+          }
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      
+      fetchAvailableSlots();
+    }
+  }, [selectedDate, selectedSlot, currentBooking]);
+
   // Handle date change manually since DatePicker manages its own state
   const handleDateChange = (date: Date | undefined) => {
+    console.log("Date selected:", date);
     setSelectedDate(date);
   };
 
@@ -180,6 +252,7 @@ export const BookingOptionsDialog = ({
     
     try {
       setIsLoading(true);
+      console.log("Rescheduling to date:", selectedDate);
       const response = await fetch(`/api/appointments/${activeBooking.id}/reschedule`, {
         method: "PATCH",
         headers: {
@@ -202,7 +275,7 @@ export const BookingOptionsDialog = ({
       // Update current booking with the new data
       setCurrentBooking({
         ...activeBooking,
-        date: new Date(selectedDate),
+        date: selectedDate,
         slot: selectedSlot,
         notes: notes
       });
@@ -211,7 +284,7 @@ export const BookingOptionsDialog = ({
       if (onBookingUpdate) {
         onBookingUpdate({
           ...activeBooking,
-          date: new Date(selectedDate),
+          date: selectedDate,
           slot: selectedSlot,
           // Preserve notes in case they were edited but not saved
           notes: notes
@@ -232,6 +305,13 @@ export const BookingOptionsDialog = ({
     // Only close, no auto-save
     onClose();
   };
+
+  // Format date for display with proper timezone handling
+  const formatDisplayDate = (date: Date | string) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    // Use a full month name format to make the month absolutely clear
+    return format(dateObj, 'MMMM d, yyyy');
+  };
   
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogClose}>
@@ -247,11 +327,11 @@ export const BookingOptionsDialog = ({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm text-gray-500">Date</Label>
-                <p>{activeBooking.date ? new Date(activeBooking.date).toLocaleDateString() : "Not set"}</p>
+                <p>{activeBooking.date ? formatDisplayDate(activeBooking.date) : "Not set"}</p>
               </div>
               <div>
                 <Label className="text-sm text-gray-500">Time</Label>
-                <p>{activeBooking.slot}</p>
+                <p>{activeBooking.slot ? formatTimeSlot(activeBooking.slot, 60) : ""}</p>
               </div>
               <div>
                 <Label className="text-sm text-gray-500">Email</Label>
@@ -313,7 +393,7 @@ export const BookingOptionsDialog = ({
                     <SelectValue placeholder="Select time slot" />
                   </SelectTrigger>
                   <SelectContent>
-                    {AVAILABLE_SLOTS.map((slot) => (
+                    {availableSlots.map((slot) => (
                       <SelectItem key={slot} value={slot}>
                         {slot}
                       </SelectItem>
@@ -355,8 +435,9 @@ export const BookingOptionsDialog = ({
                   isLoading ||
                   !selectedDate ||
                   !selectedSlot ||
-                  (selectedDate.getTime() === new Date(activeBooking.date).getTime() &&
-                   selectedSlot === activeBooking.slot)
+                  (selectedDate && 
+                    formatAPIDate(activeBooking.date).toDateString() === selectedDate.toDateString() &&
+                    selectedSlot === activeBooking.slot)
                 }
               >
                 Reschedule

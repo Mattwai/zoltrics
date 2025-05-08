@@ -19,7 +19,7 @@ import {
   DialogFooter 
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { generateTimeOptions, calculateDuration, calculateEndTime } from "@/lib/time-slots";
+import { generateTimeOptions, calculateDuration, calculateEndTime, formatTimeSlot } from "@/lib/time-slots";
 import { Switch } from "@/components/ui/switch";
 import { AlertCircle, Clock, Calendar as CalendarIcon, X } from "lucide-react";
 
@@ -441,7 +441,7 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
                       >
                         <div className="space-y-1">
                           <div className="font-medium flex items-center gap-2">
-                            {slot.slot} - {calculateEndTime(slot.slot, slot.duration)} ({slot.duration} min)
+                            {slot.slot} - {formatTimeSlot(slot.slot, slot.duration).split(' - ')[1]} ({slot.duration} min)
                             {isCustomSlot ? (
                               <Badge variant="outline" className="bg-blue-50 text-blue-800">Custom</Badge>
                             ) : (

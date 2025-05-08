@@ -10,6 +10,8 @@ import { ChevronLeft, ChevronRight, MoreVertical, StickyNote } from "lucide-reac
 import { useState } from "react";
 import { Booking } from "@/types/booking";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { format } from "date-fns";
+import { formatTimeSlot } from "@/lib/time-slots";
 
 interface Props {
   bookings: Booking[];
@@ -30,6 +32,12 @@ const AllAppointments = ({ bookings, onBookingOptions, isDeleting }: Props) => {
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const currentBookings = bookings.slice(startIndex, endIndex);
+  
+  // Format date to ensure correct month display
+  const formatDate = (date: Date | string) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return format(dateObj, 'MMMM d, yyyy');
+  };
 
   return (
     <div className="space-y-4">
@@ -39,11 +47,10 @@ const AllAppointments = ({ bookings, onBookingOptions, isDeleting }: Props) => {
             <TableCell>{booking.name}</TableCell>
             <TableCell>{booking.email}</TableCell>
             <TableCell>
-              <div>
-                {getMonthName(new Date(booking.date).getMonth())} {new Date(booking.date).getDate()}{" "}
-                {new Date(booking.date).getFullYear()}
+              <div className="font-medium">
+                {formatDate(booking.date)}
               </div>
-              <div className="uppercase">{booking.slot}</div>
+              <div className="text-sm text-gray-600">{formatTimeSlot(booking.slot, 60)}</div>
               {booking.notes && (
                 <div className="mt-1 flex items-center text-xs text-gray-500">
                   <TooltipProvider>

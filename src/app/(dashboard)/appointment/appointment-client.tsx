@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DeleteAppointmentDialog } from "@/components/appointment/delete-appointment-dialog";
 import { BookingOptionsDialog } from "@/components/appointment/booking-options-dialog";
+import { formatTimeSlot } from "@/lib/time-slots";
 
 interface AppointmentClientProps {
   initialBookings: Booking[];
@@ -164,7 +165,7 @@ export const AppointmentClient = ({
                 <CardHeader className="bg-orchid/10 pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg font-semibold">
-                      {booking.slot}
+                      {formatTimeSlot(booking.slot, 60)}
                     </CardTitle>
                   </div>
                 </CardHeader>
