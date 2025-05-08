@@ -215,6 +215,7 @@ export async function POST(req: NextRequest) {
         domainId: null,
         customerId: customer.id,
         productId: productId || null,
+        userId: userId,
         bookingMetadata: {
           create: {
             source: "direct_link",
