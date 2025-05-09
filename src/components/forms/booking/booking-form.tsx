@@ -81,6 +81,7 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
     defaultValues: {
       name: session?.user?.name || "",
       email: session?.user?.email || "",
+      productId: "",
     },
   });
 
@@ -405,6 +406,8 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
               <select
                 className="w-full h-11 rounded-md border border-input bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
                 {...field}
+                value={field.value || ""}
+                onChange={(e) => field.onChange(e.target.value)}
               >
                 <option value="">Select a service</option>
                 {services

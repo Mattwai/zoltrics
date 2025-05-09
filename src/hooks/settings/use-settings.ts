@@ -286,7 +286,7 @@ export const useServices = (userId: string) => {
   const { toast } = useToast();
   const {
     handleSubmit,
-    register,
+    register: originalRegister,
     formState: { errors },
   } = useForm<AddServiceProps>({
     resolver: zodResolver(AddServiceSchema),
@@ -297,7 +297,7 @@ export const useServices = (userId: string) => {
       const result = await onCreateNewDomainService(
         userId,
         values.name,
-        values.price
+        Number(values.price)
       );
 
       if (result?.status === 200) {
@@ -320,6 +320,10 @@ export const useServices = (userId: string) => {
         variant: "destructive",
       });
     }
+  });
+
+  const register = (name: keyof AddServiceProps) => originalRegister(name, {
+    setValueAs: (value) => name === 'price' ? Number(value) : value
   });
 
   return {

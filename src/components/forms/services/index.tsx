@@ -1,14 +1,14 @@
 import { getMonthName } from "@/lib/utils";
 import { Plus, Trash2 } from "lucide-react";
-import { SideSheet } from "../sheet";
-import { DataTable } from "../table";
-import TabsMenu from "../tabs/index";
-import { TableCell, TableRow } from "../ui/table";
-import { TabsContent } from "../ui/tabs";
+import { SideSheet } from "../../sheet";
+import { DataTable } from "../../table";
+import TabsMenu from "../../tabs/index";
+import { TableCell, TableRow } from "../../ui/table";
+import { TabsContent } from "../../ui/tabs";
 import { CreateServiceForm } from "./service-form";
-import { Switch } from "../ui/switch";
-import { Button } from "../ui/button";
-import { useToast } from "../ui/use-toast";
+import { Switch } from "../../ui/switch";
+import { Button } from "../../ui/button";
+import { useToast } from "../../ui/use-toast";
 import { onDeleteService, onUpdateServiceStatus } from "@/actions/settings";
 
 type Props = {

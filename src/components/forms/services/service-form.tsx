@@ -4,8 +4,8 @@ import { Loader } from "@/components/loader";
 import { Button } from "@/components/ui/button";
 import { useServices } from "@/hooks/settings/use-settings";
 import { useRouter } from "next/navigation";
-import FormGenerator from "../forms/form-generator";
-import { Card } from "../ui/card";
+import FormGenerator from "../form-generator";
+import { Card } from "../../ui/card";
 
 type CreateServiceFormProps = {
   id: string;

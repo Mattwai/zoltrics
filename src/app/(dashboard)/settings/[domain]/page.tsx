@@ -2,7 +2,7 @@ import { onGetCurrentDomainInfo } from "@/actions/settings";
 import BotTrainingForm from "@/components/forms/settings/bot-training";
 import SettingsForm from "@/components/forms/settings/form";
 import InfoBar from "@/components/infobar";
-import ServiceTable from "@/components/services";
+import ServiceTable from "@/components/forms/services";
 import { redirect } from "next/navigation";
 
 type Props = { params: { domain: string } };

@@ -1,7 +1,7 @@
 "use client";
 
 import InfoBar from "@/components/infobar";
-import ServiceTable from "@/components/services";
+import ServiceTable from "@/components/forms/services";
 import { useEffect, useState } from "react";
 
 type Props = {};
