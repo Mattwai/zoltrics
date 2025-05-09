@@ -2,18 +2,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ErrorMessage } from "@hookform/error-message";
-import { FieldErrors, FieldValues, UseFormRegister } from "react-hook-form";
+import { FieldErrors, FieldValues, UseFormRegister, Path } from "react-hook-form";
 import { cn } from "@/lib/utils";
 
-type Props = {
+type Props<T extends FieldValues = any> = {
   type: "text" | "email" | "password" | "number";
   inputType: "select" | "input" | "textarea";
   options?: { value: string; label: string; id: string }[];
   label?: string;
   placeholder: string;
-  register: UseFormRegister<any>;
-  name: string;
-  errors: FieldErrors<FieldValues>;
+  register: UseFormRegister<T>;
+  name: Path<T>;
+  errors: FieldErrors<T>;
   lines?: number;
   form?: string;
   defaultValue?: string;
@@ -21,9 +21,10 @@ type Props = {
   className?: string;
   step?: string;
   min?: string;
+  setValueAs?: (value: any) => any;
 };
 
-const FormGenerator = ({
+const FormGenerator = <T extends FieldValues = any>({
   errors,
   inputType,
   name,
@@ -39,7 +40,8 @@ const FormGenerator = ({
   className,
   step,
   min,
-}: Props) => {
+  setValueAs,
+}: Props<T>) => {
   switch (inputType) {
     case "input":
     default:
@@ -55,11 +57,11 @@ const FormGenerator = ({
             disabled={disabled}
             step={step}
             min={min}
-            {...register(name)}
+            {...register(name, { setValueAs })}
           />
           <ErrorMessage
             errors={errors}
-            name={name}
+            name={name as any}
             render={({ message }) => (
               <p className="text-red-400 mt-2">
                 {message === "Required" ? "" : message}
@@ -82,7 +84,7 @@ const FormGenerator = ({
           </select>
           <ErrorMessage
             errors={errors}
-            name={name}
+            name={name as any}
             render={({ message }) => (
               <p className="text-red-400 mt-2">
                 {message === "Required" ? "" : message}
@@ -106,7 +108,7 @@ const FormGenerator = ({
           />
           <ErrorMessage
             errors={errors}
-            name={name}
+            name={name as any}
             render={({ message }) => (
               <p className="text-red-400 mt-2">
                 {message === "Required" ? "" : message}

@@ -54,6 +54,7 @@ export const CreateServiceForm = ({
             step="0.01"
             min="0"
             className="w-full"
+            setValueAs={(value) => Number(value)}
           />
         </div>
         <Button 

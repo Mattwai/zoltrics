@@ -40,19 +40,23 @@ async function fetchWeatherData(date: Date, city: string = "Auckland") {
 
 async function getCustomerBookingHistory(email: string) {
   const bookings = await prisma.booking.findMany({
-    where: { email },
+    where: {
+      customer: {
+        email: email
+      }
+    },
     include: {
       bookingMetadata: true
     },
-    orderBy: { date: "desc" },
+    orderBy: { startTime: "desc" },
   });
-  const cancellations = bookings.filter((b) => b.bookingMetadata?.no_show).length;
+  const cancellations = bookings.filter((b) => b.status === "CANCELLED").length;
   const totalBookings = bookings.length;
   const clientReliability =
     totalBookings > 0 ? (totalBookings - cancellations) / totalBookings : 1;
   const isFirstAppointment = totalBookings === 0 ? 1 : 0;
   const daysSinceLastBooking =
-    bookings.length > 0 ? differenceInDays(new Date(), bookings[0].date) : 365; // Default to 1 year if no prior bookings
+    bookings.length > 0 ? differenceInDays(new Date(), bookings[0].startTime) : 365; // Default to 1 year if no prior bookings
   return {
     cancellations,
     clientReliability,
@@ -118,7 +122,7 @@ async function predictCancellationRisk(features: any): Promise<number> {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, date, slot, userId, isAuthenticated, googleUserId, serviceId } = body;
+    const { name, email, date, slot, userId, isAuthenticated, googleUserId, serviceId, notes } = body;
 
     if (!name || !email || !date || !slot || !userId) {
       return NextResponse.json(
@@ -160,15 +164,41 @@ export async function POST(req: NextRequest) {
     }
 
     // Find or create customer - explicitly set domainId to null for direct bookings
-    const customer = await prisma.customer.upsert({
-      where: { email },
-      update: {},
-      create: {
-        email,
-        // Setting domainId to null explicitly marks this as a direct booking
-        domainId: null,
-      },
+    let customer = await prisma.customer.findFirst({
+      where: {
+        email: email,
+        userId: userId
+      }
     });
+
+    if (!customer) {
+      // Find the first domain for this user
+      const domain = await prisma.domain.findFirst({
+        where: { userId }
+      });
+
+      if (!domain) {
+        throw new Error("No domain found for user");
+      }
+
+      customer = await prisma.customer.create({
+        data: {
+          email,
+          name,
+          domainId: domain.id,
+          userId: userId,
+        },
+      });
+    } else {
+      customer = await prisma.customer.update({
+        where: {
+          id: customer.id
+        },
+        data: {
+          name: name
+        }
+      });
+    }
 
     // Fetch booking history
     const {
@@ -212,23 +242,27 @@ export async function POST(req: NextRequest) {
         endTime: new Date(appointmentDate.getTime() + 60 * 60 * 1000), // 1 hour duration
         status: "PENDING",
         customerId: customer.id,
-        serviceId: serviceId || null,
+        serviceId: serviceId || undefined,
         userId: userId,
-        metadata: {
+        bookingMetadata: {
           create: {
-            noShow: false,
-            riskScore,
-            isAuthenticated: !!isAuthenticated,
-            googleUserId: googleUserId || null,
+            notes: notes || undefined
           }
         },
-        payment: {
+        bookingPayment: {
           create: {
-            depositRequired,
-            depositPaid: false,
+            amount: 0,
+            currency: "NZD",
+            status: "PENDING"
           }
         }
       },
+      include: {
+        customer: true,
+        service: true,
+        bookingMetadata: true,
+        bookingPayment: true
+      }
     });
 
     return NextResponse.json(

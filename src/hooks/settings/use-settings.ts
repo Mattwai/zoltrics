@@ -27,7 +27,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, UseFormRegister } from "react-hook-form";
 import { z } from "zod";
 import { HelpDesk } from "@prisma/client";
 
@@ -284,13 +284,11 @@ export const useFilterQuestions = (userId: string) => {
 
 export const useServices = (userId: string) => {
   const { toast } = useToast();
-  const {
-    handleSubmit,
-    register: originalRegister,
-    formState: { errors },
-  } = useForm<AddServiceProps>({
-    resolver: zodResolver(AddServiceSchema),
+  const { register: originalRegister, handleSubmit, formState: { errors } } = useForm<AddServiceProps>({
+    resolver: zodResolver(AddServiceSchema)
   });
+
+  const register = originalRegister as UseFormRegister<any>;
 
   const onCreateNewService = handleSubmit(async (values) => {
     try {
@@ -320,10 +318,6 @@ export const useServices = (userId: string) => {
         variant: "destructive",
       });
     }
-  });
-
-  const register = (name: keyof AddServiceProps) => originalRegister(name, {
-    setValueAs: (value) => name === 'price' ? Number(value) : value
   });
 
   return {
