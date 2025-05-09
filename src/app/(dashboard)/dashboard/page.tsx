@@ -3,7 +3,7 @@ import {
   getUserBalance,
   getUserClients,
   getUserPlanInfo,
-  getUserTotalProductPrices,
+  getUserTotalServicePrices,
   getUserTransactions,
 } from "@/actions/dashboard";
 import DashboardCard from "@/components/dashboard/cards";
@@ -18,12 +18,12 @@ import { DollarSign, MessageSquare, Package, Calendar, TrendingUp, Users, Clock 
 type Props = {};
 
 const Page = async (props: Props) => {
-  const clients = await getUserClients();
+  const services = await getUserTotalServicePrices();
   const sales = await getUserBalance();
+  const clients = await getUserClients();
   const bookings = await getUserAppointments();
   const plan = await getUserPlanInfo();
   const transactions = await getUserTransactions();
-  const products = await getUserTotalProductPrices();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -48,8 +48,8 @@ const Page = async (props: Props) => {
             icon={<TrendingUp className="w-5 h-5" />}
           />
           <DashboardCard
-            value={products || 0}
-            title="Active Products"
+            value={services || 0}
+            title="Active Services"
             icon={<Package className="w-5 h-5" />}
           />
         </div>
@@ -192,38 +192,21 @@ const Page = async (props: Props) => {
             </div>
           </div>
 
-          {/* Product Performance */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-            <div className="p-6 border-b border-gray-100">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-orange-50 rounded-lg">
-                    <Package className="w-5 h-5 text-orange-600" />
-                  </div>
-                  <div>
-                    <h2 className="font-semibold text-lg text-gray-900">Product Performance</h2>
-                    <p className="text-sm text-gray-500">Your product metrics</p>
-                  </div>
-                </div>
-                <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                  View All
-                </button>
+          {/* Service Performance */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="font-semibold text-lg text-gray-900">Service Performance</h2>
+            <p className="text-sm text-gray-500">Your service metrics</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+              <div>
+                <p className="text-sm text-gray-600">Total Services</p>
+                <p className="text-2xl font-bold mt-1">{services || 0}</p>
               </div>
-            </div>
-            <div className="p-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Total Products</p>
-                  <p className="text-2xl font-bold mt-1">{products || 0}</p>
-                  <p className="text-xs text-gray-500 mt-1">Active listings</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Avg. Product Price</p>
-                  <p className="text-2xl font-bold mt-1">
-                    ${products && sales ? (sales / products).toFixed(2) : 0}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">Per product</p>
-                </div>
+              <div>
+                <p className="text-sm text-gray-600">Avg. Service Price</p>
+                <p className="text-2xl font-bold mt-1">
+                  ${services && sales ? (sales / services).toFixed(2) : 0}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Per service</p>
               </div>
             </div>
           </div>

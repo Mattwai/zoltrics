@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { pricingCards } from "@/constants/pricing-cards";
-import { products } from "@/constants/landing-page";
+import { services } from "@/constants/landing-page";
 import clsx from "clsx";
 import { Check, Star, ArrowRight, MessageSquare, Calendar, Mail, Zap } from "lucide-react";
 import Image from "next/image";
@@ -211,9 +211,9 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Product Showcase */}
+      {/* Service Showcase */}
       <section className="py-12 bg-neutral-900">
-        <HeroParallax products={products} />
+        <HeroParallax services={services} />
       </section>
 
       {/* Pricing Section */}

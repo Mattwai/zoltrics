@@ -2,14 +2,14 @@
 
 import { client } from "@/lib/prisma";
 
-export const onGetDomainProductsAndConnectedAccountId = async (id: string) => {
+export const onGetDomainServicesAndConnectedAccountId = async (id: string) => {
   try {
     const connectedAccount = await client.domain.findUnique({
       where: {
         id,
       },
       select: {
-        User: {
+        user: {
           select: {
             stripeId: true,
           },
@@ -17,7 +17,7 @@ export const onGetDomainProductsAndConnectedAccountId = async (id: string) => {
       },
     });
 
-    const products = await client.product.findMany({
+    const services = await client.service.findMany({
       where: {
         domainId: id,
       },
@@ -36,33 +36,33 @@ export const onGetDomainProductsAndConnectedAccountId = async (id: string) => {
       },
     });
 
-    if (products) {
-      const totalAmount = products.reduce(
+    if (services) {
+      const totalAmount = services.reduce(
         (current: number, next: { pricing: { price: number } | null, status: { isLive: boolean } | null }) => {
           return current + (next.pricing?.price || 0);
         },
         0
       );
       return {
-        products: products.map(p => ({
-          name: p.name,
-          price: p.pricing?.price || 0,
-          isLive: p.status?.isLive || false
+        services: services.map(s => ({
+          name: s.name,
+          price: s.pricing?.price || 0,
+          isLive: s.status?.isLive || false
         })),
         amount: totalAmount,
-        stripeId: connectedAccount?.User?.stripeId ?? null,
+        stripeId: connectedAccount?.user?.stripeId ?? null,
       };
     } else {
       return {
-        products: [],
+        services: [],
         amount: 0,
-        stripeId: connectedAccount?.User?.stripeId ?? null,
+        stripeId: connectedAccount?.user?.stripeId ?? null,
       };
     }
   } catch (error) {
     console.log(error);
     return {
-      products: [],
+      services: [],
       amount: 0,
       stripeId: null,
     };

@@ -2,28 +2,28 @@
 
 import { Loader } from "@/components/loader";
 import { Button } from "@/components/ui/button";
-import { useProducts } from "@/hooks/settings/use-settings";
+import { useServices } from "@/hooks/settings/use-settings";
 import { useRouter } from "next/navigation";
 import FormGenerator from "../forms/form-generator";
 import { Card } from "../ui/card";
 
-type CreateProductFormProps = {
+type CreateServiceFormProps = {
   id: string;
-  onProductAdded?: () => void;
+  onServiceAdded?: () => void;
 };
 
-export const CreateProductForm = ({
+export const CreateServiceForm = ({
   id,
-  onProductAdded,
-}: CreateProductFormProps) => {
+  onServiceAdded,
+}: CreateServiceFormProps) => {
   const router = useRouter();
-  const { onCreateNewProduct, register, errors, loading } = useProducts(id);
+  const { onCreateNewService, register, errors, loading } = useServices(id);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onCreateNewProduct(e);
-    router.refresh(); // Refresh the page to show the new product
-    onProductAdded?.(); // Call the callback if provided
+    await onCreateNewService(e);
+    router.refresh(); // Refresh the page to show the new service
+    onServiceAdded?.(); // Call the callback if provided
   };
 
   return (
@@ -36,10 +36,10 @@ export const CreateProductForm = ({
           <FormGenerator
             inputType="input"
             register={register}
-            label="Product Name"
+            label="Service Name"
             name="name"
             errors={errors}
-            placeholder="Enter product name"
+            placeholder="Enter service name"
             type="text"
             className="w-full"
           />
@@ -61,7 +61,7 @@ export const CreateProductForm = ({
           className="w-full bg-purple hover:bg-purple/90 text-white"
           disabled={loading}
         >
-          <Loader loading={loading}>Create Product</Loader>
+          <Loader loading={loading}>Create Service</Loader>
         </Button>
       </Card>
     </form>

@@ -15,9 +15,9 @@ export type HelpDeskQuestionsProps = {
   knowledgeBase?: string;
 };
 
-export type AddProductProps = {
+export type AddServiceProps = {
   name: string;
-  price: string;
+  price: number;
 };
 
 export type FilterQuestionsProps = {
@@ -93,15 +93,7 @@ export const FilterQuestionsSchema = z.object({
   question: z.string().min(1, { message: "Question cannot be left empty" }),
 });
 
-export const AddProductSchema = z.object({
-  name: z
-    .string()
-    .min(3, { message: "The name must have atleast 3 characters" }),
-  price: z.string()
-    .refine((val) => !isNaN(parseInt(val)), {
-      message: "Price must be a valid number"
-    })
-    .refine((val) => parseInt(val) > 0, {
-      message: "Price must be greater than 0"
-    }),
+export const AddServiceSchema = z.object({
+  name: z.string().min(1, "Service name is required"),
+  price: z.number().min(0, "Price must be greater than or equal to 0"),
 });

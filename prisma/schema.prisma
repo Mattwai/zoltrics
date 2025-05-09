@@ -8,89 +8,117 @@ datasource db {
 }
 
 model Account {
-  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId             String    @db.Uuid
-  providerType       String
-  providerId         String
-  providerAccountId  String
-  refreshToken       String?
-  accessToken        String?
-  accessTokenExpires DateTime?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  user               User      @relation(fields: [userId], references: [id])
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?  @db.Text
+  access_token      String?  @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?  @db.Text
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([providerId, providerAccountId])
+  @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Session {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id           String   @id @default(uuid()) @db.Uuid
+  sessionToken String   @unique
   userId       String   @db.Uuid
   expires      DateTime
-  sessionToken String   @unique
-  accessToken  String   @unique
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  user         User     @relation(fields: [userId], references: [id])
-}
-
-model User {
-  id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email               String               @unique
-  name                String?
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  emailVerified       DateTime?
-  stripeId            String?
-  accounts            Account[]
-  subscription        Billings?
-  blockedDates        BlockedDate[]
-  bookings            Booking[]
-  campaign            Campaign[]
-  chatBot             ChatBot?
-  chatMessages        ChatMessage[]
-  chatRooms           ChatRoom[]
-  customTimeSlots     CustomTimeSlot[]
-  customers           Customer[]
-  domains             Domain[]
-  filterQuestions     FilterQuestions[]
-  helpdesk            HelpDesk[]
-  knowledgeBase       KnowledgeBase[]
-  products            Product[]
-  sessions            Session[]
-  userBusinessProfile UserBusinessProfile?
-  userProfile         UserProfile?
-  userSettings        UserSettings?
-
-  @@index([email])
-  @@index([createdAt])
-}
-
-model UserProfile {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId    String   @unique @db.Uuid
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model UserBusinessProfile {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId       String   @unique @db.Uuid
-  businessName String?
-  bookingLink  String?  @unique
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model User {
+  id                  String               @id @default(uuid()) @db.Uuid
+  name                String?
+  email               String               @unique
+  emailVerified       DateTime?
+  image               String?
+  password            String?
+  stripeId            String?
+  accounts            Account[]
+  sessions            Session[]
+  subscription        Billings?
+  userProfile         UserProfile?
+  userBusinessProfile UserBusinessProfile?
+  userSettings        UserSettings?
+  domains             Domain[]
+  services            Service[]
+  customers           Customer[]
+  campaigns           Campaign[]
+  chatBot             ChatBot?
+  chatRooms           ChatRoom[]
+  chatMessages        ChatMessage[]
+  bookings            Booking[]
+  blockedDates        BlockedDate[]
+  customTimeSlots     CustomTimeSlot[]
+  filterQuestions     FilterQuestions[]
+  helpdesk            HelpDesk[]
+  knowledgeBase       KnowledgeBase[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  @@index([email])
+}
+
+model UserProfile {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @db.Uuid
+  bio       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model UserBusinessProfile {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @unique @db.Uuid
+  businessName String?
+  bookingLink  BookingLink?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model BookingLink {
+  id           String   @id @default(uuid()) @db.Uuid
+  link         String   @unique @default(dbgenerated("gen_random_uuid()")) @db.VarChar(255)
+  userBusinessProfileId String @unique @db.Uuid
+  userBusinessProfile UserBusinessProfile @relation(fields: [userBusinessProfileId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([link])
+  @@index([userBusinessProfileId])
 }
 
 model UserSettings {
-  id                      String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                      String                   @id @default(uuid()) @db.Uuid
   userId                  String                   @unique @db.Uuid
-  createdAt               DateTime                 @default(now())
-  updatedAt               DateTime                 @updatedAt
-  user                    User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme                   String?
+  notifications          Boolean                  @default(true)
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  user                   User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   bookingCalendarSettings BookingCalendarSettings?
+
+  @@index([userId])
 }
 
 model VerificationRequest {
@@ -105,320 +133,289 @@ model VerificationRequest {
 }
 
 model Domain {
-  id        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id        String    @id @default(uuid()) @db.Uuid
   name      String
-  userId    String?         @db.Uuid
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-  customer  Customer[]
-  User      User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  settings  DomainSettings?
-  products  Product[]
-  Campaign  Campaign[]      @relation("CampaignToDomain")
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  services  Service[]
+  customers Customer[]
+  campaigns Campaign[] @relation("CampaignToDomain")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  @@index([name])
   @@index([userId])
 }
 
-model DomainSettings {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  domainId  String   @unique @db.Uuid
+model Service {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  domainId  String   @db.Uuid
+  domain    Domain   @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pricing   ServicePricing?
+  status    ServiceStatus?
+  bookings  Booking[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  domain    Domain   @relation(fields: [domainId], references: [id], onDelete: Cascade)
 
   @@index([domainId])
+  @@index([userId])
+}
+
+model ServicePricing {
+  id        String   @id @default(uuid()) @db.Uuid
+  price     Float
+  currency  String   @default("NZD")
+  serviceId String   @unique @db.Uuid
+  service   Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([serviceId])
+}
+
+model ServiceStatus {
+  id        String   @id @default(uuid()) @db.Uuid
+  isLive    Boolean  @default(false)
+  serviceId String   @unique @db.Uuid
+  service   Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([serviceId])
 }
 
 model ChatBot {
-  id             String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id             String   @id @default(uuid()) @db.Uuid
+  name           String
   welcomeMessage String?
   background     String?
   textColor      String?
-  helpdesk       Boolean @default(false)
-  userId         String? @unique @db.Uuid
-  User           User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  helpdesk       Boolean  @default(false)
+  userId         String   @unique @db.Uuid
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model Billings {
-  id      String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  plan    Plans   @default(STANDARD)
-  credits Int     @default(10)
+  id      String  @id @default(uuid()) @db.Uuid
+  plan    String?
   userId  String? @unique @db.Uuid
-  User    User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model HelpDesk {
-  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id       String  @id @default(uuid()) @db.Uuid
   question String
   answer   String
   userId   String? @db.Uuid
-  User     User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model KnowledgeBase {
-  id        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id        String   @id @default(uuid()) @db.Uuid
   title     String
   content   String
-  type      KnowledgeType @default(ARTICLE)
-  category  String?
-  userId    String?       @db.Uuid
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  User      User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([type])
-  @@index([category])
-  @@index([createdAt])
 }
 
 model FilterQuestions {
-  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id       String  @id @default(uuid()) @db.Uuid
   question String
-  answered String?
-  userId   String? @db.Uuid
-  User     User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answer   String? @default("")
+  userId   String  @db.Uuid
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
 model CustomerResponses {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id         String   @id @default(uuid()) @db.Uuid
   question   String
-  answered   String?
+  answer     String
   customerId String   @db.Uuid
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([customerId])
 }
 
 model Customer {
-  id        String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email     String?             @unique
-  domainId  String?             @db.Uuid
-  userId    String?             @db.Uuid
-  createdAt DateTime            @default(now())
-  updatedAt DateTime            @updatedAt
-  booking   Booking[]
-  campaigns CampaignCustomer[]
-  chatRoom  ChatRoom[]
-  Domain    Domain?             @relation(fields: [domainId], references: [id], onDelete: Cascade)
-  User      User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  questions CustomerResponses[]
+  id          String              @id @default(uuid()) @db.Uuid
+  name        String
+  email       String
+  phone       String?
+  domainId    String             @db.Uuid
+  domain      Domain             @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  userId      String             @db.Uuid
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings    Booking[]
+  campaigns   CampaignCustomer[]
+  chatRooms   ChatRoom[]
+  questions   CustomerResponses[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 
-  @@index([email])
   @@index([domainId])
   @@index([userId])
-  @@index([createdAt])
+  @@index([email])
 }
 
 model ChatRoom {
-  id         String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id         String          @id @default(uuid()) @db.Uuid
+  name       String
   customerId String?         @db.Uuid
   userId     String?         @db.Uuid
+  message    ChatMessage[]
+  customer   Customer?       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user       User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status     ChatRoomStatus?
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
-  message    ChatMessage[]
-  Customer   Customer?       @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  User       User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status     ChatRoomStatus?
 
   @@index([customerId])
   @@index([userId])
-  @@index([createdAt])
 }
 
 model ChatRoomStatus {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id         String   @id @default(uuid()) @db.Uuid
+  isOpen     Boolean  @default(true)
   chatRoomId String   @unique @db.Uuid
-  live       Boolean  @default(false)
-  mailed     Boolean  @default(false)
+  chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
 
   @@index([chatRoomId])
 }
 
 model ChatMessage {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  message    String
-  role       Role?
-  chatRoomId String?   @db.Uuid
+  id         String    @id @default(uuid()) @db.Uuid
+  content    String
+  chatRoomId String    @db.Uuid
   userId     String?   @db.Uuid
   seen       Boolean   @default(false)
+  chatRoom   ChatRoom  @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  user       User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
-  ChatRoom   ChatRoom? @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
-  User       User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([chatRoomId])
   @@index([userId])
-  @@index([createdAt])
-  @@index([seen])
 }
 
 model Booking {
-  id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  date            DateTime
-  slot            String
-  email           String
-  name            String
-  notes           String?
-  customerId      String?          @db.Uuid
-  domainId        String?          @db.Uuid
-  productId       String?          @db.Uuid
-  userId          String?          @db.Uuid
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  Customer        Customer?        @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  Product         Product?         @relation(fields: [productId], references: [id])
-  User            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String            @id @default(uuid()) @db.Uuid
+  startTime       DateTime
+  endTime         DateTime
+  status          String            @default("pending")
+  customerId      String?           @db.Uuid
+  serviceId       String?           @db.Uuid
+  userId          String?           @db.Uuid
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  customer        Customer?         @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  service         Service?          @relation(fields: [serviceId], references: [id])
+  user            User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
   bookingMetadata BookingMetadata?
   bookingPayment  BookingPayment?
 
-  @@index([date])
-  @@index([email])
   @@index([customerId])
-  @@index([domainId])
-  @@index([productId])
+  @@index([serviceId])
   @@index([userId])
 }
 
 model BookingMetadata {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id              String   @id @default(uuid()) @db.Uuid
+  notes           String?
   bookingId       String   @unique @db.Uuid
-  source          String?  @default("direct_link")
-  no_show         Boolean  @default(false)
-  riskScore       Float?
-  googleUserId    String?  @db.Uuid
-  isAuthenticated Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   booking         Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
 }
 
 model BookingPayment {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id              String   @id @default(uuid()) @db.Uuid
+  amount          Float
+  currency        String
+  status          String
   bookingId       String   @unique @db.Uuid
-  depositRequired Boolean  @default(false)
-  depositPaid     Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   booking         Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
 }
 
 model Campaign {
-  id        String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id        String             @id @default(uuid()) @db.Uuid
   name      String
-  template  String?
-  userId    String?            @db.Uuid
-  createdAt DateTime           @default(now())
-  User      User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String             @db.Uuid
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  domains   Domain[]           @relation("CampaignToDomain")
   customers CampaignCustomer[]
-  domain    Domain[]           @relation("CampaignToDomain")
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
 
   @@index([userId])
-  @@index([createdAt])
 }
 
 model CampaignCustomer {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id         String   @id @default(uuid()) @db.Uuid
   campaignId String   @db.Uuid
   customerId String   @db.Uuid
-  createdAt  DateTime @default(now())
   campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  @@unique([campaignId, customerId])
   @@index([campaignId])
   @@index([customerId])
 }
 
-model Product {
-  id        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String
-  userId    String?         @db.Uuid
-  domainId  String?         @db.Uuid
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-  bookings  Booking[]
-  Domain    Domain?         @relation(fields: [domainId], references: [id], onDelete: Cascade)
-  User      User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  pricing   ProductPricing?
-  status    ProductStatus?
-
-  @@index([userId])
-  @@index([domainId])
-  @@index([createdAt])
-}
-
-model ProductPricing {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  productId String   @unique @db.Uuid
-  price     Int
-  currency  String   @default("NZD")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@index([productId])
-}
-
-model ProductStatus {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  productId String   @unique @db.Uuid
-  isLive    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@index([productId])
-  @@index([isLive])
-}
-
 model BookingCalendarSettings {
-  id            String       @id @default(uuid()) @db.Uuid
-  userId        String       @unique @db.Uuid
-  availableDays String[]
-  timeSlots     Json
-  startDate     DateTime
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  userSettings  UserSettings @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String       @id @default(uuid()) @db.Uuid
+  userSettingsId String       @unique @db.Uuid
+  timeZone       String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  userSettings   UserSettings @relation(fields: [userSettingsId], references: [id], onDelete: Cascade)
 
-  @@map("booking_calendar_settings")
+  @@index([userSettingsId])
 }
 
 model CustomTimeSlot {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id              String   @id @default(uuid()) @db.Uuid
+  startTime       DateTime
+  endTime         DateTime
   userId          String   @db.Uuid
-  date            DateTime
-  startTime       String
-  endTime         String
-  duration        Int
-  maxSlots        Int
-  overrideRegular Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  user            User     @relation(fields: [userId], references: [id])
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, date])
-  @@index([date])
-  @@index([createdAt])
+  @@index([userId])
 }
 
 model BlockedDate {
-  id        String   @id @default(cuid())
-  userId    String   @db.Uuid
+  id        String   @id @default(uuid()) @db.Uuid
   date      DateTime
+  userId    String   @db.Uuid
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, date])
-  @@index([userId, date])
   @@index([userId])
-  @@index([date])
 }
 
 enum Plans {

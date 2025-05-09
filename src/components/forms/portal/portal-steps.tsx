@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { FieldErrors, FieldValues, UseFormRegister } from "react-hook-form";
 import BookAppointmentDate from "./booking-date";
-import PaymentCheckout from "./product-checkout";
+import ServiceCheckout from "./service-checkout";
 import QuestionsForm from "./questions";
 
 type Props = {
@@ -27,15 +27,14 @@ type Props = {
         slot: string;
       }[]
     | undefined;
-  products?:
-    | {
-        name: string;
-        image: string;
-        price: number;
-      }[]
-    | undefined;
+  services?: {
+    id: string;
+    name: string;
+    price: number;
+  }[];
   amount?: number;
   stripeId?: string;
+  onAmount: (amount: number) => void;
 };
 
 const PortalSteps = ({
@@ -51,45 +50,59 @@ const PortalSteps = ({
   onSlot,
   loading,
   slot,
-  products,
   bookings,
   amount,
   stripeId,
+  services,
+  onAmount,
 }: Props) => {
-  if (step == 1) {
+  const [stepState, setStepState] = useState(step);
+
+  const handleNext = () => {
+    setStepState(stepState + 1);
+    onNext();
+  };
+
+  const handleBack = () => {
+    setStepState(stepState - 1);
+    onBack();
+  };
+
+  if (stepState == 1) {
     return (
       <QuestionsForm
         register={register}
         error={error}
-        onNext={onNext}
+        onNext={handleNext}
         questions={questions}
       />
     );
   }
 
-  if (step == 2 && type == "Appointment") {
+  if (stepState == 2 && type == "Appointment") {
     return (
       <BookAppointmentDate
         date={date}
         bookings={bookings}
         currentSlot={slot}
         register={register}
-        onBack={onBack}
+        onBack={handleBack}
         onBooking={onBooking}
         onSlot={onSlot}
         loading={loading}
+        userId={""}
       />
     );
   }
 
-  if (step == 2 && type == "Payment") {
+  if (stepState == 2 && type == "Payment") {
     return (
-      <PaymentCheckout
-        products={products}
-        stripeId={stripeId}
-        onBack={onBack}
-        onNext={onNext}
+      <ServiceCheckout
+        services={services}
+        onBack={handleBack}
+        onNext={handleNext}
         amount={amount}
+        onAmount={onAmount}
       />
     );
   }

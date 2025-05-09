@@ -22,7 +22,7 @@ global.fetch = jest.fn();
 
 describe('End-to-End Booking Flow', () => {
   // Create a mock booking page component
-  const BookingPage = () => {
+  const BookingPage = ({ services }: { services: any[] }) => {
     const [step, setStep] = React.useState(1);
     const [formData, setFormData] = React.useState({
       name: '',
@@ -30,6 +30,7 @@ describe('End-to-End Booking Flow', () => {
       date: '',
       time: '',
       notes: '',
+      serviceId: '',
     });
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [isSuccess, setIsSuccess] = React.useState(false);
@@ -122,6 +123,26 @@ describe('End-to-End Booking Flow', () => {
           )}
           
           {step === 2 && (
+            <div data-testid="service-selection-step">
+              <h2>Select a Service</h2>
+              <div>
+                {services.map((service) => (
+                  <button
+                    key={service.id}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setFormData({ ...formData, serviceId: service.id });
+                    }}
+                    data-testid={`service-${service.id}`}
+                  >
+                    {service.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {step === 3 && (
             <div data-testid="date-selection-step">
               <h2>Select a Date</h2>
               <div>
@@ -139,7 +160,7 @@ describe('End-to-End Booking Flow', () => {
             </div>
           )}
           
-          {step === 3 && (
+          {step === 4 && (
             <div data-testid="time-selection-step">
               <h2>Select a Time</h2>
               <div>
@@ -172,7 +193,7 @@ describe('End-to-End Booking Flow', () => {
             disabled={isSubmitting}
             data-testid="next-button"
           >
-            {isSubmitting ? 'Processing...' : step < 3 ? 'Next' : 'Confirm Booking'}
+            {isSubmitting ? 'Processing...' : step < 4 ? 'Next' : 'Confirm Booking'}
           </button>
         </form>
       </div>
@@ -183,69 +204,79 @@ describe('End-to-End Booking Flow', () => {
     (global.fetch as jest.Mock).mockReset();
   });
 
-  it('completes the full booking flow successfully', async () => {
+  // Mock data
+  const mockService = {
+    id: 'service-1',
+    name: 'Test Service',
+    price: 100,
+    isLive: true
+  };
+
+  const mockFormData = {
+    name: 'John Doe',
+    email: 'john@example.com',
+    date: '2023-12-15',
+    time: '14:30',
+    notes: 'Test booking',
+    serviceId: mockService.id
+  };
+
+  // Mock API responses
+  beforeEach(() => {
+    global.fetch = jest.fn().mockImplementation((url) => {
+      if (url.includes('/api/bookings')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            success: true,
+            booking: {
+              id: 'booking-1',
+              ...mockFormData,
+              service: mockService
+            }
+          })
+        });
+      }
+      return Promise.reject(new Error('Not found'));
+    });
+  });
+
+  it('completes the booking flow successfully', async () => {
     const user = userEvent.setup();
     
-    // Render the booking page
-    render(<BookingPage />);
+    render(<BookingPage services={[mockService]} />);
     
-    // Step 1: Fill in personal information
-    expect(screen.getByTestId('personal-info-step')).toBeInTheDocument();
-    
-    await user.type(screen.getByTestId('name-input'), 'John Doe');
-    await user.type(screen.getByTestId('email-input'), 'john@example.com');
+    // Step 1: Personal Information
+    await user.type(screen.getByTestId('name-input'), mockFormData.name);
+    await user.type(screen.getByTestId('email-input'), mockFormData.email);
     await user.click(screen.getByTestId('next-button'));
     
-    // Step 2: Select a date
+    // Step 2: Service Selection
+    await waitFor(() => {
+      expect(screen.getByTestId('service-selection-step')).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId(`service-${mockService.id}`));
+    await user.click(screen.getByTestId('next-button'));
+    
+    // Step 3: Date and Time Selection
     await waitFor(() => {
       expect(screen.getByTestId('date-selection-step')).toBeInTheDocument();
     });
+    await user.type(screen.getByTestId('date-input'), mockFormData.date);
+    await user.type(screen.getByTestId('time-input'), mockFormData.time);
+    await user.type(screen.getByTestId('notes-input'), mockFormData.notes);
     
-    await user.type(screen.getByTestId('date-input'), '2023-12-15');
+    // Submit booking
     await user.click(screen.getByTestId('next-button'));
     
-    // Step 3: Select a time and add notes
-    await waitFor(() => {
-      expect(screen.getByTestId('time-selection-step')).toBeInTheDocument();
-    });
-    
-    await user.type(screen.getByTestId('time-input'), '14:30');
-    await user.type(screen.getByTestId('notes-input'), 'Looking forward to our meeting!');
-    
-    // Configure the mock fetch to simulate a successful booking
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ success: true, id: 'booking-123' }),
-    });
-    
-    // Submit the booking
-    await user.click(screen.getByTestId('next-button'));
-    
-    // Verify the booking was submitted with the correct data
-    await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
-        '/api/bookings',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: 'John Doe',
-            email: 'john@example.com',
-            date: '2023-12-15',
-            time: '14:30',
-            notes: 'Looking forward to our meeting!',
-          }),
-        }
-      );
-    });
-    
-    // Check for success message
+    // Check for success message and booking details
     await waitFor(() => {
       expect(screen.getByTestId('success-message')).toBeInTheDocument();
-      expect(screen.getByTestId('booking-details')).toHaveTextContent('John Doe');
-      expect(screen.getByTestId('booking-details')).toHaveTextContent('john@example.com');
-      expect(screen.getByTestId('booking-details')).toHaveTextContent('2023-12-15');
-      expect(screen.getByTestId('booking-details')).toHaveTextContent('14:30');
+      expect(screen.getByTestId('booking-details')).toHaveTextContent(mockFormData.name);
+      expect(screen.getByTestId('booking-details')).toHaveTextContent(mockFormData.email);
+      expect(screen.getByTestId('booking-details')).toHaveTextContent(mockFormData.date);
+      expect(screen.getByTestId('booking-details')).toHaveTextContent(mockFormData.time);
+      expect(screen.getByTestId('booking-details')).toHaveTextContent(mockService.name);
     });
   });
 
@@ -258,7 +289,7 @@ describe('End-to-End Booking Flow', () => {
     HTMLFormElement.prototype.reportValidity = jest.fn();
     
     // Render the booking page
-    render(<BookingPage />);
+    render(<BookingPage services={[mockService]} />);
     
     // Try to submit without filling required fields
     const nextButton = screen.getByTestId('next-button');

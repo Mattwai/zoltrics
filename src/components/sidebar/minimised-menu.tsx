@@ -8,6 +8,7 @@ import ChatIcon from "@/icons/chat-icon";
 import HelpDeskIcon from "@/icons/help-desk-icon";
 import TimerIcon from "@/icons/timer-icon";
 import { Separator } from "../ui/separator";
+import { ShoppingBag } from "lucide-react";
 
 type MinMenuProps = {
   onShrink(): void;
@@ -55,9 +56,9 @@ export const MinMenu = ({
           />
           <MenuItem
             size="min"
-            label="Products"
-            icon={<HelpDeskIcon />}
-            path="product-settings"
+            label="Services"
+            icon={<ShoppingBag className="h-5 w-5" />}
+            path="service-settings"
           />
           <MenuItem
             size="min"

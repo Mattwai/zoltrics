@@ -16,8 +16,8 @@ export const getUserClients = async () => {
   try {
     const clients = await client.customer.count({
       where: {
-        Domain: {
-          User: {
+        domain: {
+          user: {
             id: session.user.id,
           },
         },
@@ -78,7 +78,6 @@ export const getUserPlanInfo = async () => {
         subscription: {
           select: {
             plan: true,
-            credits: true,
           },
         },
       },
@@ -86,27 +85,24 @@ export const getUserPlanInfo = async () => {
     if (plan) {
       return {
         plan: plan.subscription?.plan,
-        credits: plan.subscription?.credits,
         domains: plan._count.domains,
       };
     }
   } catch (error) {
     console.error("Error fetching user plan info:", error);
-    return null; // or handle error as needed
+    return null;
   }
 };
 
-export const getUserTotalProductPrices = async () => {
+export const getUserTotalServicePrices = async () => {
   const session = await getServerSession(authConfig);
   if (!session || !session.user) return;
 
   try {
-    const products = await client.product.findMany({
+    const services = await client.service.findMany({
       where: {
-        Domain: {
-          User: {
-            id: session.user.id,
-          },
+        user: {
+          id: session.user.id,
         },
       },
       select: {
@@ -115,17 +111,17 @@ export const getUserTotalProductPrices = async () => {
             price: true
           }
         }
-      },
+      }
     });
 
-    const total = products.reduce((total: number, next: { pricing: { price: number } | null }) => {
+    const total = services.reduce((total: number, next: { pricing: { price: number } | null }) => {
       return total + (next.pricing?.price || 0);
     }, 0);
 
     return total;
   } catch (error) {
-    console.error("Error fetching total product prices:", error);
-    return null; // or handle error as needed
+    console.error("Error fetching total service prices:", error);
+    return 0;
   }
 };
 

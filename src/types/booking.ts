@@ -21,7 +21,11 @@ export interface Booking {
       name: string;
     } | null;
   } | null;
-  Product: {
+  Service: {
+    id: string;
     name: string;
+    pricing: {
+      price: number;
+    } | null;
   } | null;
 } 

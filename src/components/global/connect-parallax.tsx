@@ -11,17 +11,17 @@ import Link from "next/link";
 import React from "react";
 
 export const HeroParallax = ({
-  products,
+  services,
 }: {
-  products: {
+  services: {
     title: string;
     link: string;
     thumbnail: string;
   }[];
 }) => {
-  const firstRow = products.slice(0, 5);
-  const secondRow = products.slice(5, 10);
-  const thirdRow = products.slice(10, 15);
+  const firstRow = services.slice(0, 5);
+  const secondRow = services.slice(5, 10);
+  const thirdRow = services.slice(10, 15);
   const ref = React.useRef(null);
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -70,20 +70,20 @@ export const HeroParallax = ({
         className=""
       >
         <motion.div className="flex flex-row-reverse space-x-reverse space-x-20 mb-10">
-          {firstRow.map((product) => (
-            <ProductCard
-              product={product}
+          {firstRow.map((service) => (
+            <ServiceCard
+              service={service}
               translate={translateX}
-              key={product.title}
+              key={service.title}
             />
           ))}
         </motion.div>
         <motion.div className="flex flex-row-reverse space-x-reverse space-x-20 ">
-          {secondRow.map((product) => (
-            <ProductCard
-              product={product}
+          {secondRow.map((service) => (
+            <ServiceCard
+              service={service}
               translate={translateXReverse}
-              key={product.title}
+              key={service.title}
             />
           ))}
         </motion.div>
@@ -100,19 +100,19 @@ export const Header = () => {
         Embed Zoltrics into any website with just a snippet of code!
       </h1>
       <p className="max-w-2xl text-base md:text-xl mt-8 text-neutral-200">
-        We build beautiful products with the latest technologies and frameworks.
+        We build beautiful services with the latest technologies and frameworks.
         We are a team of passionate developers and designers that love to build
-        amazing products.
+        amazing services.
       </p>
     </div>
   );
 };
 
-export const ProductCard = ({
-  product,
+export const ServiceCard = ({
+  service,
   translate,
 }: {
-  product: {
+  service: {
     title: string;
     link: string;
     thumbnail: string;
@@ -127,24 +127,24 @@ export const ProductCard = ({
       whileHover={{
         y: -20,
       }}
-      key={product.title}
-      className="group/product h-96 w-[30rem] relative flex-shrink-0"
+      key={service.title}
+      className="group/service h-96 w-[30rem] relative flex-shrink-0"
     >
       <Link
-        href={product.link}
-        className="block group-hover/product:shadow-2xl "
+        href={service.link}
+        className="block group-hover/service:shadow-2xl "
       >
         <Image
-          src={product.thumbnail}
+          src={service.thumbnail}
           height="600"
           width="600"
           className="object-cover object-left-top absolute h-full w-full inset-0"
-          alt={product.title}
+          alt={service.title}
         />
       </Link>
-      <div className="absolute inset-0 h-full w-full opacity-0 group-hover/product:opacity-80 bg-black pointer-events-none"></div>
-      <h2 className="absolute bottom-4 left-4 opacity-0 group-hover/product:opacity-100 text-white">
-        {product.title}
+      <div className="absolute inset-0 h-full w-full opacity-0 group-hover/service:opacity-80 bg-black pointer-events-none"></div>
+      <h2 className="absolute bottom-4 left-4 opacity-0 group-hover/service:opacity-100 text-white">
+        {service.title}
       </h2>
     </motion.div>
   );

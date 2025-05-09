@@ -3,7 +3,7 @@ import {
   onCreateHelpDeskQuestion,
   onCreateKnowledgeBaseEntry,
   onGetAllKnowledgeBaseEntries,
-  onCreateNewDomainProduct,
+  onCreateNewDomainService,
   onDeleteUserDomain,
   onGetAllFilterQuestions,
   onGetAllHelpDeskQuestions,
@@ -14,8 +14,8 @@ import {
 } from "@/actions/settings";
 import { useToast } from "@/components/ui/use-toast";
 import {
-  AddProductProps,
-  AddProductSchema,
+  AddServiceProps,
+  AddServiceSchema,
   DomainSettingsProps,
   DomainSettingsSchema,
   FilterQuestionsProps,
@@ -282,31 +282,20 @@ export const useFilterQuestions = (userId: string) => {
   };
 };
 
-export const useProducts = (userId: string) => {
+export const useServices = (userId: string) => {
   const { toast } = useToast();
-  const [loading, setLoading] = useState<boolean>(false);
   const {
-    register,
-    reset,
-    formState: { errors },
     handleSubmit,
-  } = useForm<AddProductProps>({
-    resolver: zodResolver(AddProductSchema),
+    register,
+    formState: { errors },
+  } = useForm<AddServiceProps>({
+    resolver: zodResolver(AddServiceSchema),
   });
 
-  const onCreateNewProduct = handleSubmit(async (values) => {
+  const onCreateNewService = handleSubmit(async (values) => {
     try {
-      setLoading(true);
-      // Get the first domain ID from the user's domains
-      const response = await fetch("/api/user");
-      if (!response.ok) {
-        throw new Error("Failed to fetch user data");
-      }
-      const userData = await response.json();
-      const domainId = userData.domains[0]?.id || userId; // Use userId if no domain exists
-
-      const result = await onCreateNewDomainProduct(
-        domainId,
+      const result = await onCreateNewDomainService(
+        userId,
         values.name,
         values.price
       );
@@ -314,33 +303,30 @@ export const useProducts = (userId: string) => {
       if (result?.status === 200) {
         toast({
           title: "Success",
-          description: "Product created successfully",
+          description: "Service created successfully",
         });
-        reset();
       } else {
         toast({
           title: "Error",
-          description: result?.message || "Failed to create product",
+          description: result?.message || "Failed to create service",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error("Error creating product:", error);
+      console.error("Error creating service:", error);
       toast({
         title: "Error",
-        description: "Failed to create product. Please try again.",
+        description: "Failed to create service. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   });
 
   return {
-    onCreateNewProduct,
+    onCreateNewService,
     register,
     errors,
-    loading,
+    loading: false,
   };
 };
 

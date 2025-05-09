@@ -7,6 +7,7 @@ import ChatIcon from "@/icons/chat-icon";
 import HelpDeskIcon from "@/icons/help-desk-icon";
 import TimerIcon from "@/icons/timer-icon";
 import { Separator } from "../ui/separator";
+import { ShoppingBag } from "lucide-react";
 
 type Props = {
   onExpand(): void;
@@ -63,9 +64,9 @@ const MaxMenu = ({ current, domains, onExpand, onSignOut }: Props) => {
           />
           <MenuItem
             size="max"
-            label="Products"
-            icon={<HelpDeskIcon />}
-            path="product-settings"
+            label="Services"
+            icon={<ShoppingBag className="h-5 w-5" />}
+            path="service-settings"
           />
           <MenuItem
             size="max"

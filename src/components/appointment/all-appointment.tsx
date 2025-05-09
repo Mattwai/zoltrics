@@ -74,7 +74,7 @@ const AllAppointments = ({ bookings, onBookingOptions, isDeleting }: Props) => {
               )}
             </TableCell>
             <TableCell>
-              {booking.Product?.name || "No service specified"}
+              {booking.Service?.name || "No service specified"}
             </TableCell>
             <TableCell>            
               <Button

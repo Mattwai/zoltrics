@@ -20,9 +20,9 @@ export const IntegrationModalBody = ({
           <h2 className="font-bold">Stripe would like to access</h2>
           {[
             "Payment and bank information",
-            "Products and services you sell",
+            "Services you offer",
             "Business and tax information",
-            "Create and update Products",
+            "Create and update Services",
           ].map((item, key) => (
             <div key={key} className="flex gap-2 items-center pl-3">
               <CheckCircle2Icon />

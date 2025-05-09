@@ -118,7 +118,7 @@ async function predictCancellationRisk(features: any): Promise<number> {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, date, slot, userId, isAuthenticated, googleUserId, productId } = body;
+    const { name, email, date, slot, userId, isAuthenticated, googleUserId, serviceId } = body;
 
     if (!name || !email || !date || !slot || !userId) {
       return NextResponse.json(
@@ -208,25 +208,24 @@ export async function POST(req: NextRequest) {
     // Create booking
     const booking = await prisma.booking.create({
       data: {
-        date: appointmentDate,
-        slot,
-        email,
-        name,
-        domainId: null,
+        startTime: appointmentDate,
+        endTime: new Date(appointmentDate.getTime() + 60 * 60 * 1000), // 1 hour duration
+        status: "PENDING",
         customerId: customer.id,
-        productId: productId || null,
+        serviceId: serviceId || null,
         userId: userId,
-        bookingMetadata: {
+        metadata: {
           create: {
-            source: "direct_link",
+            noShow: false,
             riskScore,
             isAuthenticated: !!isAuthenticated,
             googleUserId: googleUserId || null,
           }
         },
-        bookingPayment: {
+        payment: {
           create: {
             depositRequired,
+            depositPaid: false,
           }
         }
       },
