@@ -184,7 +184,8 @@ export async function POST(request: NextRequest) {
             data: {
               startTime,
               endTime,
-              userId,
+              duration: Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60)),
+              user: { connect: { id: userId } }
             },
           });
         } else {
@@ -193,7 +194,8 @@ export async function POST(request: NextRequest) {
             data: {
               startTime,
               endTime,
-              userId,
+              duration: Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60)),
+              user: { connect: { id: userId } }
             },
           });
         }
