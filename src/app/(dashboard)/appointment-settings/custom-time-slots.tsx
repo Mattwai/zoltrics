@@ -23,6 +23,35 @@ import { generateTimeOptions, calculateDuration, calculateEndTime, formatTimeSlo
 import { Switch } from "@/components/ui/switch";
 import { AlertCircle, Clock, Calendar as CalendarIcon, X } from "lucide-react";
 
+// Utility functions for time conversion
+const convertTo24HourFormat = (time12h: string): string => {
+  const [time, modifier] = time12h.split(' ');
+  let [hours, minutes] = time.split(':');
+  
+  if (hours === '12') {
+    hours = modifier === 'AM' ? '00' : '12';
+  } else if (modifier === 'PM') {
+    hours = (parseInt(hours, 10) + 12).toString();
+  }
+  
+  return `${hours.padStart(2, '0')}:${minutes}`;
+};
+
+const convertTo12HourFormat = (time24h: string): string => {
+  const [hours, minutes] = time24h.split(':');
+  const hour = parseInt(hours, 10);
+  
+  if (hour === 0) {
+    return `12:${minutes} AM`;
+  } else if (hour < 12) {
+    return `${hour}:${minutes} AM`;
+  } else if (hour === 12) {
+    return `12:${minutes} PM`;
+  } else {
+    return `${hour - 12}:${minutes} PM`;
+  }
+};
+
 interface TimeSlot {
   id?: string;
   startTime: string;
@@ -31,6 +60,7 @@ interface TimeSlot {
   maxSlots: number;
   isCustom?: boolean;
   overrideRegular?: boolean;
+  slot?: string;
 }
 
 interface CustomTimeSlotsProps {
@@ -70,8 +100,20 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
       if (!response.ok) throw new Error("Failed to fetch time slots");
       
       const data = await response.json();
+      console.log("Fetched data:", data); // Add logging to debug
+      
+      // Ensure slots are properly formatted with all required fields
+      const formattedCustomSlots = (data.customSlots || []).map((slot: any) => ({
+        ...slot,
+        // Ensure endTime exists or calculate it
+        endTime: slot.endTime || calculateEndTime(slot.startTime, slot.duration),
+        // Make sure duration and maxSlots are numbers
+        duration: parseInt(slot.duration) || 30,
+        maxSlots: parseInt(slot.maxSlots) || 1
+      }));
+      
       setAvailableSlots(data.slots || []);
-      setCustomSlots(data.customSlots || []);
+      setCustomSlots(formattedCustomSlots);
       setIsBlocked(data.isBlocked || false);
     } catch (error) {
       console.error("Error fetching time slots:", error);
@@ -176,7 +218,7 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
   const handleAddSlot = () => {
     setNewSlot({
       startTime: "09:00",
-      endTime: "09:30",
+      endTime: calculateEndTime("09:00", 30),
       duration: 30,
       maxSlots: 1
     });
@@ -188,10 +230,10 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
     setEditingSlot(slot);
     setNewSlot({
       id: slot.id,
-      startTime: slot.startTime,
-      endTime: slot.endTime,
+      startTime: slot.startTime || slot.slot || "09:00",
+      endTime: slot.endTime || calculateEndTime(slot.slot || slot.startTime || "09:00", slot.duration),
       duration: slot.duration,
-      maxSlots: slot.maxSlots
+      maxSlots: slot.maxSlots || 1
     });
     setIsDialogOpen(true);
   };
@@ -202,26 +244,9 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
     setLoading(true);
     try {
       const formattedDate = format(selectedDate, "yyyy-MM-dd");
-      let updatedSlots = [...customSlots];
       
-      // If it's a regular slot (no id), we need to create a custom slot to override it
-      if (!slotId) {
-        const slotToRemove = availableSlots.find(slot => !slot.id);
-        if (slotToRemove) {
-          // Create a custom slot with the same time but marked as deleted
-          updatedSlots.push({
-            startTime: slotToRemove.slot,
-            endTime: calculateEndTime(slotToRemove.slot, slotToRemove.duration),
-            duration: slotToRemove.duration,
-            maxSlots: 0, // Set maxSlots to 0 to effectively delete it
-            isCustom: true,
-            overrideRegular: true // Add this flag to indicate this is overriding a regular slot
-          });
-        }
-      } else {
-        // For custom slots, just remove them from the array
-        updatedSlots = updatedSlots.filter(slot => slot.id !== slotId);
-      }
+      // Filter out the slot to be removed
+      const updatedSlots = customSlots.filter(slot => slot.id !== slotId);
       
       const response = await fetch("/api/bookings/custom-slots", {
         method: "POST",
@@ -441,7 +466,12 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
                       >
                         <div className="space-y-1">
                           <div className="font-medium flex items-center gap-2">
-                            {slot.slot} - {formatTimeSlot(slot.slot, slot.duration).split(' - ')[1]} ({slot.duration} min)
+                            {/* Convert 24-hour format times to 12-hour format for display */}
+                            {slot.slot.includes(':') && !slot.slot.includes('M') ? 
+                              convertTo12HourFormat(slot.slot) : 
+                              slot.slot} {" - "} 
+                            {convertTo12HourFormat(calculateEndTime(slot.slot, slot.duration))} {" "}
+                            ({slot.duration} min)
                             {isCustomSlot ? (
                               <Badge variant="outline" className="bg-blue-50 text-blue-800">Custom</Badge>
                             ) : (
@@ -473,19 +503,61 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <div className="font-medium">Time</div>
-              <div className="text-sm text-muted-foreground">
-                {newSlot.startTime} - {newSlot.endTime}
+              <Label htmlFor="startTime">Start Time</Label>
+              <select
+                id="startTime"
+                value={newSlot.startTime}
+                onChange={(e) => {
+                  const newStartTime = e.target.value;
+                  setNewSlot({
+                    ...newSlot,
+                    startTime: newStartTime,
+                    // Update endTime based on selected duration
+                    endTime: calculateEndTime(newStartTime, newSlot.duration)
+                  });
+                }}
+                className="w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 pl-2"
+              >
+                {TIME_OPTIONS.map((time) => (
+                  <option key={time} value={convertTo24HourFormat(time)}>
+                    {time}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="endTime">End Time</Label>
+              <div className="text-sm text-muted-foreground mb-1">
+                Auto-calculated based on start time and duration
+              </div>
+              <div className="p-2 border border-gray-300 rounded-md bg-gray-50">
+                {convertTo12HourFormat(newSlot.endTime)}
               </div>
             </div>
 
             <div className="space-y-2">
-              <div className="font-medium">Duration</div>
-              <div className="text-sm text-muted-foreground">
-                {newSlot.duration} minutes
-              </div>
+              <Label htmlFor="duration">Duration (minutes)</Label>
+              <select
+                id="duration"
+                value={newSlot.duration}
+                onChange={(e) => {
+                  const newDuration = parseInt(e.target.value);
+                  setNewSlot({
+                    ...newSlot,
+                    duration: newDuration,
+                    // Update endTime based on selected duration
+                    endTime: calculateEndTime(newSlot.startTime, newDuration)
+                  });
+                }}
+                className="w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 pl-2"
+              >
+                {DURATION_OPTIONS.map(duration => (
+                  <option key={duration} value={duration}>{duration} minutes</option>
+                ))}
+              </select>
             </div>
-
+            
             <div>
               <Label htmlFor="maxSlots">Maximum Concurrent Bookings</Label>
               <Input
@@ -502,11 +574,23 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
             <Button 
               variant="destructive" 
               onClick={() => {
-                handleRemoveSlot(editingSlot!.id!);
-                setIsDialogOpen(false);
+                if (editingSlot) {
+                  if (editingSlot.id) {
+                    handleRemoveSlot(editingSlot.id);
+                  } else {
+                    // For regular slots we need to create an override that hides it
+                    const slot = editingSlot.slot || editingSlot.startTime;
+                    toast({
+                      title: "Info",
+                      description: "Regular slots cannot be deleted individually. Please adjust your weekly schedule instead.",
+                    });
+                  }
+                  setIsDialogOpen(false);
+                }
               }}
+              disabled={!editingSlot}
             >
-              Delete Slot
+              {editingSlot && editingSlot.id ? "Delete Slot" : "Cannot Delete Regular Slot"}
             </Button>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cancel
