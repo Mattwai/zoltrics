@@ -23,12 +23,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const selectedDate = new Date(date);
-    const startOfDay = new Date(selectedDate);
-    startOfDay.setHours(0, 0, 0, 0);
+    // Parse the date with timezone handling to ensure it's the same as selected in UI
+    const parsedDate = new Date(date);
     
-    const endOfDay = new Date(selectedDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    // Ensure we're getting the correct day, month, year regardless of time
+    const selectedDay = parsedDate.getDate();
+    const selectedMonth = parsedDate.getMonth();
+    const selectedYear = parsedDate.getFullYear();
+    
+    // Create start and end time markers for the selected date (in local timezone)
+    const startOfDay = new Date(selectedYear, selectedMonth, selectedDay, 0, 0, 0, 0);
+    const endOfDay = new Date(selectedYear, selectedMonth, selectedDay, 23, 59, 59, 999);
+    
+    console.log("GET request for date:", date);
+    console.log("Start of day:", startOfDay.toISOString());
+    console.log("End of day:", endOfDay.toISOString());
 
     // Get custom time slots for the selected date
     const customSlots = await client.customTimeSlot.findMany({
@@ -44,11 +53,20 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    console.log(`Found ${customSlots.length} custom slots for date ${date}`);
+    if (customSlots.length > 0) {
+      console.log("Sample custom slot:", {
+        id: customSlots[0].id,
+        startTime: customSlots[0].startTime.toISOString(),
+        endTime: customSlots[0].endTime.toISOString()
+      });
+    }
+
     // Get blocked status for the date
     const blockedDate = await client.blockedDate.findFirst({
       where: {
         userId,
-        date: selectedDate,
+        date: parsedDate,
       },
     });
 
@@ -128,12 +146,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const selectedDate = new Date(date);
-    const startOfDay = new Date(selectedDate);
-    startOfDay.setHours(0, 0, 0, 0);
+    // Parse the date with timezone handling to ensure it's the same as selected in UI
+    const parsedDate = new Date(date);
+    // Adjust for timezone offset to keep the date consistent
+    const timezoneOffsetMinutes = parsedDate.getTimezoneOffset();
+    const adjustedDate = new Date(parsedDate.getTime() + timezoneOffsetMinutes * 60000);
     
-    const endOfDay = new Date(selectedDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    console.log("Original date from client:", date);
+    console.log("Parsed date:", parsedDate.toISOString());
+    console.log("Adjusted date for timezone:", adjustedDate.toISOString());
+    
+    // Ensure we're getting the correct day, month, year regardless of time
+    const selectedDay = parsedDate.getDate();
+    const selectedMonth = parsedDate.getMonth();
+    const selectedYear = parsedDate.getFullYear();
+    
+    // Create start and end time markers for the selected date (in local timezone)
+    const startOfDay = new Date(selectedYear, selectedMonth, selectedDay, 0, 0, 0, 0);
+    const endOfDay = new Date(selectedYear, selectedMonth, selectedDay, 23, 59, 59, 999);
+    
+    console.log("Start of day:", startOfDay.toISOString());
+    console.log("End of day:", endOfDay.toISOString());
 
     // Handle blocked date status
     if (typeof isBlocked === 'boolean') {
@@ -142,7 +175,7 @@ export async function POST(request: NextRequest) {
         const existingBlockedDate = await client.blockedDate.findFirst({
           where: {
             userId,
-            date: selectedDate,
+            date: parsedDate,
           },
         });
 
@@ -155,7 +188,7 @@ export async function POST(request: NextRequest) {
           await client.blockedDate.create({
             data: {
               userId,
-              date: selectedDate,
+              date: parsedDate,
             },
           });
         }
@@ -164,7 +197,7 @@ export async function POST(request: NextRequest) {
         await client.blockedDate.deleteMany({
           where: {
             userId,
-            date: selectedDate,
+            date: parsedDate,
           },
         });
       }
@@ -181,6 +214,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    console.log("Existing slots found:", existingSlots.length);
+
     // If slots array is provided
     if (slots) {
       // Keep track of processed IDs to know which to delete
@@ -196,19 +231,22 @@ export async function POST(request: NextRequest) {
           // Convert time strings to Date objects
           const [startHour, startMinute] = slot.startTime.split(':').map(Number);
           
-          const startTime = new Date(selectedDate);
+          // Create a date with the user's selected date and the time from the slot
+          const startTime = new Date(selectedYear, selectedMonth, selectedDay);
           startTime.setHours(startHour, startMinute, 0, 0);
           
           let endTime;
           if (slot.endTime) {
             const [endHour, endMinute] = slot.endTime.split(':').map(Number);
-            endTime = new Date(selectedDate);
+            endTime = new Date(selectedYear, selectedMonth, selectedDay);
             endTime.setHours(endHour, endMinute, 0, 0);
           } else {
             // Calculate end time based on duration
             endTime = new Date(startTime);
             endTime.setMinutes(endTime.getMinutes() + (slot.duration || 30));
           }
+
+          console.log(`Slot time: ${startTime.toISOString()} to ${endTime.toISOString()}`);
 
           if (slot.id) {
             // Update existing slot

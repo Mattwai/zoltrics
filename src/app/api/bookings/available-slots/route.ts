@@ -26,6 +26,8 @@ export async function GET(request: NextRequest) {
     const date = searchParams.get("date");
     const userId = searchParams.get("userId");
 
+    console.log(`Available slots request for date: ${date}, userId: ${userId}`);
+
     if (!date || !userId) {
       return NextResponse.json(
         { error: "Date and userId are required" },
@@ -33,17 +35,30 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const selectedDate = new Date(date);
-    const nextDay = new Date(selectedDate);
-    nextDay.setDate(nextDay.getDate() + 1);
+    // Parse the date with timezone handling to ensure it's the same as selected in UI
+    const parsedDate = new Date(date);
+    
+    // Ensure we're getting the correct day, month, year regardless of time
+    const selectedDay = parsedDate.getDate();
+    const selectedMonth = parsedDate.getMonth();
+    const selectedYear = parsedDate.getFullYear();
+    
+    // Create start and end time markers for the selected date (in local timezone)
+    const startOfDay = new Date(selectedYear, selectedMonth, selectedDay, 0, 0, 0, 0);
+    const endOfDay = new Date(selectedYear, selectedMonth, selectedDay, 23, 59, 59, 999);
+    
+    console.log("Querying date range:", {
+      start: startOfDay.toISOString(),
+      end: endOfDay.toISOString()
+    });
 
     // Get existing bookings for the date range
     const existingBookings = await prisma.booking.findMany({
       where: {
         userId: userId,
         startTime: {
-          gte: selectedDate,
-          lt: nextDay
+          gte: startOfDay,
+          lt: endOfDay
         }
       },
       select: {
@@ -57,19 +72,26 @@ export async function GET(request: NextRequest) {
       where: {
         userId: userId,
         startTime: {
-          gte: selectedDate,
-          lt: nextDay
+          gte: startOfDay,
+          lt: endOfDay
         }
       }
     });
+
+    console.log(`Found ${customTimeSlots.length} custom time slots for ${date}`);
+    if (customTimeSlots.length > 0) {
+      customTimeSlots.forEach(slot => {
+        console.log(`Custom slot: ${slot.startTime.toISOString()} - ${slot.endTime.toISOString()}, duration: ${slot.duration}`);
+      });
+    }
 
     // Get blocked dates
     const blockedDate = await prisma.blockedDate.findFirst({
       where: {
         userId: userId,
         date: {
-          gte: selectedDate,
-          lt: nextDay
+          gte: startOfDay,
+          lt: endOfDay
         }
       }
     });
@@ -101,7 +123,7 @@ export async function GET(request: NextRequest) {
         const settingsData = JSON.parse(bookingSettings.timeZone);
         
         // Get the day of week (0-6, Sunday is 0)
-        const dayOfWeek = selectedDate.getDay();
+        const dayOfWeek = parsedDate.getDay();
         const dayMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const dayName = dayMap[dayOfWeek];
         
@@ -213,10 +235,21 @@ export async function GET(request: NextRequest) {
     // Add custom time slots
     if (customTimeSlots.length > 0) {
       customTimeSlots.forEach(slot => {
+        // Extract hours and minutes to preserve the time parts while ensuring
+        // they display correctly for the user's selected date
+        const hours = slot.startTime.getHours();
+        const minutes = slot.startTime.getMinutes();
+        const endHours = slot.endTime.getHours();
+        const endMinutes = slot.endTime.getMinutes();
+        
+        // Format the times in 24-hour format
+        const startTimeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        const endTimeStr = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
+        
         availableSlots.push({
-          slot: `${format(slot.startTime, 'HH:mm')} - ${format(slot.endTime, 'HH:mm')}`,
-          startTime: format(slot.startTime, 'HH:mm'),
-          endTime: format(slot.endTime, 'HH:mm'),
+          slot: `${startTimeStr} - ${endTimeStr}`,
+          startTime: startTimeStr,
+          endTime: endTimeStr,
           duration: slot.duration || Math.round((slot.endTime.getTime() - slot.startTime.getTime()) / (1000 * 60)),
           isCustom: true,
           maxSlots: slot.maxSlots || 1,
@@ -226,19 +259,29 @@ export async function GET(request: NextRequest) {
     }
 
     // Filter out booked slots
-    const bookedSlots = new Set(existingBookings.map(booking => 
-      `${booking.startTime.toISOString()}-${booking.endTime.toISOString()}`
-    ));
-    availableSlots = availableSlots.filter(slot => 
-      !bookedSlots.has(`${slot.startTime}-${slot.endTime}`)
-    );
+    const bookedSlotTimes = new Map();
+    existingBookings.forEach(booking => {
+      const hours = booking.startTime.getHours();
+      const minutes = booking.startTime.getMinutes();
+      const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      const count = bookedSlotTimes.get(timeStr) || 0;
+      bookedSlotTimes.set(timeStr, count + 1);
+    });
+    
+    // Filter based on max concurrent bookings
+    availableSlots = availableSlots.filter(slot => {
+      const bookedCount = bookedSlotTimes.get(slot.startTime) || 0;
+      return bookedCount < slot.maxSlots;
+    });
 
     // Filter slots based on current time for same-day bookings
     const now = new Date();
-    if (selectedDate.toDateString() === now.toDateString()) {
+    if (parsedDate.toDateString() === now.toDateString()) {
       availableSlots = availableSlots.filter(slot => {
-        const [hours, minutes] = slot.slot.split(':').map(Number);
-        const slotTime = new Date();
+        if (!slot.startTime) return false;
+        
+        const [hours, minutes] = slot.startTime.split(':').map(Number);
+        const slotTime = new Date(parsedDate);
         slotTime.setHours(hours, minutes, 0, 0);
         return slotTime > now;
       });
@@ -250,9 +293,33 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ slots: [] });
     }
 
+    // Sort all slots by start time (chronologically)
+    availableSlots.sort((a, b) => {
+      // Ensure we have start times to compare
+      if (!a.startTime || !b.startTime) return 0;
+      
+      // Parse hours and minutes for comparison
+      const [aHours, aMinutes] = a.startTime.split(':').map(Number);
+      const [bHours, bMinutes] = b.startTime.split(':').map(Number);
+      
+      // Compare total minutes since midnight
+      const aMinutesSinceMidnight = aHours * 60 + aMinutes;
+      const bMinutesSinceMidnight = bHours * 60 + bMinutes;
+      
+      return aMinutesSinceMidnight - bMinutesSinceMidnight;
+    });
+
     // Final logging of what we're returning
     console.log(`Returning ${availableSlots.length} total slots`);
     console.log('Custom slots being returned:', availableSlots.filter(slot => slot.isCustom === true).length);
+    
+    // Debug log to show the sorting order
+    if (availableSlots.length > 0) {
+      console.log("Slots being returned (first 5):");
+      availableSlots.slice(0, 5).forEach((slot, i) => {
+        console.log(`${i+1}. ${slot.startTime} - ${slot.endTime} (custom: ${slot.isCustom ? 'yes' : 'no'})`);
+      });
+    }
 
     return NextResponse.json({ slots: availableSlots });
   } catch (error) {
