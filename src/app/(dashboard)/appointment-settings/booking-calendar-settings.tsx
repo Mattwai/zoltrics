@@ -122,44 +122,28 @@ export const BookingCalendarSettings = ({ userId }: BookingCalendarSettingsProps
         
         const data = await response.json();
         if (data) {
-          setAvailableDays(data.availableDays || []);
-
-          // Load time slots for each day
-          if (data.timeSlots) {
+          // Parse the timeZone field which contains the time slots
+          if (data.timeZone) {
             try {
-              const timeSlots = JSON.parse(data.timeSlots);
-              const dayMap = {
-                0: "Sunday",
-                1: "Monday",
-                2: "Tuesday",
-                3: "Wednesday",
-                4: "Thursday",
-                5: "Friday",
-                6: "Saturday",
-              };
-
-              // Create a new object for day time slots
-              const newDayTimeSlots = { ...dayTimeSlots };
+              const timeSlots = JSON.parse(data.timeZone);
+              setDayTimeSlots(timeSlots);
               
-              // For each day, use the first time slot if available
-              Object.entries(dayMap).forEach(([dayIndex, dayName]) => {
-                const daySlots = timeSlots[dayIndex];
-                if (daySlots && daySlots.length > 0) {
-                  newDayTimeSlots[dayName] = daySlots[0];
-                }
-              });
-
-              setDayTimeSlots(newDayTimeSlots);
+              // Set available days based on the time slots
+              const days = Object.keys(timeSlots);
+              setAvailableDays(days);
               
               // Check if the loaded schedule matches any preset
-              const matchingPreset = checkMatchingPreset(newDayTimeSlots, data.availableDays || []);
+              const matchingPreset = checkMatchingPreset(timeSlots, days);
               setSelectedPreset(matchingPreset);
             } catch (error) {
               console.error("Error parsing time slots:", error);
+              toast({
+                title: "Error",
+                description: "Failed to parse booking calendar settings",
+                variant: "destructive",
+              });
             }
           }
-          
-          setStartDate(new Date(data.startDate).toISOString().split("T")[0]);
         }
       } catch (error) {
         console.error("Error fetching settings:", error);
@@ -172,7 +156,7 @@ export const BookingCalendarSettings = ({ userId }: BookingCalendarSettingsProps
     };
 
     fetchSettings();
-  }, [toast]);
+  }, []);
 
   const handleDayToggle = (day: string) => {
     setAvailableDays((prev) =>

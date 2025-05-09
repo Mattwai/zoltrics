@@ -68,7 +68,30 @@ export async function GET(req: Request) {
     });
 
     if (!userSettings) {
-      return NextResponse.json(null);
+      // Create UserSettings if it doesn't exist
+      const newUserSettings = await prisma.userSettings.create({
+        data: {
+          userId: session.user.id,
+        },
+      });
+
+      // Create default BookingCalendarSettings
+      const defaultSettings = await prisma.bookingCalendarSettings.create({
+        data: {
+          userSettingsId: newUserSettings.id,
+          timeZone: JSON.stringify({
+            "Monday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+            "Tuesday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+            "Wednesday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+            "Thursday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+            "Friday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+            "Saturday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+            "Sunday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+          }),
+        },
+      });
+
+      return NextResponse.json(defaultSettings);
     }
 
     const settings = await prisma.bookingCalendarSettings.findUnique({
@@ -76,6 +99,26 @@ export async function GET(req: Request) {
         userSettingsId: userSettings.id,
       },
     });
+
+    if (!settings) {
+      // Create default BookingCalendarSettings if it doesn't exist
+      const defaultSettings = await prisma.bookingCalendarSettings.create({
+        data: {
+          userSettingsId: userSettings.id,
+          timeZone: JSON.stringify({
+            "Monday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+            "Tuesday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+            "Wednesday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+            "Thursday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+            "Friday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+            "Saturday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+            "Sunday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+          }),
+        },
+      });
+
+      return NextResponse.json(defaultSettings);
+    }
 
     return NextResponse.json(settings);
   } catch (error) {
