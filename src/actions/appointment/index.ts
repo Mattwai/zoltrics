@@ -120,6 +120,9 @@ export const onGetAllBookingsForCurrentUser = async (id: string) => {
             userId: id,
           },
         },
+        NOT: {
+          userId: id // Exclude direct bookings
+        }
       },
       select: {
         id: true,
@@ -164,8 +167,10 @@ export const onGetAllBookingsForCurrentUser = async (id: string) => {
       where: {
         userId: id,
         customer: {
-          domainId: undefined
-        },
+          is: {
+            domainId: undefined
+          }
+        }
       },
       select: {
         id: true,

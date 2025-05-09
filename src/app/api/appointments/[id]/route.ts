@@ -17,7 +17,17 @@ export async function DELETE(
     const booking = await prisma.booking.findUnique({
       where: { id: params.id },
       include: {
-        Customer: true
+        customer: {
+          include: {
+            domain: {
+              select: {
+                name: true
+              }
+            }
+          }
+        },
+        bookingMetadata: true,
+        bookingPayment: true
       }
     });
 
@@ -30,15 +40,15 @@ export async function DELETE(
       id: booking.id,
       userId: booking.userId,
       customerId: booking.customerId,
-      customerUserId: booking.Customer?.userId
+      customerUserId: booking.customer?.userId
     });
 
     // Check if the user has permission to delete this booking
     // If the booking has a customerId but no userId/customerUserId, allow deletion
     const canDelete = 
       booking.userId === session.user.id || // Direct booking
-      booking.Customer?.userId === session.user.id || // Customer booking
-      (booking.customerId && !booking.userId && !booking.Customer?.userId); // Customer booking with no user relationships
+      booking.customer?.userId === session.user.id || // Customer booking
+      (booking.customerId && !booking.userId && !booking.customer?.userId); // Customer booking with no user relationships
 
     if (!canDelete) {
       return new NextResponse("Unauthorized to delete this booking", { status: 403 });
@@ -67,13 +77,36 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { notes } = body;
+    const { notes, startTime, endTime } = body;
+
+    // Validate date strings
+    if (!startTime || !endTime) {
+      return new NextResponse("Start time and end time are required", { status: 400 });
+    }
+
+    // Parse dates and validate them
+    const parsedStartTime = new Date(startTime);
+    const parsedEndTime = new Date(endTime);
+
+    if (isNaN(parsedStartTime.getTime()) || isNaN(parsedEndTime.getTime())) {
+      return new NextResponse("Invalid date format", { status: 400 });
+    }
 
     // First, check if the booking exists
     const booking = await prisma.booking.findUnique({
       where: { id: params.id },
       include: {
-        Customer: true
+        customer: {
+          include: {
+            domain: {
+              select: {
+                name: true
+              }
+            }
+          }
+        },
+        bookingMetadata: true,
+        bookingPayment: true
       }
     });
 
@@ -84,17 +117,38 @@ export async function PATCH(
     // Check if the user has permission to update this booking
     const canUpdate = 
       booking.userId === session.user.id || // Direct booking
-      booking.Customer?.userId === session.user.id || // Customer booking
-      (booking.customerId && !booking.userId && !booking.Customer?.userId); // Customer booking with no user relationships
+      booking.customer?.userId === session.user.id || // Customer booking
+      (booking.customerId && !booking.userId && !booking.customer?.userId); // Customer booking with no user relationships
 
     if (!canUpdate) {
       return new NextResponse("Unauthorized to update this booking", { status: 403 });
     }
 
-    // Update the booking notes
+    // Update the booking
     const updatedBooking = await prisma.booking.update({
       where: { id: params.id },
-      data: { notes },
+      data: {
+        startTime: parsedStartTime,
+        endTime: parsedEndTime,
+        bookingMetadata: {
+          update: {
+            notes: notes || null
+          }
+        }
+      },
+      include: {
+        customer: {
+          include: {
+            domain: {
+              select: {
+                name: true
+              }
+            }
+          }
+        },
+        bookingMetadata: true,
+        bookingPayment: true
+      }
     });
 
     return NextResponse.json(updatedBooking);

@@ -35,7 +35,9 @@ const AllAppointments = ({ bookings, onBookingOptions, isDeleting }: Props) => {
   
   // Format date to ensure correct month display
   const formatDate = (date: Date | string) => {
+    if (!date) return '';
     const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) return '';
     return format(dateObj, 'MMMM d, yyyy');
   };
 
@@ -44,14 +46,16 @@ const AllAppointments = ({ bookings, onBookingOptions, isDeleting }: Props) => {
       <DataTable headers={APPOINTMENT_TABLE_HEADER}>
         {currentBookings.map((booking) => (
           <TableRow key={booking.id}>
-            <TableCell>{booking.name}</TableCell>
-            <TableCell>{booking.email}</TableCell>
+            <TableCell>{booking.customer?.name || 'N/A'}</TableCell>
+            <TableCell>{booking.customer?.email || 'N/A'}</TableCell>
             <TableCell>
               <div className="font-medium">
-                {formatDate(booking.date)}
+                {formatDate(booking.startTime)}
               </div>
-              <div className="text-sm text-gray-600">{formatTimeSlot(booking.slot, 60)}</div>
-              {booking.notes && (
+              <div className="text-sm text-gray-600">
+                {formatTimeSlot(`${format(booking.startTime, 'HH:mm')}-${format(booking.endTime, 'HH:mm')}`, 60)}
+              </div>
+              {booking.bookingMetadata?.notes && (
                 <div className="mt-1 flex items-center text-xs text-gray-500">
                   <TooltipProvider>
                     <Tooltip>
@@ -63,9 +67,9 @@ const AllAppointments = ({ bookings, onBookingOptions, isDeleting }: Props) => {
                       </TooltipTrigger>
                       <TooltipContent>
                         <p className="w-[200px] whitespace-normal break-words">
-                          {booking.notes.length > 100 
-                            ? `${booking.notes.substring(0, 100)}...` 
-                            : booking.notes}
+                          {booking.bookingMetadata.notes.length > 100 
+                            ? `${booking.bookingMetadata.notes.substring(0, 100)}...` 
+                            : booking.bookingMetadata.notes}
                         </p>
                       </TooltipContent>
                     </Tooltip>
@@ -74,7 +78,7 @@ const AllAppointments = ({ bookings, onBookingOptions, isDeleting }: Props) => {
               )}
             </TableCell>
             <TableCell>
-              {booking.Service?.name || "No service specified"}
+              {booking.service?.name || "No service specified"}
             </TableCell>
             <TableCell>            
               <Button

@@ -67,7 +67,7 @@ export const BookingOptionsDialog = ({
 }: BookingOptionsDialogProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    booking ? formatAPIDate(booking.date) : undefined
+    booking ? new Date(booking.startTime) : undefined
   );
   const [selectedSlot, setSelectedSlot] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
@@ -83,7 +83,7 @@ export const BookingOptionsDialog = ({
     }
   }, [isOpen]);
 
-  console.log("Current date from booking:", booking?.date);
+  console.log("Current date from booking:", booking?.startTime);
 
   // Fetch latest booking data from the database when dialog opens
   useEffect(() => {
@@ -98,13 +98,13 @@ export const BookingOptionsDialog = ({
           
           if (response.ok) {
             const data = await response.json();
-            console.log("Fetched booking date:", data.date);
+            console.log("Fetched booking date:", data.startTime);
             setCurrentBooking(data);
-            setSelectedSlot(data.slot);
-            const bookingNotes = data.notes || "";
+            setSelectedSlot(`${format(new Date(data.startTime), 'HH:mm')} - ${format(new Date(data.endTime), 'HH:mm')}`);
+            const bookingNotes = data.bookingMetadata?.notes || "";
             setNotes(bookingNotes);
             setOriginalNotes(bookingNotes);
-            setSelectedDate(formatAPIDate(data.date));
+            setSelectedDate(new Date(data.startTime));
             
             // Update parent component with fresh data
             if (onBookingUpdate) {
@@ -113,21 +113,21 @@ export const BookingOptionsDialog = ({
           } else {
             // Fall back to the booking data passed by props
             setCurrentBooking(booking);
-            setSelectedSlot(booking.slot);
-            const bookingNotes = booking.notes || "";
+            setSelectedSlot(`${format(new Date(booking.startTime), 'HH:mm')} - ${format(new Date(booking.endTime), 'HH:mm')}`);
+            const bookingNotes = booking.bookingMetadata?.notes || "";
             setNotes(bookingNotes);
             setOriginalNotes(bookingNotes);
-            setSelectedDate(formatAPIDate(booking.date));
+            setSelectedDate(new Date(booking.startTime));
           }
         } catch (error) {
           console.error("Error fetching booking details:", error);
           // Fall back to the booking data passed by props
           setCurrentBooking(booking);
-          setSelectedSlot(booking.slot);
-          const bookingNotes = booking.notes || "";
+          setSelectedSlot(`${format(new Date(booking.startTime), 'HH:mm')} - ${format(new Date(booking.endTime), 'HH:mm')}`);
+          const bookingNotes = booking.bookingMetadata?.notes || "";
           setNotes(bookingNotes);
           setOriginalNotes(bookingNotes);
-          setSelectedDate(formatAPIDate(booking.date));
+          setSelectedDate(new Date(booking.startTime));
         } finally {
           setIsLoading(false);
         }
@@ -162,9 +162,10 @@ export const BookingOptionsDialog = ({
             // If API fails, keep current slot only as fallback
             if (selectedSlot) {
               setAvailableSlots([selectedSlot]);
-            } else if (currentBooking?.slot) {
-              setAvailableSlots([currentBooking.slot]);
-              setSelectedSlot(currentBooking.slot);
+            } else if (currentBooking?.startTime && currentBooking?.endTime) {
+              const formattedSlot = `${format(new Date(currentBooking.startTime), 'HH:mm')} - ${format(new Date(currentBooking.endTime), 'HH:mm')}`;
+              setAvailableSlots([formattedSlot]);
+              setSelectedSlot(formattedSlot);
             } else {
               setAvailableSlots([]);
             }
@@ -174,9 +175,10 @@ export const BookingOptionsDialog = ({
           // If API fails, keep current slot only as fallback
           if (selectedSlot) {
             setAvailableSlots([selectedSlot]);
-          } else if (currentBooking?.slot) {
-            setAvailableSlots([currentBooking.slot]);
-            setSelectedSlot(currentBooking.slot);
+          } else if (currentBooking?.startTime && currentBooking?.endTime) {
+            const formattedSlot = `${format(new Date(currentBooking.startTime), 'HH:mm')} - ${format(new Date(currentBooking.endTime), 'HH:mm')}`;
+            setAvailableSlots([formattedSlot]);
+            setSelectedSlot(formattedSlot);
           } else {
             setAvailableSlots([]);
           }
@@ -210,7 +212,11 @@ export const BookingOptionsDialog = ({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ notes }),
+        body: JSON.stringify({ 
+          notes,
+          startTime: activeBooking.startTime,
+          endTime: activeBooking.endTime
+        }),
       });
 
       if (!response.ok) {
@@ -224,7 +230,10 @@ export const BookingOptionsDialog = ({
       // Update current booking with the new data
       setCurrentBooking({
         ...activeBooking,
-        notes: notes
+        bookingMetadata: {
+          ...activeBooking.bookingMetadata,
+          notes: notes
+        }
       });
       
       // Update original notes after successful save
@@ -234,7 +243,10 @@ export const BookingOptionsDialog = ({
       if (onBookingUpdate) {
         onBookingUpdate({
           ...activeBooking,
-          notes: notes
+          bookingMetadata: {
+            ...activeBooking.bookingMetadata,
+            notes: notes
+          }
         });
       }
       
@@ -252,15 +264,25 @@ export const BookingOptionsDialog = ({
     
     try {
       setIsLoading(true);
-      console.log("Rescheduling to date:", selectedDate);
-      const response = await fetch(`/api/appointments/${activeBooking.id}/reschedule`, {
+      const [startTime, endTime] = selectedSlot.split(" - ");
+      const [startHours, startMinutes] = startTime.split(":").map(Number);
+      const [endHours, endMinutes] = endTime.split(":").map(Number);
+      
+      const newStartTime = new Date(selectedDate);
+      newStartTime.setHours(startHours, startMinutes, 0, 0);
+      
+      const newEndTime = new Date(selectedDate);
+      newEndTime.setHours(endHours, endMinutes, 0, 0);
+
+      const response = await fetch(`/api/appointments/${activeBooking.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ 
-          date: selectedDate.toISOString(),
-          slot: selectedSlot 
+          startTime: newStartTime.toISOString(),
+          endTime: newEndTime.toISOString(),
+          notes: activeBooking.bookingMetadata?.notes
         }),
       });
 
@@ -275,19 +297,16 @@ export const BookingOptionsDialog = ({
       // Update current booking with the new data
       setCurrentBooking({
         ...activeBooking,
-        date: selectedDate,
-        slot: selectedSlot,
-        notes: notes
+        startTime: newStartTime,
+        endTime: newEndTime
       });
       
       // Update the parent component with the new booking data
       if (onBookingUpdate) {
         onBookingUpdate({
           ...activeBooking,
-          date: selectedDate,
-          slot: selectedSlot,
-          // Preserve notes in case they were edited but not saved
-          notes: notes
+          startTime: newStartTime,
+          endTime: newEndTime
         });
       }
 
@@ -309,7 +328,6 @@ export const BookingOptionsDialog = ({
   // Format date for display with proper timezone handling
   const formatDisplayDate = (date: Date | string) => {
     const dateObj = typeof date === 'string' ? new Date(date) : date;
-    // Use a full month name format to make the month absolutely clear
     return format(dateObj, 'MMMM d, yyyy');
   };
   
@@ -317,7 +335,7 @@ export const BookingOptionsDialog = ({
     <Dialog open={isOpen} onOpenChange={handleDialogClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Booking Options - {activeBooking.name}</DialogTitle>
+          <DialogTitle>Booking Options - {activeBooking?.customer?.name}</DialogTitle>
         </DialogHeader>
         
         <div className="grid gap-6 py-4">
@@ -327,25 +345,25 @@ export const BookingOptionsDialog = ({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm text-gray-500">Date</Label>
-                <p>{activeBooking.date ? formatDisplayDate(activeBooking.date) : "Not set"}</p>
+                <p>{activeBooking?.startTime ? formatDisplayDate(activeBooking.startTime) : "Not set"}</p>
               </div>
               <div>
                 <Label className="text-sm text-gray-500">Time</Label>
-                <p>{activeBooking.slot ? formatTimeSlot(activeBooking.slot, 60) : ""}</p>
+                <p>{selectedSlot}</p>
               </div>
               <div>
                 <Label className="text-sm text-gray-500">Email</Label>
-                <p>{activeBooking.email}</p>
+                <p>{activeBooking?.customer?.email}</p>
               </div>
               <div>
                 <Label className="text-sm text-gray-500">Type</Label>
-                <p>{activeBooking.Customer?.Domain?.name || "Direct Booking"}</p>
+                <p>{activeBooking?.customer?.domain?.name || "Direct Booking"}</p>
               </div>
             </div>
           </div>
 
           {/* Payment Status */}
-          {activeBooking.bookingPayment && (
+          {activeBooking?.bookingPayment && (
             <div className="grid gap-2">
               <h3 className="text-sm font-medium text-gray-500">Payment Status</h3>
               <div className="flex items-center gap-2">
@@ -353,18 +371,18 @@ export const BookingOptionsDialog = ({
                 <p
                   className={cn(
                     "text-sm font-medium",
-                    activeBooking.bookingPayment.depositPaid
+                    activeBooking.bookingPayment.status === "paid"
                       ? "text-green-600"
                       : "text-amber-600"
                   )}
                 >
-                  {activeBooking.bookingPayment.depositPaid ? "Paid" : "Pending"}
+                  {activeBooking.bookingPayment.status === "paid" ? "Paid" : "Pending"}
                 </p>
               </div>
             </div>
           )}
 
-          {/* Notes Section - Moved up before reschedule section */}
+          {/* Notes Section */}
           <div className="grid gap-2">
             <h3 className="text-sm font-medium text-gray-500">Additional Notes</h3>
             <Textarea
@@ -436,8 +454,8 @@ export const BookingOptionsDialog = ({
                   !selectedDate ||
                   !selectedSlot ||
                   (selectedDate && 
-                    formatAPIDate(activeBooking.date).toDateString() === selectedDate.toDateString() &&
-                    selectedSlot === activeBooking.slot)
+                    new Date(activeBooking?.startTime || "").toDateString() === selectedDate.toDateString() &&
+                    selectedSlot === `${format(new Date(activeBooking?.startTime || ""), 'HH:mm')} - ${format(new Date(activeBooking?.endTime || ""), 'HH:mm')}`)
                 }
               >
                 Reschedule
