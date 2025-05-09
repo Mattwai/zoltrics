@@ -183,13 +183,44 @@ export const generateTimeSlots = (
    * Calculate duration in minutes between two time strings
    */
   export const calculateDuration = (startTime: string, endTime: string): number => {
-    const [startHour, startMinute] = startTime.split(":").map(Number);
-    const [endHour, endMinute] = endTime.split(":").map(Number);
-    
-    const startMinutes = startHour * 60 + startMinute;
-    const endMinutes = endHour * 60 + endMinute;
-    
-    return Math.max(0, endMinutes - startMinutes);
+    try {
+      if (!startTime || !endTime) return 30; // Default duration if times are missing
+      
+      // Check if input times include AM/PM
+      const is12HourFormat = startTime.toLowerCase().includes('am') || startTime.toLowerCase().includes('pm') ||
+                             endTime.toLowerCase().includes('am') || endTime.toLowerCase().includes('pm');
+      
+      let startHour, startMinute, endHour, endMinute;
+      
+      if (is12HourFormat) {
+        // Parse as 12-hour times
+        const baseDate = new Date();
+        baseDate.setHours(0, 0, 0, 0);
+        
+        const parsedStartTime = parse(startTime, 'h:mm a', baseDate);
+        const parsedEndTime = parse(endTime, 'h:mm a', baseDate);
+        
+        startHour = parsedStartTime.getHours();
+        startMinute = parsedStartTime.getMinutes();
+        endHour = parsedEndTime.getHours();
+        endMinute = parsedEndTime.getMinutes();
+      } else {
+        // Parse as 24-hour times
+        [startHour, startMinute] = startTime.split(":").map(Number);
+        [endHour, endMinute] = endTime.split(":").map(Number);
+      }
+      
+      const startMinutes = startHour * 60 + startMinute;
+      const endMinutes = endHour * 60 + endMinute;
+      
+      const duration = endMinutes - startMinutes;
+      
+      // Handle case where end time is earlier than start time (next day)
+      return duration > 0 ? duration : 30;
+    } catch (error) {
+      console.warn('Error calculating duration:', error);
+      return 30; // Default duration on error
+    }
   };
   
   /**

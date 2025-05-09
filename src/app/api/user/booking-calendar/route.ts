@@ -13,7 +13,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { availableDays, timeSlots, startDate } = await req.json();
+    const { availableDays, timeSlots, dayTimeSlots, startDate } = await req.json();
     
     // First ensure UserSettings exists
     const userSettings = await prisma.userSettings.upsert({
@@ -27,16 +27,23 @@ export async function POST(req: Request) {
     });
 
     // Now create or update booking calendar settings
+    // Store both the day-indexed timeSlots and the dayTimeSlots object
+    const settingsData = {
+      timeZone: JSON.stringify({
+        timeSlots,
+        dayTimeSlots,
+        availableDays
+      }),
+    };
+
     const settings = await prisma.bookingCalendarSettings.upsert({
       where: {
         userSettingsId: userSettings.id,
       },
-      update: {
-        timeZone: JSON.stringify(timeSlots),
-      },
+      update: settingsData,
       create: {
         userSettingsId: userSettings.id,
-        timeZone: JSON.stringify(timeSlots),
+        ...settingsData,
       },
     });
 
@@ -80,13 +87,26 @@ export async function GET(req: Request) {
         data: {
           userSettingsId: newUserSettings.id,
           timeZone: JSON.stringify({
-            "Monday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
-            "Tuesday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
-            "Wednesday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
-            "Thursday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
-            "Friday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
-            "Saturday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
-            "Sunday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+            dayTimeSlots: {
+              "Monday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Tuesday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Wednesday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Thursday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Friday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Saturday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Sunday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+            },
+            availableDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+            // For backward compatibility
+            timeSlots: {
+              0: [], // Sunday
+              1: [], // Monday
+              2: [], // Tuesday
+              3: [], // Wednesday
+              4: [], // Thursday
+              5: [], // Friday
+              6: [], // Saturday
+            }
           }),
         },
       });
@@ -106,13 +126,26 @@ export async function GET(req: Request) {
         data: {
           userSettingsId: userSettings.id,
           timeZone: JSON.stringify({
-            "Monday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
-            "Tuesday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
-            "Wednesday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
-            "Thursday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
-            "Friday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
-            "Saturday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
-            "Sunday": { startTime: "09:00", endTime: "17:00", duration: 30, maxBookings: 1 },
+            dayTimeSlots: {
+              "Monday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Tuesday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Wednesday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Thursday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Friday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Saturday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Sunday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+            },
+            availableDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+            // For backward compatibility
+            timeSlots: {
+              0: [], // Sunday
+              1: [], // Monday
+              2: [], // Tuesday
+              3: [], // Wednesday
+              4: [], // Thursday
+              5: [], // Friday
+              6: [], // Saturday
+            }
           }),
         },
       });

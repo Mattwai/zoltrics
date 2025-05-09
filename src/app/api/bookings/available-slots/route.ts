@@ -93,26 +93,120 @@ export async function GET(request: NextRequest) {
     };
 
     let availableSlots: TimeSlot[] = [];
-
-    // Generate default time slots if no custom slots exist
-    if (!customTimeSlots.length) {
-      // Generate slots from 9 AM to 5 PM with 30-minute intervals
-      const startHour = 9;
-      const endHour = 17;
-      const interval = 30; // minutes
-
-      for (let hour = startHour; hour < endHour; hour++) {
-        for (let minute = 0; minute < 60; minute += interval) {
-          const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-          availableSlots.push({
-            slot: time,
-            startTime: time,
-            endTime: calculateEndTime(time, interval),
-            duration: interval,
-            isCustom: false,
-            maxSlots: 1
+    
+    // Check if we have booking settings
+    if (bookingSettings && bookingSettings.timeZone) {
+      try {
+        // Parse the settings
+        const settingsData = JSON.parse(bookingSettings.timeZone);
+        
+        // Get the day of week (0-6, Sunday is 0)
+        const dayOfWeek = selectedDate.getDay();
+        const dayMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const dayName = dayMap[dayOfWeek];
+        
+        // Check if we have the new format with dayTimeSlots
+        if (settingsData.dayTimeSlots && settingsData.availableDays) {
+          // Check if this day is available
+          if (settingsData.availableDays.includes(dayName)) {
+            const daySettings = settingsData.dayTimeSlots[dayName];
+            
+            if (daySettings) {
+              // Convert times to 24h format if needed
+              const isTimeFormat12h = daySettings.startTime.includes('AM') || 
+                                      daySettings.startTime.includes('PM') || 
+                                      daySettings.endTime.includes('AM') || 
+                                      daySettings.endTime.includes('PM');
+              
+              let startTime, endTime;
+              
+              if (isTimeFormat12h) {
+                // Convert 12h to 24h format
+                const startParts = daySettings.startTime.match(/(\d+):(\d+)\s?(AM|PM)/i);
+                const endParts = daySettings.endTime.match(/(\d+):(\d+)\s?(AM|PM)/i);
+                
+                if (startParts && endParts) {
+                  let startHour = parseInt(startParts[1]);
+                  const startMinute = parseInt(startParts[2]);
+                  const startPeriod = startParts[3].toUpperCase();
+                  
+                  let endHour = parseInt(endParts[1]);
+                  const endMinute = parseInt(endParts[2]);
+                  const endPeriod = endParts[3].toUpperCase();
+                  
+                  // Convert to 24-hour
+                  if (startPeriod === 'PM' && startHour < 12) startHour += 12;
+                  if (startPeriod === 'AM' && startHour === 12) startHour = 0;
+                  
+                  if (endPeriod === 'PM' && endHour < 12) endHour += 12;
+                  if (endPeriod === 'AM' && endHour === 12) endHour = 0;
+                  
+                  startTime = `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
+                  endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+                } else {
+                  // Fallback to defaults
+                  startTime = '09:00';
+                  endTime = '17:00';
+                }
+              } else {
+                startTime = daySettings.startTime;
+                endTime = daySettings.endTime;
+              }
+              
+              // Generate slots based on the user's settings
+              const interval = daySettings.duration || 30;
+              const maxSlots = daySettings.maxBookings || 1;
+              
+              // Generate slots from start to end time
+              const [startHour, startMinute] = startTime.split(':').map(Number);
+              const [endHour, endMinute] = endTime.split(':').map(Number);
+              
+              const startTotalMinutes = startHour * 60 + startMinute;
+              const endTotalMinutes = endHour * 60 + endMinute;
+              
+              for (let time = startTotalMinutes; time < endTotalMinutes; time += interval) {
+                const hour = Math.floor(time / 60);
+                const minute = time % 60;
+                
+                const slotStart = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                const slotEnd = calculateEndTime(slotStart, interval);
+                
+                // Skip if slot end time exceeds day end time
+                const slotEndHour = parseInt(slotEnd.split(':')[0]);
+                const slotEndMinute = parseInt(slotEnd.split(':')[1]);
+                const slotEndTotalMinutes = slotEndHour * 60 + slotEndMinute;
+                
+                if (slotEndTotalMinutes <= endTotalMinutes) {
+                  availableSlots.push({
+                    slot: `${slotStart} - ${slotEnd}`,
+                    startTime: slotStart,
+                    endTime: slotEnd,
+                    duration: interval,
+                    maxSlots: maxSlots,
+                    isCustom: false
+                  });
+                }
+              }
+            }
+          }
+        } 
+        // Fallback to the old format if needed
+        else if (settingsData[dayOfWeek]) {
+          const daySlots = settingsData[dayOfWeek];
+          
+          daySlots.forEach((slot: any) => {
+            availableSlots.push({
+              slot: `${slot.startTime} - ${slot.endTime}`,
+              startTime: slot.startTime,
+              endTime: slot.endTime,
+              duration: slot.duration || 30,
+              maxSlots: slot.maxBookings || 1,
+              isCustom: false
+            });
           });
         }
+      } catch (error) {
+        console.error("Error parsing booking settings:", error);
       }
     }
 
@@ -120,12 +214,13 @@ export async function GET(request: NextRequest) {
     if (customTimeSlots.length > 0) {
       customTimeSlots.forEach(slot => {
         availableSlots.push({
-          slot: format(slot.startTime, 'HH:mm'),
+          slot: `${format(slot.startTime, 'HH:mm')} - ${format(slot.endTime, 'HH:mm')}`,
           startTime: format(slot.startTime, 'HH:mm'),
           endTime: format(slot.endTime, 'HH:mm'),
-          duration: Math.round((slot.endTime.getTime() - slot.startTime.getTime()) / (1000 * 60)),
+          duration: slot.duration || Math.round((slot.endTime.getTime() - slot.startTime.getTime()) / (1000 * 60)),
           isCustom: true,
-          maxSlots: 1
+          maxSlots: slot.maxSlots || 1,
+          id: slot.id
         });
       });
     }
