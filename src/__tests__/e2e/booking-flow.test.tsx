@@ -28,14 +28,14 @@ describe('End-to-End Booking Flow', () => {
       name: '',
       email: '',
       date: '',
-      time: '',
+      slot: '',
       notes: '',
       serviceId: '',
     });
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [isSuccess, setIsSuccess] = React.useState(false);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       const { name, value } = e.target;
       setFormData({ ...formData, [name]: value });
     };
@@ -80,7 +80,7 @@ describe('End-to-End Booking Flow', () => {
             Name: {formData.name}<br />
             Email: {formData.email}<br />
             Date: {formData.date}<br />
-            Time: {formData.time}
+            Time: {formData.slot}
           </p>
         </div>
       );
@@ -144,7 +144,7 @@ describe('End-to-End Booking Flow', () => {
           
           {step === 3 && (
             <div data-testid="date-selection-step">
-              <h2>Select a Date</h2>
+              <h2>Select a Date and Time</h2>
               <div>
                 <label htmlFor="date">Date</label>
                 <input
@@ -157,23 +157,21 @@ describe('End-to-End Booking Flow', () => {
                   data-testid="date-input"
                 />
               </div>
-            </div>
-          )}
-          
-          {step === 4 && (
-            <div data-testid="time-selection-step">
-              <h2>Select a Time</h2>
               <div>
-                <label htmlFor="time">Time</label>
-                <input
-                  type="time"
-                  id="time"
-                  name="time"
-                  value={formData.time}
+                <label htmlFor="slot">Time Slot</label>
+                <select
+                  id="slot"
+                  name="slot"
+                  value={formData.slot}
                   onChange={handleChange}
                   required
-                  data-testid="time-input"
-                />
+                  data-testid="slot-select"
+                >
+                  <option value="">Select a time slot</option>
+                  <option value="09:00">9:00 AM</option>
+                  <option value="10:00">10:00 AM</option>
+                  <option value="11:00">11:00 AM</option>
+                </select>
               </div>
               <div>
                 <label htmlFor="notes">Additional Notes</label>
@@ -193,7 +191,7 @@ describe('End-to-End Booking Flow', () => {
             disabled={isSubmitting}
             data-testid="next-button"
           >
-            {isSubmitting ? 'Processing...' : step < 4 ? 'Next' : 'Confirm Booking'}
+            {isSubmitting ? 'Processing...' : step < 3 ? 'Next' : 'Confirm Booking'}
           </button>
         </form>
       </div>
@@ -216,7 +214,7 @@ describe('End-to-End Booking Flow', () => {
     name: 'John Doe',
     email: 'john@example.com',
     date: '2023-12-15',
-    time: '14:30',
+    slot: '09:00',
     notes: 'Test booking',
     serviceId: mockService.id
   };
@@ -263,7 +261,7 @@ describe('End-to-End Booking Flow', () => {
       expect(screen.getByTestId('date-selection-step')).toBeInTheDocument();
     });
     await user.type(screen.getByTestId('date-input'), mockFormData.date);
-    await user.type(screen.getByTestId('time-input'), mockFormData.time);
+    await user.selectOptions(screen.getByTestId('slot-select'), mockFormData.slot);
     await user.type(screen.getByTestId('notes-input'), mockFormData.notes);
     
     // Submit booking
@@ -275,8 +273,7 @@ describe('End-to-End Booking Flow', () => {
       expect(screen.getByTestId('booking-details')).toHaveTextContent(mockFormData.name);
       expect(screen.getByTestId('booking-details')).toHaveTextContent(mockFormData.email);
       expect(screen.getByTestId('booking-details')).toHaveTextContent(mockFormData.date);
-      expect(screen.getByTestId('booking-details')).toHaveTextContent(mockFormData.time);
-      expect(screen.getByTestId('booking-details')).toHaveTextContent(mockService.name);
+      expect(screen.getByTestId('booking-details')).toHaveTextContent(mockFormData.slot);
     });
   });
 

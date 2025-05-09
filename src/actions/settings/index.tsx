@@ -803,6 +803,7 @@ export const onGetAllKnowledgeBaseEntries = async (userId: string) => {
         title: true,
         content: true,
         userId: true,
+        category: true,
       },
       orderBy: {
         title: "asc",
