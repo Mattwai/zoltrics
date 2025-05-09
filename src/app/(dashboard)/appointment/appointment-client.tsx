@@ -47,7 +47,7 @@ export const AppointmentClient = ({
     setSelectedDate(date);
     if (date) {
       const filteredBookings = initialBookings.filter((booking) => {
-        const bookingDate = new Date(booking.date);
+        const bookingDate = new Date(booking.startTime);
         return (
           bookingDate.getFullYear() === date.getFullYear() &&
           bookingDate.getMonth() === date.getMonth() &&
@@ -129,16 +129,16 @@ export const AppointmentClient = ({
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
-      booking.name.toLowerCase().includes(query) ||
-      booking.email.toLowerCase().includes(query) ||
-      booking.slot.toLowerCase().includes(query) ||
-      (booking.Customer?.Domain?.name || "").toLowerCase().includes(query)
+      booking.customer?.name.toLowerCase().includes(query) ||
+      booking.customer?.email.toLowerCase().includes(query) ||
+      formatTimeSlot(booking.startTime.toISOString(), 60).toLowerCase().includes(query) ||
+      (booking.customer?.domain?.name || "").toLowerCase().includes(query)
     );
   });
 
   const todayBookings = filteredBookings.filter((booking) => {
     const today = new Date();
-    const bookingDate = new Date(booking.date);
+    const bookingDate = new Date(booking.startTime);
     return (
       bookingDate.getFullYear() === today.getFullYear() &&
       bookingDate.getMonth() === today.getMonth() &&
@@ -165,7 +165,7 @@ export const AppointmentClient = ({
                 <CardHeader className="bg-orchid/10 pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg font-semibold">
-                      {formatTimeSlot(booking.slot, 60)}
+                      {formatTimeSlot(booking.startTime.toISOString(), 60)}
                     </CardTitle>
                   </div>
                 </CardHeader>
@@ -173,33 +173,33 @@ export const AppointmentClient = ({
                   <div className="space-y-3">
                     <div>
                       <p className="text-sm font-medium text-gray-500">Name</p>
-                      <p className="text-base">{booking.name}</p>
+                      <p className="text-base">{booking.customer?.name}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-500">Email</p>
-                      <p className="text-base">{booking.email}</p>
+                      <p className="text-base">{booking.customer?.email}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-500">Booking Type</p>
                       <p className="text-base">
-                        {booking.Customer?.Domain?.name || "Direct Booking"}
+                        {booking.customer?.domain?.name || "Direct Booking"}
                       </p>
                     </div>
-                    {booking.bookingPayment?.depositRequired && (
+                    {booking.bookingPayment && (
                       <div>
-                        <p className="text-sm font-medium text-gray-500">Deposit Status</p>
+                        <p className="text-sm font-medium text-gray-500">Payment Status</p>
                         <p className={cn(
                           "text-base",
-                          booking.bookingPayment.depositPaid ? "text-green-600" : "text-amber-600"
+                          booking.bookingPayment.status === "completed" ? "text-green-600" : "text-amber-600"
                         )}>
-                          {booking.bookingPayment.depositPaid ? "Paid" : "Pending"}
+                          {booking.bookingPayment.status === "completed" ? "Paid" : "Pending"}
                         </p>
                       </div>
                     )}
-                    {booking.notes && (
+                    {booking.bookingMetadata?.notes && (
                       <div>
                         <p className="text-sm font-medium text-gray-500">Notes</p>
-                        <p className="text-base">{booking.notes}</p>
+                        <p className="text-base">{booking.bookingMetadata.notes}</p>
                       </div>
                     )}
                   </div>
