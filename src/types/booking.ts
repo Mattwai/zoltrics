@@ -1,31 +1,26 @@
 export interface Booking {
   id: string;
-  name: string;
-  email: string;
-  date: Date;
-  slot: string;
+  startTime: Date;
+  endTime: Date;
+  status: string;
   createdAt: Date;
-  domainId: string | null;
-  notes?: string;
-  bookingMetadata: {
-    source: string | null;
-    no_show: boolean;
-    riskScore: number | null;
-  } | null;
-  bookingPayment: {
-    depositRequired: boolean;
-    depositPaid: boolean;
-  } | null;
-  Customer: {
-    Domain: {
+  updatedAt: Date;
+  customer: {
+    name: string;
+    email: string;
+    domain: {
       name: string;
     } | null;
   } | null;
-  Service: {
-    id: string;
+  service: {
     name: string;
-    pricing: {
-      price: number;
-    } | null;
+  } | null;
+  bookingMetadata: {
+    notes: string | null;
+  } | null;
+  bookingPayment: {
+    amount: number;
+    currency: string;
+    status: string;
   } | null;
 } 

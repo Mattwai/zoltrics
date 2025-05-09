@@ -667,11 +667,12 @@ const generateBookingLink = async () => {
   let exists = true;
 
   while (exists) {
+    // Generate a random string for the booking link
     link = Math.random().toString(36).substring(2, 15);
-    const userProfile = await client.userBusinessProfile.findUnique({
-      where: { id: link },
+    const existingLink = await client.bookingLink.findUnique({
+      where: { link: link }
     });
-    exists = !!userProfile;
+    exists = !!existingLink;
   }
 
   return link;
@@ -703,7 +704,11 @@ export const onGetUser = async (): Promise<UserWithRelations | null> => {
         chatBot: true,
         helpdesk: true,
         subscription: true,
-        userBusinessProfile: true
+        userBusinessProfile: {
+          include: {
+            bookingLink: true
+          }
+        }
       },
     });
     
@@ -715,28 +720,40 @@ export const onGetUser = async (): Promise<UserWithRelations | null> => {
     // If no business profile exists, create one
     if (!user.userBusinessProfile) {
       const newBookingLink = await generateBookingLink();
-      const updatedProfile = await client.userBusinessProfile.create({
+      const businessProfile = await client.userBusinessProfile.create({
         data: {
-          id: newBookingLink,
           userId: user.id,
           businessName: null,
+          bookingLink: {
+            create: {
+              link: newBookingLink
+            }
+          }
         },
+        include: {
+          bookingLink: true
+        }
       });
 
-      if (updatedProfile) {
+      if (businessProfile) {
         return {
           ...user,
           userBusinessProfile: {
-            ...updatedProfile,
-            bookingLink: {
-              link: newBookingLink
-            }
+            ...businessProfile,
+            bookingLink: businessProfile.bookingLink
           } as UserBusinessProfileWithBookingLink,
         } as UserWithRelations;
       }
     }
     
-    return user as UserWithRelations;
+    // Format the existing user data to include the booking link
+    return {
+      ...user,
+      userBusinessProfile: user.userBusinessProfile ? {
+        ...user.userBusinessProfile,
+        bookingLink: user.userBusinessProfile.bookingLink
+      } as UserBusinessProfileWithBookingLink : null
+    } as UserWithRelations;
   } catch (error) {
     console.error("Error fetching user:", error);
     return null;

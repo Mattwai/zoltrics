@@ -29,18 +29,14 @@ export async function POST(req: Request) {
     // Now create or update booking calendar settings
     const settings = await prisma.bookingCalendarSettings.upsert({
       where: {
-        userId: userSettings.id, // Use the UserSettings.id
+        userSettingsId: userSettings.id,
       },
       update: {
-        availableDays,
-        timeSlots: JSON.stringify(timeSlots),
-        startDate: new Date(startDate),
+        timeZone: JSON.stringify(timeSlots),
       },
       create: {
-        userId: userSettings.id, // Use the UserSettings.id
-        availableDays,
-        timeSlots: JSON.stringify(timeSlots),
-        startDate: new Date(startDate),
+        userSettingsId: userSettings.id,
+        timeZone: JSON.stringify(timeSlots),
       },
     });
 
@@ -77,7 +73,7 @@ export async function GET(req: Request) {
 
     const settings = await prisma.bookingCalendarSettings.findUnique({
       where: {
-        userId: userSettings.id,
+        userSettingsId: userSettings.id,
       },
     });
 

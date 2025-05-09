@@ -204,6 +204,7 @@ model ChatBot {
 model Billings {
   id      String  @id @default(uuid()) @db.Uuid
   plan    String?
+  credits Int     @default(0)
   userId  String? @unique @db.Uuid
   user    User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

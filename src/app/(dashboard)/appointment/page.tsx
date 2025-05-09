@@ -30,7 +30,7 @@ const Page = async (props: Props) => {
           <AppointmentClient 
             initialBookings={allBookings?.bookings || []}
             userId={session.user.id}
-            bookingLink={user.userBusinessProfile?.bookingLink || null}
+            bookingLink={user.userBusinessProfile?.bookingLink?.link || null}
             baseUrl={process.env.NEXT_PUBLIC_BASE_URL || ""}
           />
         </div>

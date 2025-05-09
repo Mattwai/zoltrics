@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { generateTimeSlots, formatTimeSlot } from "@/lib/time-slots";
+import { format } from "date-fns";
 
 interface CustomTimeSlot {
   startTime: string;
@@ -32,239 +33,121 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Parse the date string to create a date with the correct day
-    let selectedDate: Date;
-    
-    // Check if the date is in ISO format or YYYY-MM-DD format
-    if (date.includes('T')) {
-      // It's an ISO string
-      selectedDate = new Date(date);
-    } else {
-      // It's a YYYY-MM-DD format
-      const [year, month, day] = date.split('-').map(Number);
-      selectedDate = new Date(year, month - 1, day); // Month is 0-indexed in JavaScript Date
-    }
-    
-    // Set the time to midnight for consistent date comparison
-    selectedDate.setHours(0, 0, 0, 0);
-    
-    console.log('Original date string:', date);
-    console.log('Parsed selected date:', selectedDate);
-    
-    const dayOfWeek = selectedDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const selectedDate = new Date(date);
+    const nextDay = new Date(selectedDate);
+    nextDay.setDate(nextDay.getDate() + 1);
 
-    // Set up start and end of the selected day to query for custom slots
-    const startOfDay = new Date(selectedDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    
-    const endOfDay = new Date(selectedDate);
-    endOfDay.setHours(23, 59, 59, 999);
-    
-    console.log('Querying custom slots from', startOfDay, 'to', endOfDay);
-
-    // Get existing bookings for the selected date
+    // Get existing bookings for the date range
     const existingBookings = await prisma.booking.findMany({
       where: {
-        date: {
-          gte: startOfDay,
-          lte: endOfDay
-        },
-        Customer: {
-          Domain: {
-            User: {
-              id: userId
-            }
-          }
+        userId: userId,
+        startTime: {
+          gte: selectedDate,
+          lt: nextDay
         }
       },
       select: {
-        slot: true,
-      },
+        startTime: true,
+        endTime: true
+      }
     });
 
-    // Get custom time slots for this date
-    const customSlots = await prisma.customTimeSlot.findMany({
-      where: {
-        userId,
-        date: {
-          gte: startOfDay,
-          lte: endOfDay
-        }
-      },
-      orderBy: {
-        startTime: 'asc',
-      },
-    });
-    
-    console.log(`Found ${customSlots.length} custom slots for date:`, selectedDate);
-    if (customSlots.length > 0) {
-      console.log('Custom slots:', customSlots);
-    }
-    
-    // Get weekly booking calendar settings
-    const userSettings = await prisma.userSettings.findUnique({
+    // Get custom time slots for the selected date
+    const customTimeSlots = await prisma.customTimeSlot.findMany({
       where: {
         userId: userId,
-      },
+        startTime: {
+          gte: selectedDate,
+          lt: nextDay
+        }
+      }
     });
 
-    if (!userSettings) {
-      return NextResponse.json({ slots: [] });
-    }
-
-    const calendarSettings = await prisma.bookingCalendarSettings.findUnique({
+    // Get blocked dates
+    const blockedDate = await prisma.blockedDate.findFirst({
       where: {
-        userId: userSettings.id,
-      },
+        userId: userId,
+        date: {
+          gte: selectedDate,
+          lt: nextDay
+        }
+      }
     });
 
-    // Initialize available slots array
+    // Get booking calendar settings
+    const bookingSettings = await prisma.bookingCalendarSettings.findFirst({
+      where: {
+        userSettings: {
+          userId: userId
+        }
+      }
+    });
+
+    // Helper function to calculate end time
+    const calculateEndTime = (startTime: string, durationMinutes: number): string => {
+      const [hours, minutes] = startTime.split(':').map(Number);
+      let totalMinutes = hours * 60 + minutes + durationMinutes;
+      const endHours = Math.floor(totalMinutes / 60);
+      const endMinutes = totalMinutes % 60;
+      return `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
+    };
+
     let availableSlots: TimeSlot[] = [];
-    
-    // First add weekly slots from calendar settings
-    if (calendarSettings && calendarSettings.timeSlots) {
-      try {
-        const weeklySlots = JSON.parse(calendarSettings.timeSlots as string);
-        
-        // Get slots for this day of the week
-        if (weeklySlots[dayOfWeek] && weeklySlots[dayOfWeek].length > 0) {
-          // Process each weekly slot
-          weeklySlots[dayOfWeek].forEach((slot: any) => {
-            // For each configuration, we need to generate all individual time slots
-            // by incrementing the start time by the duration until we reach the end time
-            let currentHour = parseInt(slot.startTime.split(':')[0]);
-            let currentMinute = parseInt(slot.startTime.split(':')[1]);
-            const endHour = parseInt(slot.endTime.split(':')[0]);
-            const endMinute = parseInt(slot.endTime.split(':')[1]);
-            const duration = slot.duration;
-            
-            // Generate all time slots between start and end time
-            while (
-              currentHour < endHour || 
-              (currentHour === endHour && currentMinute < endMinute)
-            ) {
-              // Format the current time as a slot
-              const timeSlot = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
-              
-              // Calculate end time based on duration
-              let endHour = currentHour;
-              let endMinute = currentMinute + duration;
-              
-              // Adjust if minutes overflow
-              while (endMinute >= 60) {
-                endHour++;
-                endMinute -= 60;
-              }
-              
-              const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
-              
-              // Check if this regular slot is overridden by a custom slot
-              const isOverridden = customSlots.some((customSlot: any) => 
-                customSlot.startTime === timeSlot && 
-                (customSlot.overrideRegular || customSlot.maxSlots === 0)
-              );
-              
-              if (!isOverridden) {
-                // Add this slot to available slots
-                availableSlots.push({
-                  slot: timeSlot,
-                  startTime: timeSlot,
-                  endTime: endTime,
-                  duration: duration,
-                  maxSlots: slot.maxBookings,
-                  isCustom: false
-                });
-              }
-              
-              // Increment to the next slot based on duration
-              currentMinute += duration;
-              while (currentMinute >= 60) {
-                currentHour++;
-                currentMinute -= 60;
-              }
-            }
+
+    // Generate default time slots if no custom slots exist
+    if (!customTimeSlots.length) {
+      // Generate slots from 9 AM to 5 PM with 30-minute intervals
+      const startHour = 9;
+      const endHour = 17;
+      const interval = 30; // minutes
+
+      for (let hour = startHour; hour < endHour; hour++) {
+        for (let minute = 0; minute < 60; minute += interval) {
+          const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+          availableSlots.push({
+            slot: time,
+            startTime: time,
+            endTime: calculateEndTime(time, interval),
+            duration: interval,
+            isCustom: false,
+            maxSlots: 1
           });
         }
-      } catch (error) {
-        console.error("Error parsing weekly time slots:", error);
       }
     }
-    
-    // Now add custom slots - these are additional slots for specific dates
-    if (customSlots.length > 0) {
-      customSlots.forEach((slot: any) => {
-        // Only add custom slots that aren't marked for deletion (maxSlots > 0)
-        if (slot.maxSlots > 0) {
-          // Calculate end time based on start time and duration
-          const [startHour, startMinute] = slot.startTime.split(':').map(Number);
-          let endHour = startHour;
-          let endMinute = startMinute + slot.duration;
-          
-          // Adjust if minutes overflow
-          while (endMinute >= 60) {
-            endHour++;
-            endMinute -= 60;
-          }
-          
-          const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
-          
-          availableSlots.push({
-            slot: slot.startTime,
-            startTime: slot.startTime,
-            endTime: endTime,
-            duration: slot.duration,
-            maxSlots: slot.maxSlots,
-            id: slot.id,
-            isCustom: true
-          });
-        }
+
+    // Add custom time slots
+    if (customTimeSlots.length > 0) {
+      customTimeSlots.forEach(slot => {
+        availableSlots.push({
+          slot: format(slot.startTime, 'HH:mm'),
+          startTime: format(slot.startTime, 'HH:mm'),
+          endTime: format(slot.endTime, 'HH:mm'),
+          duration: Math.round((slot.endTime.getTime() - slot.startTime.getTime()) / (1000 * 60)),
+          isCustom: true,
+          maxSlots: 1
+        });
       });
-      
-      console.log('After adding custom slots, available slots include:', 
-        availableSlots.filter(slot => slot.isCustom === true).map(slot => ({
-          slot: slot.slot,
-          startTime: slot.startTime,
-          endTime: slot.endTime,
-          isCustom: slot.isCustom
-        }))
-      );
     }
 
-    // Sort slots by time
-    availableSlots.sort((a, b) => {
-      if (a.slot < b.slot) return -1;
-      if (a.slot > b.slot) return 1;
-      return 0;
-    });
-
     // Filter out booked slots
-    const bookedSlots = new Set(existingBookings.map((booking: { slot: string }) => booking.slot));
-    availableSlots = availableSlots.filter((slot) => !bookedSlots.has(slot.slot));
+    const bookedSlots = new Set(existingBookings.map(booking => 
+      `${booking.startTime.toISOString()}-${booking.endTime.toISOString()}`
+    ));
+    availableSlots = availableSlots.filter(slot => 
+      !bookedSlots.has(`${slot.startTime}-${slot.endTime}`)
+    );
 
     // Filter slots based on current time for same-day bookings
     const now = new Date();
-    const isToday = selectedDate.toDateString() === now.toDateString();
-    
-    if (isToday) {
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      
-      availableSlots = availableSlots.filter(({ slot }) => {
-        const [hour, minute] = slot.split(':').map(Number);
-        return hour > currentHour || (hour === currentHour && minute > currentMinute);
+    if (selectedDate.toDateString() === now.toDateString()) {
+      availableSlots = availableSlots.filter(slot => {
+        const [hours, minutes] = slot.slot.split(':').map(Number);
+        const slotTime = new Date();
+        slotTime.setHours(hours, minutes, 0, 0);
+        return slotTime > now;
       });
     }
-
-    // Check if the date is blocked
-    const blockedDate = await prisma.blockedDate.findFirst({
-      where: {
-        userId,
-        date: {
-          gte: startOfDay,
-          lte: endOfDay
-        }
-      },
-    });
 
     // If the date is blocked, return empty slots array
     if (blockedDate) {
