@@ -48,6 +48,7 @@ model User {
   image               String?
   password            String?
   stripeId            String?
+  role                Role                 @default(USER)
   accounts            Account[]
   sessions            Session[]
   subscription        Billings?
@@ -428,8 +429,9 @@ enum Plans {
 }
 
 enum Role {
-  user
-  assistant
+  ADMIN
+  USER
+  ASSISTANT
 }
 
 enum KnowledgeType {
@@ -451,7 +453,7 @@ model Invitation {
   company   String?
   token     String          @unique
   status    InvitationStatus @default(PENDING)
-  role      Role            @default(user)
+  role      Role            @default(USER)
   expiresAt DateTime
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt

@@ -3,11 +3,13 @@ import GoogleProvider from "next-auth/providers/google";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import prisma from "./prisma";
+import { PrismaAdapter } from "@auth/prisma-adapter";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
 
 export const authConfig: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({
       clientId: GOOGLE_CLIENT_ID,
@@ -25,27 +27,51 @@ export const authConfig: NextAuthOptions = {
         where: {
           email: profile.email,
         },
+        include: {
+          accounts: true,
+        },
       });
 
-      // If the user does not exist, create a new one
-      if (!existingUser) {
-        const freePlan = await prisma.billings.create({
-          data: {
-            plan: "STANDARD",
-            credits: 10,
-          },
-        });
-
-        await prisma.user.create({
-          data: {
-            email: profile.email,
-            name: profile.name || profile.email,
-            subscription: {
-              connect: { id: freePlan.id },
+      // If user exists and has no Google account, allow linking
+      if (existingUser) {
+        const hasGoogleAccount = existingUser.accounts.some(
+          (acc) => acc.provider === "google"
+        );
+        if (!hasGoogleAccount) {
+          // Create a new account link
+          await prisma.account.create({
+            data: {
+              userId: existingUser.id,
+              type: (account?.type ?? "oauth") as string,
+              provider: (account?.provider ?? "google") as string,
+              providerAccountId: (account?.providerAccountId ?? profile.sub) as string,
+              access_token: account?.access_token ?? null,
+              token_type: account?.token_type ?? null,
+              scope: account?.scope ?? null,
+              id_token: account?.id_token ?? null,
             },
-          },
-        });
+          });
+        }
+        return true;
       }
+
+      // If user doesn't exist, create new user
+      const freePlan = await prisma.billings.create({
+        data: {
+          plan: "STANDARD",
+          credits: 10,
+        },
+      });
+
+      await prisma.user.create({
+        data: {
+          email: profile.email,
+          name: profile.name || profile.email,
+          subscription: {
+            connect: { id: freePlan.id },
+          },
+        },
+      });
 
       return true;
     },
@@ -56,6 +82,7 @@ export const authConfig: NextAuthOptions = {
         });
         if (dbUser) {
           token.id = dbUser.id;
+          token.role = dbUser.role;
         }
         token.access_token = user.access_token;
       }
@@ -64,6 +91,7 @@ export const authConfig: NextAuthOptions = {
     async session({ session, token, user }) {
       if (token.id) {
         session.user.id = token.id as string;
+        session.user.role = token.role as string;
       }
       session.user.access_token = token.access_token;
       return session;
@@ -74,7 +102,7 @@ export const authConfig: NextAuthOptions = {
       // Allows callback URLs on the same origin
       else if (new URL(url).origin === baseUrl) return url;
       return baseUrl;
-    },
+    }
   },
   session: {
     strategy: "jwt",
@@ -82,6 +110,7 @@ export const authConfig: NextAuthOptions = {
   },
   pages: {
     signIn: "/auth/sign-in",
+    error: "/auth/error",
   },
 };
 
