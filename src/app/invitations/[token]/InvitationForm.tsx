@@ -39,7 +39,7 @@ export default function InvitationForm({ token }: Props) {
       setIsLoading(true);
       setError('');
 
-      const response = await fetch(`/api/invitations/${token}`, {
+      const response = await fetch(`/admin/invitations/${token}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

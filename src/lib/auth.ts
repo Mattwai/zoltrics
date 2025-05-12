@@ -67,8 +67,20 @@ export const authConfig: NextAuthOptions = {
         data: {
           email: profile.email,
           name: profile.name || profile.email,
+          role: "USER",
           subscription: {
             connect: { id: freePlan.id },
+          },
+          accounts: {
+            create: {
+              type: (account?.type ?? "oauth") as string,
+              provider: (account?.provider ?? "google") as string,
+              providerAccountId: (account?.providerAccountId ?? profile.sub) as string,
+              access_token: account?.access_token ?? null,
+              token_type: account?.token_type ?? null,
+              scope: account?.scope ?? null,
+              id_token: account?.id_token ?? null,
+            },
           },
         },
       });
@@ -79,6 +91,10 @@ export const authConfig: NextAuthOptions = {
       if (user) {
         const dbUser = await prisma.user.findUnique({
           where: { email: user.email as string },
+          select: {
+            id: true,
+            role: true,
+          },
         });
         if (dbUser) {
           token.id = dbUser.id;
@@ -88,12 +104,12 @@ export const authConfig: NextAuthOptions = {
       }
       return token;
     },
-    async session({ session, token, user }) {
-      if (token.id) {
+    async session({ session, token }) {
+      if (token) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
+        session.user.access_token = token.access_token;
       }
-      session.user.access_token = token.access_token;
       return session;
     },
     async redirect({ url, baseUrl }) {
