@@ -32,7 +32,7 @@ const Page = async (props: Props) => {
             />
           </div>
           <BillingSettings />
-          {/* <DarkModetoggle /> */}
+          <DarkModetoggle />
         </div>
       </div>
     </div>
