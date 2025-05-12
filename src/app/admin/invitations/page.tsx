@@ -1,11 +1,39 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import InvitationList from './InvitationList';
 import CreateInvitationForm from './CreateInvitationForm';
 
 export default function InvitationsPage() {
   const [refreshKey, setRefreshKey] = useState(0);
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Redirect if user is not authenticated or not an admin
+    if (status === 'unauthenticated') {
+      router.push('/auth/sign-in');
+    } else if (status === 'authenticated') {
+      if (session?.user && session.user.role !== 'ADMIN') {
+        router.push('/dashboard');
+      } else {
+        setIsLoading(false);
+      }
+    }
+  }, [session, status, router]);
+
+  // Show loading state while checking auth
+  if (status === 'loading' || isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
+
+  // Additional safety check to ensure admin access
+  if (session?.user?.role !== 'ADMIN') {
+    return null; // Don't render anything if not admin (will be redirected by useEffect)
+  }
 
   const handleInvitationCreated = () => {
     setRefreshKey(prev => prev + 1);

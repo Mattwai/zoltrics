@@ -4,8 +4,9 @@ import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
 export async function middleware(request: NextRequest) {
-  // Skip middleware for auth routes
-  if (request.nextUrl.pathname.startsWith('/auth')) {
+  // Skip middleware for auth routes and invitation acceptance routes
+  if (request.nextUrl.pathname.startsWith('/auth') || 
+      request.nextUrl.pathname.startsWith('/invitations')) {
     return NextResponse.next();
   }
 
@@ -19,8 +20,9 @@ export async function middleware(request: NextRequest) {
   // Get user role from token
   const userRole = token.role as string;
 
-  // Check if the user is trying to access admin routes
-  if (request.nextUrl.pathname.startsWith('/api/admin')) {
+  // Check if the user is trying to access admin routes (either API or pages)
+  if (request.nextUrl.pathname.startsWith('/api/admin') || 
+      request.nextUrl.pathname.startsWith('/admin')) {
     // Only allow access if user has admin role
     if (userRole !== 'ADMIN') {
       return NextResponse.redirect(new URL('/dashboard', request.url));
@@ -40,5 +42,6 @@ export const config = {
     "/conversation/:path*",
     "/settings/:path*",
     "/api/admin/:path*",
+    "/admin/:path*",
   ],
 };

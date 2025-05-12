@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { randomBytes } from 'crypto';
-import { sendInvitationEmail } from '@/lib/email';
+import emailService from '@/lib/email';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth';
 
@@ -101,12 +101,26 @@ export async function POST(request: Request) {
       },
     });
 
-    // Send invitation email
-    await sendInvitationEmail({
+    // Send invitation email but handle failures gracefully
+    const emailResult = await emailService.sendInvitationEmail({
       email: invitation.email,
       name: invitation.name || invitation.email,
       token: invitation.token,
     });
+
+    // Return result with email status
+    if (!emailResult.success) {
+      console.error('Failed to send invitation email:', emailResult.error);
+      return NextResponse.json({
+        message: 'Invitation created but email failed to send',
+        emailError: emailResult.error,
+        invitation: {
+          id: invitation.id,
+          email: invitation.email,
+          expiresAt: invitation.expiresAt,
+        },
+      });
+    }
 
     return NextResponse.json({
       message: 'Invitation sent successfully',

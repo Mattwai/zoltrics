@@ -1,28 +1,26 @@
 "use server";
-import nodemailer from "nodemailer";
+import emailService from '@/lib/email';
 
-export const onMailer = (email: string) => {
-  const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
-    auth: {
-      user: process.env.NODE_MAILER_EMAIL,
-      pass: process.env.NODE_MAILER_GMAIL_APP_PASSWORD,
-    },
-  });
-
-  const mailOptions = {
-    to: email,
-    subject: "Realtime Support",
-    text: "One of your customers on Zoltrics, just switched to realtime mode",
-  };
-
-  transporter.sendMail(mailOptions, function (error, info) {
-    if (error) {
-      console.log(error);
-    } else {
-      console.log("Email sent: " + info.response);
+export const onMailer = async (email: string) => {
+  try {
+    const result = await emailService.sendEmail({
+      to: email,
+      subject: "Realtime Support",
+      html: "<p>One of your customers on Zoltrics, just switched to realtime mode</p>",
+      text: "One of your customers on Zoltrics, just switched to realtime mode",
+    });
+    
+    if (!result.success) {
+      console.error('Failed to send realtime support email:', result.error);
+      return { success: false, error: result.error };
     }
-  });
+    
+    return { success: true, messageId: result.messageId };
+  } catch (error) {
+    console.error('Error in onMailer:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error sending email' 
+    };
+  }
 };

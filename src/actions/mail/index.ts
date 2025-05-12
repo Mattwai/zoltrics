@@ -4,6 +4,7 @@ import { authConfig } from "@/lib/auth";
 import { client } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import nodemailer from "nodemailer";
+import emailService from "@/lib/email";
 
 export const onGetAllCustomers = async (id: string) => {
   try {
@@ -151,30 +152,20 @@ export const onBulkMailer = async (email: string[], campaignId: string) => {
     });
 
     if (template && template.template) {
-      const transporter = nodemailer.createTransport({
-        host: "smtp.gmail.com",
-        port: 465,
-        secure: true,
-        auth: {
-          user: process.env.NODE_MAILER_EMAIL,
-          pass: process.env.NODE_MAILER_GMAIL_APP_PASSWORD,
-        },
-      });
-
-      const mailOptions = {
-        to: email,
+      // Use the centralized email service's bulk email method
+      const emailResult = await emailService.sendBulkEmail({
+        recipients: email,
         subject: template.name,
-        text: JSON.parse(template.template),
-      };
-
-      transporter.sendMail(mailOptions, function (error, info) {
-        if (error) {
-          console.log(error);
-        } else {
-          console.log("Email sent: " + info.response);
-        }
+        content: JSON.parse(template.template),
+        isHtml: false
       });
+      
+      if (!emailResult.success) {
+        console.error('Failed to send bulk emails:', emailResult.error);
+        return { status: 500, message: "Failed to send campaign emails" };
+      }
 
+      // Update credits in user account
       const creditsUsed = await client.user.update({
         where: {
           id: session.user.id,
@@ -187,12 +178,19 @@ export const onBulkMailer = async (email: string[], campaignId: string) => {
           },
         },
       });
+      
       if (creditsUsed) {
-        return { status: 200, message: "Campaign emails sent" };
+        return { 
+          status: 200, 
+          message: `Campaign emails sent to ${emailResult.sentCount} recipients` 
+        };
       }
     }
+    
+    return { status: 404, message: "Campaign template not found" };
   } catch (error) {
-    console.log(error);
+    console.error('Error in bulk mailer:', error);
+    return { status: 500, message: "An error occurred sending campaign emails" };
   }
 };
 

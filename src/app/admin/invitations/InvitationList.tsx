@@ -17,6 +17,12 @@ export default function InvitationList() {
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [resendStatus, setResendStatus] = useState<{
+    id: string | null;
+    loading: boolean;
+    error?: string;
+    success?: string;
+  }>({ id: null, loading: false });
 
   useEffect(() => {
     fetchInvitations();
@@ -36,6 +42,49 @@ export default function InvitationList() {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResendInvitation = async (id: string) => {
+    setResendStatus({ id, loading: true });
+    
+    try {
+      const response = await fetch(`/api/admin/invitations/${id}/resend`, {
+        method: 'POST',
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to resend invitation');
+      }
+      
+      // Show success message
+      setResendStatus({ 
+        id, 
+        loading: false, 
+        success: 'Invitation resent!' 
+      });
+      
+      // Refresh the invitations list
+      fetchInvitations();
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setResendStatus(prev => ({ ...prev, success: undefined, id: null }));
+      }, 3000);
+      
+    } catch (err) {
+      setResendStatus({ 
+        id, 
+        loading: false, 
+        error: err instanceof Error ? err.message : 'Failed to resend invitation'
+      });
+      
+      // Clear error message after 3 seconds
+      setTimeout(() => {
+        setResendStatus(prev => ({ ...prev, error: undefined, id: null }));
+      }, 3000);
     }
   };
 
@@ -82,6 +131,9 @@ export default function InvitationList() {
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Created
             </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Actions
+            </th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
@@ -114,6 +166,29 @@ export default function InvitationList() {
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {format(new Date(invitation.createdAt), 'MMM d, yyyy')}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                {invitation.status !== 'ACCEPTED' && (
+                  <div className="flex items-center">
+                    <button
+                      onClick={() => handleResendInvitation(invitation.id)}
+                      disabled={resendStatus.loading && resendStatus.id === invitation.id}
+                      className="text-indigo-600 hover:text-indigo-900 mr-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {resendStatus.loading && resendStatus.id === invitation.id 
+                        ? 'Sending...' 
+                        : 'Resend'}
+                    </button>
+                    
+                    {resendStatus.id === invitation.id && resendStatus.error && (
+                      <span className="text-red-500 text-xs">{resendStatus.error}</span>
+                    )}
+                    
+                    {resendStatus.id === invitation.id && resendStatus.success && (
+                      <span className="text-green-500 text-xs">{resendStatus.success}</span>
+                    )}
+                  </div>
+                )}
               </td>
             </tr>
           ))}

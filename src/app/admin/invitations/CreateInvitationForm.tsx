@@ -51,7 +51,14 @@ export default function CreateInvitationForm({ onInvitationCreated }: Props) {
         throw new Error(result.error || 'Failed to create invitation');
       }
 
-      setSuccess('Invitation sent successfully');
+      // Check for email errors that might be included in the response
+      if (result.emailError) {
+        setSuccess('Invitation created but email failed to send. Error: ' + result.emailError);
+        console.warn('Email failed to send:', result.emailError);
+      } else {
+        setSuccess('Invitation sent successfully');
+      }
+      
       reset();
       onInvitationCreated?.();
     } catch (err) {
