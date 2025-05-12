@@ -1,14 +1,20 @@
 import json
 import pickle
 import sys
+import os
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 
 def load_model_and_scaler():
-    with open('models/deposit-predictor-model.pkl', 'rb') as f:
+    # Get the directory where this script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.join(script_dir, 'models', 'deposit-predictor-model.pkl')
+    scaler_path = os.path.join(script_dir, 'models', 'deposit-predictor-scaler.pkl')
+    
+    with open(model_path, 'rb') as f:
         model = pickle.load(f)
-    with open('models/deposit-predictor-scaler.pkl', 'rb') as f:
+    with open(scaler_path, 'rb') as f:
         scaler = pickle.load(f)
     return model, scaler
 
@@ -28,10 +34,9 @@ def predict_risk(features_dict):
     return risk_score
 
 if __name__ == "__main__":
-    # Read input JSON from stdin
-    input_data = sys.stdin.read()
     try:
-        features_dict = json.loads(input_data)
+        # Read input JSON from command line argument
+        features_dict = json.loads(sys.argv[1])
         risk_score = predict_risk(features_dict)
         # Output result as JSON
         print(json.dumps({"risk_score": risk_score}))

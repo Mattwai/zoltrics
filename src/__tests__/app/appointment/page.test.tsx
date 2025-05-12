@@ -18,7 +18,7 @@ jest.mock('@/components/appointment/all-appointment', () => ({
   )
 }));
 
-jest.mock('@/components/settings/booking-link', () => ({
+jest.mock('@/app/(dashboard)/appointment-settings/booking-link', () => ({
   __esModule: true,
   default: ({ userId, initialBookingLink, baseUrl }: { userId: string, initialBookingLink: string | null, baseUrl: string }) => (
     <div data-testid="mock-booking-link">
@@ -40,6 +40,17 @@ jest.mock('@/components/section-label', () => ({
 jest.mock('next-auth', () => ({
   getServerSession: jest.fn().mockResolvedValue({
     user: { id: 'test-user-id', name: 'Test User' }
+  })
+}));
+
+// Mock the settings actions
+jest.mock('@/actions/settings', () => ({
+  onGetUser: jest.fn().mockResolvedValue({
+    id: 'test-user-id',
+    name: 'Test User',
+    userBusinessProfile: {
+      bookingLink: 'test-booking-link'
+    }
   })
 }));
 

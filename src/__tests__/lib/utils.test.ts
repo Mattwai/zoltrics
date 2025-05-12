@@ -43,9 +43,9 @@ describe('Utility Functions', () => {
     });
 
     it('extracts URLs with paths and query parameters', () => {
-      const textWithURL = 'Check this link: https://example.com/products?id=123&category=electronics';
+      const textWithURL = 'Check this link: https://example.com/services?id=123&category=electronics';
       const result = extractURLfromString(textWithURL);
-      expect(result && result[0]).toBe('https://example.com/products?id=123&category=electronics');
+      expect(result && result[0]).toBe('https://example.com/services?id=123&category=electronics');
     });
 
     it('extracts http URLs', () => {

@@ -1,9 +1,10 @@
 "use client";
 import { Loader } from "@/components/loader";
-import { StripeElements } from "@/components/settings/stripe-elements";
-import SubscriptionCard from "@/components/settings/subscription-card";
+import { StripeElements } from "@/components/subscription/stripe-elements";
+import SubscriptionCard from "@/components/subscription/subscription-card";
 import { Button } from "@/components/ui/button";
 import { useSubscriptions } from "@/hooks/billing/use-billing";
+import { pricingCards } from "@/constants/pricing-cards";
 
 type Props = {
   plan: "STANDARD" | "PROFESSIONAL" | "BUSINESS";
@@ -17,34 +18,19 @@ const SubscriptionForm = ({ plan }: Props) => {
     <Loader loading={loading}>
       <div className="flex flex-col gap-5">
         <div className="flex flex-col gap-3">
-          <SubscriptionCard
-            title="STANDARD"
-            description="Perfect if you’re just getting started with Zoltrics"
-            price="0"
-            payment={payment}
-            onPayment={onSetPayment}
-            id="STANDARD"
-          />
-
-          <SubscriptionCard
-            title="PRO"
-            description="Perfect if you’re just getting started with Zoltrics"
-            price="15"
-            payment={payment}
-            onPayment={onSetPayment}
-            id="PRO"
-          />
-
-          <SubscriptionCard
-            title="BUSINESS"
-            description="Perfect if you’re just getting started with Zoltrics"
-            price="35"
-            payment={payment}
-            onPayment={onSetPayment}
-            id="BUSINESS"
-          />
+          {pricingCards.map((card) => (
+            <SubscriptionCard
+              key={card.title}
+              title={card.title}
+              description={card.description}
+              price={card.price.replace("$", "")}
+              payment={payment}
+              onPayment={onSetPayment}
+              id={card.title.toUpperCase()}
+            />
+          ))}
         </div>
-        <StripeElements payment={payment} />
+        {payment !== "STANDARD" && <StripeElements payment={payment} />}
         {payment === "STANDARD" && (
           <Button onClick={onUpdatetToFreTier}>
             <Loader loading={loading}>Confirm</Loader>

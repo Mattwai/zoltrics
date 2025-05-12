@@ -46,12 +46,12 @@ const formSchema = z.object({
     required_error: "Please select a date",
   }),
   time: z.string().min(1, "Please select a time"),
-  productId: z.string().min(1, "Please select a product"),
+  productId: z.string().min(1, "Please select a service"),
 });
 
 type BookingFormProps = {
   userId: string;
-  products: {
+  services: {
     id: string;
     name: string;
     price: number;
@@ -59,7 +59,7 @@ type BookingFormProps = {
   }[];
 };
 
-const BookingForm = ({ userId, products }: BookingFormProps) => {
+const BookingForm = ({ userId, services }: BookingFormProps) => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -81,6 +81,7 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
     defaultValues: {
       name: session?.user?.name || "",
       email: session?.user?.email || "",
+      productId: "",
     },
   });
 
@@ -207,6 +208,7 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      setIsLoading(true);
       const response = await fetch("/api/bookings", {
         method: "POST",
         headers: {
@@ -218,6 +220,7 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
           date: values.date,
           slot: values.time,
           userId: userId,
+          serviceId: values.productId,
           isAuthenticated: !!session,
           googleUserId: session?.user?.id || null,
         }),
@@ -251,6 +254,8 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
       }
     } catch (error) {
       console.error("Error creating booking:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -275,7 +280,7 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
         </p>
         <Button
           onClick={() => signIn("google")}
-          className="w-full flex items-center justify-center space-x-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+          className="w-full flex items-center justify-center space-x-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 transition-colors"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -308,7 +313,7 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
         <Button
           onClick={() => setIsGuest(true)}
           variant="outline"
-          className="w-full"
+          className="w-full hover:bg-gray-50 transition-colors"
         >
           Continue as guest
         </Button>
@@ -338,9 +343,11 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
   if (isSubmitted) {
     return (
       <div className="flex flex-col items-center justify-center py-8 space-y-4">
-        <CheckCircle className="w-16 h-16 text-green-500" />
+        <div className="bg-green-50 p-4 rounded-full">
+          <CheckCircle className="w-16 h-16 text-green-500" />
+        </div>
         <h2 className="text-2xl font-semibold">Booking Confirmed!</h2>
-        <p className="text-center">
+        <p className="text-center text-gray-600">
           Thank you for booking your appointment. You will receive a
           confirmation email shortly.
           {session &&
@@ -354,51 +361,63 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Your name" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-base">Name</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="Your name" 
+                    {...field} 
+                    className="h-11"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input placeholder="Your email" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-base">Email</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="Your email" 
+                    {...field} 
+                    className="h-11"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <FormField
           control={form.control}
           name="productId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Select a Service</FormLabel>
+              <FormLabel className="text-base">Select a Service</FormLabel>
               <select
-                className="w-full rounded-md border border-input bg-background px-3 py-2"
+                className="w-full h-11 rounded-md border border-input bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
                 {...field}
+                value={field.value || ""}
+                onChange={(e) => field.onChange(e.target.value)}
               >
                 <option value="">Select a service</option>
-                {products
-                  .filter((product) => product.isLive)
-                  .map((product) => (
-                    <option key={product.id} value={product.id}>
-                      {product.name} - ${product.price}
+                {services
+                  .filter((service) => service.isLive)
+                  .map((service) => (
+                    <option key={service.id} value={service.id}>
+                      {service.name} - ${service.price}
                     </option>
                   ))}
               </select>
@@ -407,116 +426,138 @@ const BookingForm = ({ userId, products }: BookingFormProps) => {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="date"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Date</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full pl-3 text-left font-normal",
-                        !field.value && "text-muted-foreground"
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={async (date) => {
-                      field.onChange(date);
-                      await handleDateChange(date);
-                    }}
-                    disabled={(date) =>
-                      date < new Date(new Date().setHours(0, 0, 0, 0)) ||
-                      date >
-                        new Date(new Date().setMonth(new Date().getMonth() + 3))
-                    }
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="time"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Time</FormLabel>
-              <div className="grid grid-cols-2 gap-2 mt-2 max-h-[200px] overflow-y-auto">
-                {isLoading ? (
-                  <div className="col-span-2 text-center py-4">
-                    Loading available time slots...
-                  </div>
-                ) : availableTimeSlots.length > 0 ? (
-                  availableTimeSlots.map((slot, index) => (
-                    <Button
-                      type="button"
-                      key={index}
-                      variant={
-                        field.value === slot.slot ? "default" : "outline"
-                      }
-                      className={cn(
-                        "justify-start text-left h-auto py-2 flex flex-col items-start",
-                        field.value === slot.slot &&
-                          "bg-royalPurple text-black",
-                        slot.isCustom && "border-blue-400 border-2"
-                      )}
-                      onClick={() => {
-                        handleTimeSlotClick(slot);
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField
+            control={form.control}
+            name="date"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel className="text-base">Date</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full h-11 pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={async (date) => {
+                        field.onChange(date);
+                        await handleDateChange(date);
                       }}
-                    >
-                      <div className="font-medium">{slot.slot}</div>
-                      {slot.startTime && slot.endTime && (
-                        <div className="text-xs opacity-80">
-                          {slot.startTime} - {slot.endTime}
-                        </div>
-                      )}
-                      <div className="flex justify-between w-full text-xs mt-1">
-                        {slot.formattedDuration && (
-                          <span>{slot.formattedDuration}</span>
-                        )}
-                        {slot.slotsRemaining !== undefined && (
-                          <span className="ml-auto">
-                            {slot.slotsRemaining}{" "}
-                            {slot.slotsRemaining === 1 ? "slot" : "slots"} left
-                          </span>
-                        )}
-                      </div>
-                    </Button>
-                  ))
-                ) : (
-                  <div className="col-span-2 text-center py-4">
-                    <div className="text-gray-500 mb-2">
-                      No available time slots for this date
-                    </div>
-                  </div>
-                )}
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                      disabled={(date) =>
+                        date < new Date(new Date().setHours(0, 0, 0, 0)) ||
+                        date >
+                          new Date(new Date().setMonth(new Date().getMonth() + 3))
+                      }
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <Button type="submit" className="w-full mt-6">
-          Book Appointment
+          <FormField
+            control={form.control}
+            name="time"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-base">Time</FormLabel>
+                <div className="grid grid-cols-2 gap-2 mt-2 max-h-[200px] overflow-y-auto p-1">
+                  {isLoading ? (
+                    <div className="col-span-2 text-center py-4">
+                      <div className="animate-pulse flex space-x-4">
+                        <div className="flex-1 space-y-4 py-1">
+                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                          <div className="space-y-2">
+                            <div className="h-4 bg-gray-200 rounded"></div>
+                            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : availableTimeSlots.length > 0 ? (
+                    availableTimeSlots.map((slot, index) => (
+                      <Button
+                        type="button"
+                        key={index}
+                        variant={
+                          field.value === slot.slot ? "default" : "outline"
+                        }
+                        className={cn(
+                          "justify-start text-left h-auto py-3 px-4 flex flex-col items-start transition-all duration-200",
+                          field.value === slot.slot &&
+                            "bg-primary text-primary-foreground hover:bg-primary/90",
+                          slot.isCustom && "border-primary border-2",
+                          "hover:border-primary/50"
+                        )}
+                        onClick={() => {
+                          handleTimeSlotClick(slot);
+                        }}
+                      >
+                        <div className="font-medium">{slot.slot}</div>
+                        {slot.startTime && slot.endTime && (
+                          <div className="text-xs opacity-80">
+                            {slot.startTime} - {slot.endTime}
+                          </div>
+                        )}
+                        <div className="flex justify-between w-full text-xs mt-1">
+                          {slot.formattedDuration && (
+                            <span>{slot.formattedDuration}</span>
+                          )}
+                          {slot.slotsRemaining !== undefined && (
+                            <span className="ml-auto">
+                              {slot.slotsRemaining}{" "}
+                              {slot.slotsRemaining === 1 ? "slot" : "slots"} left
+                            </span>
+                          )}
+                        </div>
+                      </Button>
+                    ))
+                  ) : (
+                    <div className="col-span-2 text-center py-4">
+                      <div className="text-gray-500 mb-2">
+                        No available time slots for this date
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <Button 
+          type="submit" 
+          className="w-full h-11 text-base font-medium transition-colors"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <div className="flex items-center justify-center">
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+              Booking...
+            </div>
+          ) : (
+            "Book Appointment"
+          )}
         </Button>
       </form>
     </Form>

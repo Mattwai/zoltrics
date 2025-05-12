@@ -18,8 +18,7 @@ const BreadCrumb = (props: Props) => {
   } = useSideBar();
   return (
     <div className="flex flex-col ">
-      <div className="flex gap-5 items-center">
-        <h2 className="text-3xl font-bold capitalize pt-4">{page}</h2>
+        <h2 className="text-3xl font-bold text-gray-900 capitalize pt-4">{page}</h2>
         {page === "conversation" && chatRoom && (
           <Loader loading={loading} className="p-0 inline">
             <Switch
@@ -29,12 +28,11 @@ const BreadCrumb = (props: Props) => {
             />
           </Loader>
         )}
-      </div>
-      <p className="text-gray-500 text-sm py-2">
+        <p className="text-gray-600 mt-2">
         {page == "settings"
           ? "Manage your account settings, preferences and integrations"
           : page == "dashboard"
-          ? "A detailed overview of your metrics, usage, customers and more"
+          ? "Welcome back! Here's what's happening with your business today."
           : page == "appointment"
           ? "View and edit all your appointments"
           : page == "appointment-settings"
@@ -43,8 +41,8 @@ const BreadCrumb = (props: Props) => {
           ? "Connect third-party applications into Zoltrics"
           : "Modify domain settings, change chatbot options, enter sales questions and train your bot to do what you want it to."}
       </p>
-    </div>
+      </div>
   );
-};
+};                                                                                                                                                                                                                                                                                                                                                                                                                                               
 
 export default BreadCrumb;

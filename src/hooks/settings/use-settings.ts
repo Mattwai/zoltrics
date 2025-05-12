@@ -3,17 +3,19 @@ import {
   onCreateHelpDeskQuestion,
   onCreateKnowledgeBaseEntry,
   onGetAllKnowledgeBaseEntries,
-  onCreateNewDomainProduct,
+  onCreateNewDomainService,
   onDeleteUserDomain,
   onGetAllFilterQuestions,
   onGetAllHelpDeskQuestions,
   onUpdateDomain,
   onUpdateWelcomeMessage,
+  onDeleteHelpDeskQuestion,
+  onUpdateHelpDeskQuestion,
 } from "@/actions/settings";
 import { useToast } from "@/components/ui/use-toast";
 import {
-  AddProductProps,
-  AddProductSchema,
+  AddServiceProps,
+  AddServiceSchema,
   DomainSettingsProps,
   DomainSettingsSchema,
   FilterQuestionsProps,
@@ -25,8 +27,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, UseFormRegister } from "react-hook-form";
 import { z } from "zod";
+import { HelpDesk } from "@prisma/client";
 
 export const useThemeMode = () => {
   const { setTheme, theme } = useTheme();
@@ -98,57 +101,133 @@ export const useSettings = (id: string) => {
 };
 
 export const useHelpDesk = (id: string) => {
+  const [isQuestions, setIsQuestions] = useState<{
+    id: string;
+    question: string;
+    answer: string;
+  }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
   const {
     register,
-    formState: { errors },
     handleSubmit,
+    formState: { errors },
     reset,
   } = useForm<HelpDeskQuestionsProps>({
     resolver: zodResolver(HelpDeskQuestionsSchema),
   });
-  const { toast } = useToast();
 
-  const [loading, setLoading] = useState<boolean>(false);
-  const [isQuestions, setIsQuestions] = useState<
-    { id: string; question: string; answer: string }[]
-  >([]);
-  const onSubmitQuestion = handleSubmit(async (values) => {
-    setLoading(true);
-    const question = await onCreateHelpDeskQuestion(
-      id,
-      values.question,
-      values.answer
-    );
-    if (question) {
-      setIsQuestions(question.questions!);
+  const onSubmitQuestion = handleSubmit(async (data) => {
+    try {
+      setLoading(true);
+      const response = await onCreateHelpDeskQuestion(id, data.question, data.answer);
+
+      if (response?.status === 200) {
+        toast({
+          title: "Success",
+          description: "Question created successfully",
+        });
+        reset();
+        await getAllQuestions();
+      } else {
+        toast({
+          title: "Error",
+          description: response?.message || "Something went wrong",
+        });
+      }
+    } catch (error) {
       toast({
-        title: question.status == 200 ? "Success" : "Error",
-        description: question.message,
+        title: "Error",
+        description: "Something went wrong",
       });
+    } finally {
       setLoading(false);
-      reset();
     }
   });
 
-  const onGetQuestions = async () => {
-    setLoading(true);
-    const questions = await onGetAllHelpDeskQuestions(id);
-    if (questions) {
-      setIsQuestions(questions.questions);
+  const onDeleteQuestion = async (questionId: string) => {
+    try {
+      setLoading(true);
+      const response = await onDeleteHelpDeskQuestion(questionId);
+
+      if (response?.status === 200) {
+        toast({
+          title: "Success",
+          description: "Question deleted successfully",
+        });
+        await getAllQuestions();
+      } else {
+        toast({
+          title: "Error",
+          description: response?.message || "Something went wrong",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Something went wrong",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onUpdateQuestion = async (questionId: string, question: string, answer: string) => {
+    try {
+      setLoading(true);
+      const response = await onUpdateHelpDeskQuestion(questionId, question, answer);
+
+      if (response?.status === 200) {
+        toast({
+          title: "Success",
+          description: "Question updated successfully",
+        });
+        await getAllQuestions();
+      } else {
+        toast({
+          title: "Error",
+          description: response?.message || "Something went wrong",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Something went wrong",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getAllQuestions = async () => {
+    try {
+      setLoading(true);
+      const response = await onGetAllHelpDeskQuestions(id);
+      if (response?.status === 200) {
+        setIsQuestions(response.questions);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Something went wrong",
+      });
+    } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    onGetQuestions();
-  }, []);
+    getAllQuestions();
+  }, [id]);
 
   return {
     register,
-    onSubmitQuestion,
     errors,
+    onSubmitQuestion,
     isQuestions,
     loading,
+    onDeleteQuestion,
+    onUpdateQuestion,
   };
 };
 
@@ -203,65 +282,49 @@ export const useFilterQuestions = (userId: string) => {
   };
 };
 
-export const useProducts = (userId: string) => {
+export const useServices = (userId: string) => {
   const { toast } = useToast();
-  const [loading, setLoading] = useState<boolean>(false);
-  const {
-    register,
-    reset,
-    formState: { errors },
-    handleSubmit,
-  } = useForm<AddProductProps>({
-    resolver: zodResolver(AddProductSchema),
+  const { register: originalRegister, handleSubmit, formState: { errors } } = useForm<AddServiceProps>({
+    resolver: zodResolver(AddServiceSchema)
   });
 
-  const onCreateNewProduct = handleSubmit(async (values) => {
-    try {
-      setLoading(true);
-      // Get the first domain ID from the user's domains
-      const response = await fetch("/api/user");
-      if (!response.ok) {
-        throw new Error("Failed to fetch user data");
-      }
-      const userData = await response.json();
-      const domainId = userData.domains[0]?.id || userId; // Use userId if no domain exists
+  const register = originalRegister as UseFormRegister<any>;
 
-      const result = await onCreateNewDomainProduct(
-        domainId,
+  const onCreateNewService = handleSubmit(async (values) => {
+    try {
+      const result = await onCreateNewDomainService(
+        userId,
         values.name,
-        values.price
+        Number(values.price)
       );
 
       if (result?.status === 200) {
         toast({
           title: "Success",
-          description: "Product created successfully",
+          description: "Service created successfully",
         });
-        reset();
       } else {
         toast({
           title: "Error",
-          description: result?.message || "Failed to create product",
+          description: result?.message || "Failed to create service",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error("Error creating product:", error);
+      console.error("Error creating service:", error);
       toast({
         title: "Error",
-        description: "Failed to create product. Please try again.",
+        description: "Failed to create service. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   });
 
   return {
-    onCreateNewProduct,
+    onCreateNewService,
     register,
     errors,
-    loading,
+    loading: false,
   };
 };
 

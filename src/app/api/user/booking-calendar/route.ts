@@ -13,23 +13,37 @@ export async function POST(req: Request) {
       );
     }
 
-    const { availableDays, timeSlots, startDate } = await req.json();
+    const { availableDays, timeSlots, dayTimeSlots, startDate } = await req.json();
     
-    // Update or create booking calendar settings
-    const settings = await prisma.bookingCalendarSettings.upsert({
+    // First ensure UserSettings exists
+    const userSettings = await prisma.userSettings.upsert({
       where: {
         userId: session.user.id,
       },
-      update: {
-        availableDays,
-        timeSlots: JSON.stringify(timeSlots),
-        startDate: new Date(startDate),
-      },
       create: {
         userId: session.user.id,
-        availableDays,
-        timeSlots: JSON.stringify(timeSlots),
-        startDate: new Date(startDate),
+      },
+      update: {},
+    });
+
+    // Now create or update booking calendar settings
+    // Store both the day-indexed timeSlots and the dayTimeSlots object
+    const settingsData = {
+      timeZone: JSON.stringify({
+        timeSlots,
+        dayTimeSlots,
+        availableDays
+      }),
+    };
+
+    const settings = await prisma.bookingCalendarSettings.upsert({
+      where: {
+        userSettingsId: userSettings.id,
+      },
+      update: settingsData,
+      create: {
+        userSettingsId: userSettings.id,
+        ...settingsData,
       },
     });
 
@@ -53,11 +67,91 @@ export async function GET(req: Request) {
       );
     }
 
-    const settings = await prisma.bookingCalendarSettings.findUnique({
+    // First get the UserSettings
+    const userSettings = await prisma.userSettings.findUnique({
       where: {
         userId: session.user.id,
       },
     });
+
+    if (!userSettings) {
+      // Create UserSettings if it doesn't exist
+      const newUserSettings = await prisma.userSettings.create({
+        data: {
+          userId: session.user.id,
+        },
+      });
+
+      // Create default BookingCalendarSettings
+      const defaultSettings = await prisma.bookingCalendarSettings.create({
+        data: {
+          userSettingsId: newUserSettings.id,
+          timeZone: JSON.stringify({
+            dayTimeSlots: {
+              "Monday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Tuesday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Wednesday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Thursday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Friday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Saturday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Sunday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+            },
+            availableDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+            // For backward compatibility
+            timeSlots: {
+              0: [], // Sunday
+              1: [], // Monday
+              2: [], // Tuesday
+              3: [], // Wednesday
+              4: [], // Thursday
+              5: [], // Friday
+              6: [], // Saturday
+            }
+          }),
+        },
+      });
+
+      return NextResponse.json(defaultSettings);
+    }
+
+    const settings = await prisma.bookingCalendarSettings.findUnique({
+      where: {
+        userSettingsId: userSettings.id,
+      },
+    });
+
+    if (!settings) {
+      // Create default BookingCalendarSettings if it doesn't exist
+      const defaultSettings = await prisma.bookingCalendarSettings.create({
+        data: {
+          userSettingsId: userSettings.id,
+          timeZone: JSON.stringify({
+            dayTimeSlots: {
+              "Monday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Tuesday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Wednesday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Thursday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Friday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Saturday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+              "Sunday": { startTime: "9:00 AM", endTime: "5:00 PM", duration: 30, maxBookings: 1 },
+            },
+            availableDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+            // For backward compatibility
+            timeSlots: {
+              0: [], // Sunday
+              1: [], // Monday
+              2: [], // Tuesday
+              3: [], // Wednesday
+              4: [], // Thursday
+              5: [], // Friday
+              6: [], // Saturday
+            }
+          }),
+        },
+      });
+
+      return NextResponse.json(defaultSettings);
+    }
 
     return NextResponse.json(settings);
   } catch (error) {

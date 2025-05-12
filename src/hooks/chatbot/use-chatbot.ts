@@ -53,7 +53,22 @@ export const useChatBot = (userId?: string, initialChatBot?: {
   >(initialChatBot);
   const messageWindowRef = useRef<HTMLDivElement | null>(null);
   const [botOpened, setBotOpened] = useState<boolean>(false);
-  const onOpenChatBot = () => setBotOpened((prev) => !prev);
+  const onOpenChatBot = () => {
+    setBotOpened((prev) => {
+      const newState = !prev;
+      // Send welcome message when opening the chatbot
+      if (newState && currentBot?.chatBot?.welcomeMessage) {
+        setOnChats((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: currentBot.chatBot.welcomeMessage
+          }
+        ]);
+      }
+      return newState;
+    });
+  };
   const [loading, setLoading] = useState<boolean>(!initialChatBot);
   const [onChats, setOnChats] = useState<
     { role: "assistant" | "user"; content: string; link?: string }[]
@@ -270,24 +285,24 @@ export const useRealTime = (
 ) => {
   const counterRef = useRef(1);
 
-  useEffect(() => {
-    pusherClient.subscribe(chatRoom);
-    pusherClient.bind("realtime-mode", (data: any) => {
-      console.log("✅", data);
-      if (counterRef.current !== 1) {
-        setChats((prev: any) => [
-          ...prev,
-          {
-            role: data.chat.role,
-            content: data.chat.message,
-          },
-        ]);
-      }
-      counterRef.current += 1;
-    });
-    return () => {
-      pusherClient.unbind("realtime-mode");
-      pusherClient.unsubscribe(chatRoom);
-    };
-  }, []);
+  // useEffect(() => {
+  //   pusherClient.subscribe(chatRoom);
+  //   pusherClient.bind("realtime-mode", (data: any) => {
+  //     console.log("✅", data);
+  //     if (counterRef.current !== 1) {
+  //       setChats((prev: any) => [
+  //         ...prev,
+  //         {
+  //           role: data.chat.role,
+  //           content: data.chat.message,
+  //         },
+  //       ]);
+  //     }
+  //     counterRef.current += 1;
+  //   });
+  //   return () => {
+  //     pusherClient.unbind("realtime-mode");
+  //     pusherClient.unsubscribe(chatRoom);
+  //   };
+  // }, []);
 };

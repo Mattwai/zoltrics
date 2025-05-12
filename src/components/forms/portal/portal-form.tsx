@@ -20,13 +20,11 @@ type PortalFormProps = {
         slot: string;
       }[]
     | undefined;
-  products?:
-    | {
-        name: string;
-        image: string;
-        price: number;
-      }[]
-    | undefined;
+  services?: {
+    id: string;
+    name: string;
+    price: number;
+  }[];
   amount?: number;
   stripeId?: string;
 };
@@ -37,7 +35,7 @@ const PortalForm = ({
   customerId,
   domainid,
   bookings,
-  products,
+  services,
   email,
   amount,
   stripeId,
@@ -80,7 +78,7 @@ const PortalForm = ({
         error={errors}
         register={register}
         onNext={onNext}
-        products={products}
+        services={services}
         onBack={onPrev}
         amount={amount}
         stripeId={stripeId}

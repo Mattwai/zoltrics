@@ -1,31 +1,32 @@
-import { onDomainCustomerResponses } from "@/actions/appointment";
-import { onGetDomainProductsAndConnectedAccountId } from "@/actions/payments";
-import PortalForm from "@/components/forms/portal/portal-form";
+import { onGetDomainServicesAndConnectedAccountId } from "@/actions/payments";
+import CustomerPaymentForm from "@/components/forms/portal/customer-payment-form";
+import { redirect } from "next/navigation";
 
-const CustomerPaymentPage = async ({
-  params,
-}: {
-  params: { domainid: string; customerid: string };
-}) => {
-  const questions = await onDomainCustomerResponses(params.customerid);
-  const products = await onGetDomainProductsAndConnectedAccountId(
+type Props = {
+  params: {
+    domainid: string;
+    customerid: string;
+  };
+};
+
+const Page = async ({ params }: Props) => {
+  const services = await onGetDomainServicesAndConnectedAccountId(
     params.domainid
   );
 
-  if (!questions) return null;
+  if (!services) {
+    redirect("/dashboard");
+  }
 
   return (
-    <PortalForm
-      email={questions.email!}
-      products={products?.products}
-      amount={products?.amount}
-      domainid={params.domainid}
+    <CustomerPaymentForm
+      services={services?.services}
+      amount={services?.amount}
       customerId={params.customerid}
-      questions={questions.questions}
-      stripeId={products?.stripeId!}
-      type="Payment"
+      domainId={params.domainid}
+      stripeId={services?.stripeId!}
     />
   );
 };
 
-export default CustomerPaymentPage;
+export default Page;

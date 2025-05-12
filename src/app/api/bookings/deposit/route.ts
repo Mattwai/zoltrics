@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     // Create a payment intent for the deposit (using $20 as an example deposit amount)
     const paymentIntent = await stripe.paymentIntents.create(
       {
-        currency: "usd",
+        currency: "nzd",
         amount: 2000, // $20.00
         automatic_payment_methods: {
           enabled: true,

@@ -1,8 +1,9 @@
 "use server";
 import { authConfig } from "@/lib/auth";
 import { client } from "@/lib/prisma";
-import { User, ChatBot, HelpDesk, Domain } from "@prisma/client";
+import { User, ChatBot, HelpDesk, Domain, Billings } from "@prisma/client";
 import { getServerSession } from "next-auth";
+import { UserWithRelations, UserBusinessProfileWithBookingLink } from "@/types/prisma";
 
 export const onIntegrateDomain = async (domain: string) => {
   const session = await getServerSession(authConfig);
@@ -59,6 +60,7 @@ export const onIntegrateDomain = async (domain: string) => {
             chatBot: {
               upsert: {
                 create: {
+                  name: "Default ChatBot",
                   welcomeMessage: "Hey there, have a question? Text us here",
                 },
                 update: {
@@ -120,25 +122,21 @@ export const onGetAllAccountDomains = async () => {
       where: {
         id: session.user.id,
       },
-      select: {
-        id: true,
+      include: {
         domains: {
-          select: {
-            name: true,
-            id: true,
-            customer: {
-              select: {
-                chatRoom: {
-                  select: {
-                    id: true,
-                    live: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+          include: {
+            customers: {
+              include: {
+                chatRooms: {
+                  include: {
+                    status: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     });
     // Return the domains data if found
     if (userWithDomains) {
@@ -177,8 +175,8 @@ export const onGetCurrentDomainInfo = async (domain: string) => {
             id: true,
             name: true,
             userId: true,
-            products: true,
-            User: {
+            services: true,
+            user: {
               select: {
                 chatBot: {
                   select: {
@@ -262,6 +260,7 @@ export const onUpdateWelcomeMessage = async (
         chatBot: {
           upsert: {
             create: {
+              name: "Default ChatBot",
               welcomeMessage: message,
             },
             update: {
@@ -388,26 +387,71 @@ export const onGetAllHelpDeskQuestions = async (userId: string) => {
   }
 };
 
-export const onCreateFilterQuestions = async (userId: string, question: string) => {
+export const onDeleteHelpDeskQuestion = async (questionId: string) => {
   try {
-    const filterQuestion = await client.user.update({
+    await client.helpDesk.delete({
       where: {
-        id: userId,
+        id: questionId,
+      },
+    });
+
+    return {
+      status: 200,
+      message: "Question deleted successfully",
+    };
+  } catch (error) {
+    console.log(error);
+    return {
+      status: 400,
+      message: "Failed to delete question",
+    };
+  }
+};
+
+export const onUpdateHelpDeskQuestion = async (
+  questionId: string,
+  question: string,
+  answer: string
+) => {
+  try {
+    const updatedQuestion = await client.helpDesk.update({
+      where: {
+        id: questionId,
       },
       data: {
-        filterQuestions: {
-          create: {
-            question,
-          },
-        },
+        question,
+        answer,
       },
-      include: {
-        filterQuestions: {
-          select: {
-            id: true,
-            question: true,
-          },
-        },
+    });
+
+    if (updatedQuestion) {
+      return {
+        status: 200,
+        message: "Question updated successfully",
+        question: updatedQuestion,
+      };
+    }
+
+    return {
+      status: 400,
+      message: "Failed to update question",
+    };
+  } catch (error) {
+    console.log(error);
+    return {
+      status: 400,
+      message: "Failed to update question",
+    };
+  }
+};
+
+export const onCreateFilterQuestions = async (userId: string, question: string) => {
+  try {
+    const filterQuestion = await client.filterQuestions.create({
+      data: {
+        question,
+        userId,
+        answer: "",
       },
     });
 
@@ -415,7 +459,7 @@ export const onCreateFilterQuestions = async (userId: string, question: string) 
       return {
         status: 200,
         message: "Filter question added",
-        questions: filterQuestion.filterQuestions,
+        questions: [filterQuestion],
       };
     }
     return {
@@ -478,94 +522,142 @@ export const onGetPaymentConnected = async () => {
   }
 };
 
-export const onCreateNewDomainProduct = async (
-  id: string,
+export const onCreateNewDomainService = async (
+  userId: string,
   name: string,
-  price: string
+  price: number
 ) => {
   try {
-    // Validate price is a valid number
-    const priceNum = parseInt(price);
-    if (isNaN(priceNum)) {
-      return {
-        status: 400,
-        message: "Price must be a valid number",
-      };
-    }
-
-    // First try to find an existing domain
-    const domain = await client.domain.findFirst({
-      where: { id },
+    // Check if user has any domains
+    const existingDomain = await client.domain.findFirst({
+      where: {
+        userId,
+      },
     });
 
-    if (domain) {
-      // If domain exists, create product under that domain
-      const product = await client.domain.update({
-        where: {
-          id,
-        },
+    if (existingDomain) {
+      // If domain exists, create service under that domain
+      const service = await client.service.create({
         data: {
-          products: {
+          name,
+          userId,
+          domainId: existingDomain.id,
+          pricing: {
             create: {
-              name,
-              price: priceNum,
+              price,
             },
           },
         },
       });
 
-      if (product) {
+      if (service) {
         return {
           status: 200,
-          message: "Product successfully created",
+          message: "Service successfully created",
         };
       }
     } else {
-      // If no domain exists, create a default domain and add the product
-      const session = await getServerSession(authConfig);
-      if (!session?.user?.id) {
-        return {
-          status: 400,
-          message: "User not authenticated",
-        };
-      }
-
-      const newDomain = await client.user.update({
-        where: {
-          id: session.user.id,
-        },
+      // If no domain exists, create a default domain and add the service
+      const domain = await client.domain.create({
         data: {
-          domains: {
+          name: "Default Domain",
+          userId,
+        },
+      });
+
+      const service = await client.service.create({
+        data: {
+          name,
+          userId,
+          domainId: domain.id,
+          pricing: {
             create: {
-              name: "default",
-              products: {
-                create: {
-                  name,
-                  price: priceNum,
-                },
-              },
+              price,
             },
           },
         },
       });
 
-      if (newDomain) {
+      if (service) {
         return {
           status: 200,
-          message: "Product successfully created",
+          message: "Service successfully created",
         };
       }
     }
 
     return {
       status: 400,
-      message: "Failed to create product",
+      message: "Failed to create service",
     };
   } catch (error) {
-    console.error("Error creating product:", error);
+    console.error("Error creating service:", error);
+    return {
+      status: 500,
+      message: "Failed to create service. Please try again.",
+    };
+  }
+};
+
+export const onUpdateServiceStatus = async (serviceId: string, isLive: boolean) => {
+  try {
+    const service = await client.serviceStatus.upsert({
+      where: {
+        serviceId
+      },
+      create: {
+        serviceId,
+        isLive
+      },
+      update: {
+        isLive
+      }
+    });
+
+    if (service) {
+      return {
+        status: 200,
+        message: `Service ${isLive ? 'activated' : 'deactivated'} successfully`,
+      };
+    }
+
     return {
       status: 400,
-      message: "Failed to create product. Please try again.",
+      message: "Failed to update service status",
+    };
+  } catch (error) {
+    console.error("Error updating service status:", error);
+    return {
+      status: 400,
+      message: "Failed to update service status. Please try again.",
+    };
+  }
+};
+
+export const onDeleteService = async (serviceId: string) => {
+  try {
+    const service = await client.service.delete({
+      where: {
+        id: serviceId,
+      },
+    });
+
+    if (service) {
+      return {
+        status: 200,
+        message: "Service deleted successfully",
+      };
+    }
+
+    return {
+      status: 400,
+      message: "Failed to delete service",
+    };
+  } catch (error) {
+    console.error("Error deleting service:", error);
+    return {
+      status: 400,
+      message: "Failed to delete service. Please try again.",
     };
   }
 };
@@ -575,29 +667,18 @@ const generateBookingLink = async () => {
   let exists = true;
 
   while (exists) {
+    // Generate a random string for the booking link
     link = Math.random().toString(36).substring(2, 15);
-    const user = await client.user.findUnique({
-      where: { bookingLink: link },
+    const existingLink = await client.bookingLink.findUnique({
+      where: { link: link }
     });
-    exists = !!user;
+    exists = !!existingLink;
   }
 
   return link;
 };
 
-export const onGetUser = async (): Promise<(User & {
-  chatBot: ChatBot | null;
-  helpdesk: HelpDesk[];
-  domains: (Domain & {
-    products: {
-      id: string;
-      name: string;
-      price: number;
-      createdAt: Date;
-      domainId: string | null;
-    }[];
-  })[];
-}) | null> => {
+export const onGetUser = async (): Promise<UserWithRelations | null> => {
   try {
     const session = await getServerSession(authConfig);
     if (!session?.user?.id) {
@@ -612,11 +693,22 @@ export const onGetUser = async (): Promise<(User & {
       include: {
         domains: {
           include: {
-            products: true
+            services: {
+              include: {
+                pricing: true,
+                status: true
+              }
+            }
           }
         },
         chatBot: true,
         helpdesk: true,
+        subscription: true,
+        userBusinessProfile: {
+          include: {
+            bookingLink: true
+          }
+        }
       },
     });
     
@@ -625,26 +717,43 @@ export const onGetUser = async (): Promise<(User & {
       return null;
     }
 
-    // If booking link is null, generate a new one
-    if (!user.bookingLink) {
+    // If no business profile exists, create one
+    if (!user.userBusinessProfile) {
       const newBookingLink = await generateBookingLink();
-      const updatedUser = await client.user.update({
-        where: { id: user.id },
-        data: { bookingLink: newBookingLink },
-        include: {
-          domains: {
-            include: {
-              products: true
+      const businessProfile = await client.userBusinessProfile.create({
+        data: {
+          userId: user.id,
+          businessName: null,
+          bookingLink: {
+            create: {
+              link: newBookingLink
             }
-          },
-          chatBot: true,
-          helpdesk: true,
+          }
         },
+        include: {
+          bookingLink: true
+        }
       });
-      return updatedUser;
+
+      if (businessProfile) {
+        return {
+          ...user,
+          userBusinessProfile: {
+            ...businessProfile,
+            bookingLink: businessProfile.bookingLink
+          } as UserBusinessProfileWithBookingLink,
+        } as UserWithRelations;
+      }
     }
     
-    return user;
+    // Format the existing user data to include the booking link
+    return {
+      ...user,
+      userBusinessProfile: user.userBusinessProfile ? {
+        ...user.userBusinessProfile,
+        bookingLink: user.userBusinessProfile.bookingLink
+      } as UserBusinessProfileWithBookingLink : null
+    } as UserWithRelations;
   } catch (error) {
     console.error("Error fetching user:", error);
     return null;
@@ -654,13 +763,13 @@ export const onGetUser = async (): Promise<(User & {
 export const onGetWeeklySettings = async (userId: string) => {
   try {
     const settings = await client.bookingCalendarSettings.findUnique({
-      where: { userId },
+      where: { userSettingsId: userId },
     });
     
     if (!settings) return null;
     
     return {
-      timeSlots: JSON.parse(settings.timeSlots as string),
+      timeSlots: JSON.parse(settings.timeZone as string),
     };
   } catch (error) {
     console.error("Error fetching weekly settings:", error);
@@ -675,28 +784,11 @@ export const onCreateKnowledgeBaseEntry = async (
   category?: string
 ) => {
   try {
-    const entry = await client.user.update({
-      where: {
-        id: userId,
-      },
+    const entry = await client.knowledgeBase.create({
       data: {
-        knowledgeBase: {
-          create: {
-            title,
-            content,
-            category,
-          },
-        },
-      },
-      include: {
-        knowledgeBase: {
-          select: {
-            id: true,
-            title: true,
-            content: true,
-            category: true,
-          },
-        },
+        title,
+        content,
+        userId,
       },
     });
 
@@ -704,7 +796,7 @@ export const onCreateKnowledgeBaseEntry = async (
       return {
         status: 200,
         message: "New knowledge base entry added",
-        entries: entry.knowledgeBase,
+        entries: [entry],
       };
     }
 
@@ -727,6 +819,7 @@ export const onGetAllKnowledgeBaseEntries = async (userId: string) => {
         id: true,
         title: true,
         content: true,
+        userId: true,
         category: true,
       },
       orderBy: {
@@ -741,64 +834,5 @@ export const onGetAllKnowledgeBaseEntries = async (userId: string) => {
     };
   } catch (error) {
     console.log(error);
-  }
-};
-
-export const onUpdateProductStatus = async (productId: string, isLive: boolean) => {
-  try {
-    const product = await client.product.update({
-      where: {
-        id: productId,
-      },
-      data: {
-        isLive,
-      },
-    });
-
-    if (product) {
-      return {
-        status: 200,
-        message: `Product ${isLive ? 'activated' : 'deactivated'} successfully`,
-      };
-    }
-
-    return {
-      status: 400,
-      message: "Failed to update product status",
-    };
-  } catch (error) {
-    console.error("Error updating product status:", error);
-    return {
-      status: 400,
-      message: "Failed to update product status. Please try again.",
-    };
-  }
-};
-
-export const onDeleteProduct = async (productId: string) => {
-  try {
-    const product = await client.product.delete({
-      where: {
-        id: productId,
-      },
-    });
-
-    if (product) {
-      return {
-        status: 200,
-        message: "Product deleted successfully",
-      };
-    }
-
-    return {
-      status: 400,
-      message: "Failed to delete product",
-    };
-  } catch (error) {
-    console.error("Error deleting product:", error);
-    return {
-      status: 400,
-      message: "Failed to delete product. Please try again.",
-    };
   }
 };

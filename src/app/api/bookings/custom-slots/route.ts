@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { client } from "@/lib/prisma";
-import { generateTimeSlots, formatTimeSlot } from "@/lib/time-slots";
+import { generateTimeSlots, formatTimeSlot, calculateEndTime } from "@/lib/time-slots";
+
+// Convert 24-hour format to 12-hour format
+function convertTo12HourFormat(time24h: string): string {
+  const [hours, minutes] = time24h.split(':').map(Number);
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const hour12 = hours % 12 || 12; // Convert 0 to 12 for 12 AM
+  return `${hour12}:${minutes.toString().padStart(2, '0')} ${period}`;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,99 +23,106 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const selectedDate = new Date(date);
-    const dayOfWeek = selectedDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    // Parse the date with timezone handling to ensure it's the same as selected in UI
+    const parsedDate = new Date(date);
+    
+    // Ensure we're getting the correct day, month, year regardless of time
+    const selectedDay = parsedDate.getDate();
+    const selectedMonth = parsedDate.getMonth();
+    const selectedYear = parsedDate.getFullYear();
+    
+    // Create start and end time markers for the selected date (in local timezone)
+    const startOfDay = new Date(selectedYear, selectedMonth, selectedDay, 0, 0, 0, 0);
+    const endOfDay = new Date(selectedYear, selectedMonth, selectedDay, 23, 59, 59, 999);
+    
+    console.log("GET request for date:", date);
+    console.log("Start of day:", startOfDay.toISOString());
+    console.log("End of day:", endOfDay.toISOString());
 
     // Get custom time slots for the selected date
     const customSlots = await client.customTimeSlot.findMany({
       where: {
         userId,
-        date: selectedDate,
+        startTime: {
+          gte: startOfDay,
+          lt: endOfDay
+        }
       },
       orderBy: {
         startTime: 'asc',
       },
     });
 
+    console.log(`Found ${customSlots.length} custom slots for date ${date}`);
+    if (customSlots.length > 0) {
+      console.log("Sample custom slot:", {
+        id: customSlots[0].id,
+        startTime: customSlots[0].startTime.toISOString(),
+        endTime: customSlots[0].endTime.toISOString()
+      });
+    }
+
     // Get blocked status for the date
     const blockedDate = await client.blockedDate.findFirst({
       where: {
         userId,
-        date: selectedDate,
+        date: parsedDate,
       },
     });
 
-    // Get weekly booking calendar settings
-    const calendarSettings = await client.bookingCalendarSettings.findUnique({
-      where: {
-        userId,
-      },
-    });
-
-    let availableSlots: { slot: string; duration: number; maxSlots?: number; id?: string; isCustom?: boolean }[] = [];
+    let availableSlots: { 
+      slot: string; 
+      duration: number; 
+      maxSlots: number; 
+      id?: string; 
+      isCustom?: boolean;
+    }[] = [];
 
     // Only add slots if the date is not blocked
     if (!blockedDate) {
-      // Add weekly default slots
-      if (calendarSettings && calendarSettings.timeSlots) {
-        try {
-          const weeklySlots = JSON.parse(calendarSettings.timeSlots as string);
-          if (weeklySlots[dayOfWeek] && weeklySlots[dayOfWeek].length > 0) {
-            // Add formatted weekly slots
-            weeklySlots[dayOfWeek].forEach((slot: any) => {
-              const endTime = calculateEndTime(slot.startTime, slot.duration);
-              const slotTime = formatTimeSlot(slot.startTime, endTime);
-              
-              // Check if this regular slot is overridden by a custom slot
-              const isOverridden = customSlots.some(customSlot => 
-                customSlot.startTime === slot.startTime && 
-                (customSlot.overrideRegular || customSlot.maxSlots === 0)
-              );
-              
-              if (!isOverridden) {
-                availableSlots.push({
-                  slot: slotTime,
-                  duration: slot.duration,
-                  maxSlots: slot.maxBookings,
-                  isCustom: false
-                });
-              }
-            });
-          }
-        } catch (error) {
-          console.error("Error parsing weekly slots:", error);
-        }
-      }
-
-      // Add custom slots for this date - these are additional slots
+      // Add custom slots for this date
       if (customSlots.length > 0) {
         customSlots.forEach(slot => {
-          // Only add custom slots that aren't marked for deletion (maxSlots > 0)
-          if (slot.maxSlots > 0) {
-            availableSlots.push({
-              slot: formatTimeSlot(slot.startTime, slot.endTime),
-              duration: slot.duration,
-              maxSlots: slot.maxSlots,
-              id: slot.id,
-              isCustom: true
-            });
-          }
+          const startTimeStr = slot.startTime.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+          
+          availableSlots.push({
+            slot: startTimeStr,
+            duration: slot.duration || 30,
+            maxSlots: slot.maxSlots || 1,
+            id: slot.id,
+            isCustom: true
+          });
         });
       }
     }
 
     // Sort slots by time
     availableSlots.sort((a, b) => {
-      const timeA = a.slot.split(' - ')[0];
-      const timeB = b.slot.split(' - ')[0];
+      const timeA = a.slot;
+      const timeB = b.slot;
       if (timeA < timeB) return -1;
       if (timeA > timeB) return 1;
       return 0;
     });
 
+    // Format custom slots for the frontend
+    const formattedCustomSlots = customSlots.map(slot => {
+      const startTimeStr = slot.startTime.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+      const endTimeStr = slot.endTime.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+      
+      return {
+        id: slot.id,
+        startTime: startTimeStr,
+        endTime: endTimeStr,
+        duration: slot.duration || 30,
+        maxSlots: slot.maxSlots || 1,
+        isCustom: true
+      };
+    });
+
     return NextResponse.json({ 
       slots: availableSlots,
-      customSlots: customSlots,
+      customSlots: formattedCustomSlots,
       isBlocked: !!blockedDate
     });
   } catch (error) {
@@ -119,24 +134,10 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Helper to calculate end time from start time and duration
-function calculateEndTime(startTime: string, durationMinutes: number): string {
-  const [hour, minute] = startTime.split(':').map(Number);
-  
-  let endMinute = minute + durationMinutes;
-  let endHour = hour;
-  
-  while (endMinute >= 60) {
-    endHour++;
-    endMinute -= 60;
-  }
-  
-  return `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
-}
-
 export async function POST(request: NextRequest) {
   try {
     const { date, slots, userId, isBlocked } = await request.json();
+    console.log("Received data:", { date, slots, userId, isBlocked });
 
     if (!date || !userId) {
       return NextResponse.json(
@@ -145,100 +146,164 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const selectedDate = new Date(date);
+    // Parse the date with timezone handling to ensure it's the same as selected in UI
+    const parsedDate = new Date(date);
+    // Adjust for timezone offset to keep the date consistent
+    const timezoneOffsetMinutes = parsedDate.getTimezoneOffset();
+    const adjustedDate = new Date(parsedDate.getTime() + timezoneOffsetMinutes * 60000);
+    
+    console.log("Original date from client:", date);
+    console.log("Parsed date:", parsedDate.toISOString());
+    console.log("Adjusted date for timezone:", adjustedDate.toISOString());
+    
+    // Ensure we're getting the correct day, month, year regardless of time
+    const selectedDay = parsedDate.getDate();
+    const selectedMonth = parsedDate.getMonth();
+    const selectedYear = parsedDate.getFullYear();
+    
+    // Create start and end time markers for the selected date (in local timezone)
+    const startOfDay = new Date(selectedYear, selectedMonth, selectedDay, 0, 0, 0, 0);
+    const endOfDay = new Date(selectedYear, selectedMonth, selectedDay, 23, 59, 59, 999);
+    
+    console.log("Start of day:", startOfDay.toISOString());
+    console.log("End of day:", endOfDay.toISOString());
 
     // Handle blocked date status
     if (typeof isBlocked === 'boolean') {
       if (isBlocked) {
         // Create or update blocked date
-        await client.blockedDate.upsert({
+        const existingBlockedDate = await client.blockedDate.findFirst({
           where: {
-            userId_date: {
-              userId,
-              date: selectedDate,
-            },
-          },
-          create: {
             userId,
-            date: selectedDate,
+            date: parsedDate,
           },
-          update: {},
         });
+
+        if (existingBlockedDate) {
+          await client.blockedDate.update({
+            where: { id: existingBlockedDate.id },
+            data: {},
+          });
+        } else {
+          await client.blockedDate.create({
+            data: {
+              userId,
+              date: parsedDate,
+            },
+          });
+        }
       } else {
-        // Remove blocked date if it exists
+        // Remove blocked date
         await client.blockedDate.deleteMany({
           where: {
             userId,
-            date: selectedDate,
+            date: parsedDate,
           },
         });
       }
     }
 
-    // Only process slots if the date is not blocked
-    if (!isBlocked) {
-      // Get existing custom slots first
-      const existingSlots = await client.customTimeSlot.findMany({
-        where: {
-          userId,
-          date: selectedDate,
-        },
-        select: {
-          id: true,
-          startTime: true
+    // Get existing custom slots for this date
+    const existingSlots = await client.customTimeSlot.findMany({
+      where: {
+        userId,
+        startTime: {
+          gte: startOfDay,
+          lt: endOfDay
         }
-      });
+      },
+    });
 
-      // Create a set of IDs to keep track of which slots were processed
-      const processedIds = new Set();
+    console.log("Existing slots found:", existingSlots.length);
+
+    // If slots array is provided
+    if (slots) {
+      // Keep track of processed IDs to know which to delete
+      const processedIds = new Set<string>();
       
-      // Update or create slots
-      const slotsPromises = slots.map(async (slot: any) => {
-        if (slot.id) {
-          // Mark this ID as processed
-          processedIds.add(slot.id);
+      // Create/update slots
+      if (slots.length > 0) {
+        const slotsPromises = slots.map(async (slot: any) => {
+          if (slot.id) {
+            processedIds.add(slot.id);
+          }
+
+          // Convert time strings to Date objects
+          const [startHour, startMinute] = slot.startTime.split(':').map(Number);
           
-          // Update existing slot
-          return client.customTimeSlot.update({
-            where: { id: slot.id },
-            data: {
-              startTime: slot.startTime,
-              endTime: slot.endTime,
-              duration: slot.duration,
-              maxSlots: slot.maxSlots,
-              overrideRegular: slot.overrideRegular || false
-            },
-          });
-        } else {
-          // Create new slot
-          return client.customTimeSlot.create({
-            data: {
-              date: selectedDate,
-              startTime: slot.startTime,
-              endTime: slot.endTime,
-              duration: slot.duration,
-              maxSlots: slot.maxSlots,
-              overrideRegular: slot.overrideRegular || false,
-              userId,
-            },
-          });
-        }
-      });
-      
+          // Create a date with the user's selected date and the time from the slot
+          const startTime = new Date(selectedYear, selectedMonth, selectedDay);
+          startTime.setHours(startHour, startMinute, 0, 0);
+          
+          let endTime;
+          if (slot.endTime) {
+            const [endHour, endMinute] = slot.endTime.split(':').map(Number);
+            endTime = new Date(selectedYear, selectedMonth, selectedDay);
+            endTime.setHours(endHour, endMinute, 0, 0);
+          } else {
+            // Calculate end time based on duration
+            endTime = new Date(startTime);
+            endTime.setMinutes(endTime.getMinutes() + (slot.duration || 30));
+          }
+
+          console.log(`Slot time: ${startTime.toISOString()} to ${endTime.toISOString()}`);
+
+          if (slot.id) {
+            // Update existing slot
+            await client.customTimeSlot.update({
+              where: { id: slot.id },
+              data: {
+                startTime,
+                endTime,
+                duration: slot.duration || 30,
+                maxSlots: slot.maxSlots || 1,
+                overrideRegular: slot.overrideRegular || false,
+                user: { connect: { id: userId } }
+              },
+            });
+          } else {
+            // Create new slot
+            await client.customTimeSlot.create({
+              data: {
+                startTime,
+                endTime,
+                duration: slot.duration || 30,
+                maxSlots: slot.maxSlots || 1,
+                overrideRegular: slot.overrideRegular || false,
+                user: { connect: { id: userId } }
+              },
+            });
+          }
+        });
+        
+        await Promise.all(slotsPromises);
+      }
+        
       // Delete slots that weren't included in the updated list
       const idsToDelete = existingSlots
         .map(slot => slot.id)
         .filter(id => !processedIds.has(id));
         
       if (idsToDelete.length > 0) {
+        console.log("Deleting slots with IDs:", idsToDelete);
         await client.customTimeSlot.deleteMany({
           where: {
             id: { in: idsToDelete }
           }
         });
+      } else if (slots.length === 0 && existingSlots.length > 0) {
+        // If an empty array was explicitly provided, delete all slots for this date
+        console.log("Deleting all slots for date:", date);
+        await client.customTimeSlot.deleteMany({
+          where: {
+            userId,
+            startTime: {
+              gte: startOfDay,
+              lt: endOfDay
+            }
+          }
+        });
       }
-
-      await Promise.all(slotsPromises);
     }
 
     return NextResponse.json({ success: true });

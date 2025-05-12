@@ -16,7 +16,7 @@ export const onDomainCustomerResponses = async (customerId: string) => {
           select: {
             id: true,
             question: true,
-            answered: true,
+            answer: true,
           },
         },
       },
@@ -32,13 +32,15 @@ export const onDomainCustomerResponses = async (customerId: string) => {
 
 export const onGetAllDomainBookings = async (domainId: string) => {
   try {
-    const bookings = await client.bookings.findMany({
+    const bookings = await client.booking.findMany({
       where: {
-        domainId,
+        customer: {
+          domainId: domainId
+        }
       },
       select: {
-        slot: true,
-        date: true,
+        startTime: true,
+        endTime: true,
       },
     });
 
@@ -53,27 +55,26 @@ export const onGetAllDomainBookings = async (domainId: string) => {
 export const onBookNewAppointment = async (
   domainId: string,
   customerId: string,
-  slot: string,
-  date: string,
+  startTime: string,
+  endTime: string,
   email: string,
   name: string
 ) => {
   try {
-    const booking = await client.customer.update({
-      where: {
-        id: customerId,
-      },
+    const booking = await client.booking.create({
       data: {
-        booking: {
-          create: {
-            domainId,
-            slot,
-            date,
-            email,
-            name,
-            source: "domain_portal",
-          },
+        startTime: new Date(startTime),
+        endTime: new Date(endTime),
+        customer: {
+          connect: {
+            id: customerId
+          }
         },
+        bookingMetadata: {
+          create: {
+            notes: "Created via domain portal"
+          }
+        }
       },
     });
 
@@ -86,30 +87,23 @@ export const onBookNewAppointment = async (
 };
 
 export const saveAnswers = async (
-  questions: [question: string],
+  questions: Record<string, string>,
   customerId: string
 ) => {
   try {
-    for (const question in questions) {
-      await client.customer.update({
-        where: { id: customerId },
+    for (const [questionId, answer] of Object.entries(questions)) {
+      await client.customerResponses.update({
+        where: {
+          id: questionId,
+        },
         data: {
-          questions: {
-            update: {
-              where: {
-                id: question,
-              },
-              data: {
-                answered: questions[question],
-              },
-            },
-          },
+          answer: answer,
         },
       });
     }
     return {
       status: 200,
-      messege: "Updated Responses",
+      message: "Updated Responses",
     };
   } catch (error) {
     console.log(error);
@@ -119,79 +113,100 @@ export const saveAnswers = async (
 export const onGetAllBookingsForCurrentUser = async (id: string) => {
   try {
     // Get bookings related to domains
-    const domainBookings = await client.bookings.findMany({
+    const domainBookings = await client.booking.findMany({
       where: {
-        Customer: {
-          Domain: {
-            User: {
-              id,
-            },
+        customer: {
+          domain: {
+            userId: id,
           },
         },
+        NOT: {
+          userId: id // Exclude direct bookings
+        }
       },
       select: {
         id: true,
-        name: true,
-        slot: true,
+        startTime: true,
+        endTime: true,
+        status: true,
         createdAt: true,
-        date: true,
-        email: true,
-        domainId: true,
-        source: true,
-        Customer: {
+        updatedAt: true,
+        customer: {
           select: {
-            Domain: {
+            name: true,
+            email: true,
+            domain: {
               select: {
                 name: true,
               },
             },
           },
         },
-        depositRequired: true,
-        depositPaid: true,
-        no_show: true,
-        riskScore: true,
-        updatedAt: true
+        service: {
+          select: {
+            name: true,
+          },
+        },
+        bookingMetadata: {
+          select: {
+            notes: true,
+          }
+        },
+        bookingPayment: {
+          select: {
+            amount: true,
+            currency: true,
+            status: true,
+          }
+        },
       },
     });
 
     // Get direct bookings (those with no domainId or created via booking link)
-    const directBookings = await client.bookings.findMany({
+    const directBookings = await client.booking.findMany({
       where: {
-        Customer: {
-          booking: {
-            some: {
-              id: {
-                not: undefined,
-              },
-            },
-          },
-        },
-        domainId: null,
+        userId: id,
+        customer: {
+          is: {
+            domainId: undefined
+          }
+        }
       },
       select: {
         id: true,
-        name: true,
-        slot: true,
+        startTime: true,
+        endTime: true,
+        status: true,
         createdAt: true,
-        date: true,
-        email: true,
-        domainId: true,
-        source: true,
-        Customer: {
+        updatedAt: true,
+        customer: {
           select: {
-            Domain: {
+            name: true,
+            email: true,
+            domain: {
               select: {
                 name: true,
               },
             },
           },
         },
-        depositRequired: true,
-        depositPaid: true,
-        no_show: true,
-        riskScore: true,
-        updatedAt: true
+        service: {
+          select: {
+            name: true,
+          },
+        },
+        bookingMetadata: {
+          select: {
+            notes: true,
+          }
+        },
+        bookingPayment: {
+          select: {
+            amount: true,
+            currency: true,
+            status: true,
+          }
+        },
       },
     });
 
@@ -214,30 +229,22 @@ export const getUserAppointments = async () => {
   try {
     if (session) {
       // Count domain bookings
-      const domainBookings = await client.bookings.count({
+      const domainBookings = await client.booking.count({
         where: {
-          Customer: {
-            Domain: {
-              User: {
-                id: session.user.id,
-              },
+          customer: {
+            domain: {
+              userId: session.user.id,
             },
           },
         },
       });
       
       // Count direct bookings
-      const directBookings = await client.bookings.count({
+      const directBookings = await client.booking.count({
         where: {
-          Customer: {
-            booking: {
-              some: {
-                id: {
-                  not: undefined,
-                },
-              },
-            },
-            domainId: null,
+          userId: session.user.id,
+          customer: {
+            domainId: undefined
           },
         },
       });
@@ -256,14 +263,28 @@ export const getUserAppointments = async () => {
 
 export const onGetUserByBookingLink = async (bookingLink: string) => {
   try {
-    const user = await client.user.findUnique({
+    const user = await client.user.findFirst({
       where: {
-        bookingLink,
+        userBusinessProfile: {
+          bookingLink: {
+            link: bookingLink
+          }
+        }
       },
       include: {
         chatBot: true,
         helpdesk: true,
-      },
+        domains: {
+          include: {
+            services: {
+              include: {
+                pricing: true,
+                status: true
+              }
+            }
+          }
+        }
+      }
     });
     return user;
   } catch (error) {

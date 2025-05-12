@@ -1,8 +1,9 @@
 import { client } from "@/lib/prisma";
-import { User, Domain, Product } from "@prisma/client";
+import { User, Domain, Service, ServicePricing, ServiceStatus } from "@prisma/client";
 import BookingForm from "@/components/forms/booking/booking-form";
 import AiChatBot from "@/components/chatbot";
 import { redirect } from "next/navigation";
+import { CalendarDays, Clock, Building2 } from "lucide-react";
 
 type Props = {
   params: {
@@ -10,9 +11,14 @@ type Props = {
   };
 };
 
+type ServiceWithRelations = Service & {
+  pricing: ServicePricing | null;
+  status: ServiceStatus | null;
+};
+
 type UserWithRelations = User & {
   domains: (Domain & {
-    products: Product[];
+    services: ServiceWithRelations[];
   })[];
   chatBot: {
     id: string;
@@ -27,9 +33,12 @@ type UserWithRelations = User & {
     answer: string;
     domainId: string | null;
   }[];
+  userBusinessProfile?: {
+    businessName: string;
+  };
 };
 
-type BookingFormProduct = {
+type BookingFormService = {
   id: string;
   name: string;
   price: number;
@@ -37,18 +46,28 @@ type BookingFormProduct = {
 };
 
 const BookingPage = async ({ params }: Props) => {
-  const user = await client.user.findUnique({
+  const user = await client.user.findFirst({
     where: {
-      bookingLink: params.link,
+      userBusinessProfile: {
+        bookingLink: {
+          link: params.link
+        }
+      }
     },
     include: {
       domains: {
         include: {
-          products: true
+          services: {
+            include: {
+              pricing: true,
+              status: true
+            }
+          }
         }
       },
       chatBot: true,
-      helpdesk: true
+      helpdesk: true,
+      userBusinessProfile: true
     }
   }) as UserWithRelations | null;
 
@@ -56,30 +75,103 @@ const BookingPage = async ({ params }: Props) => {
     redirect("/");
   }
 
-  // Get all live products from all domains
-  const allProducts = user.domains.flatMap(domain => domain.products);
-  const products = allProducts
-    .filter(product => (product as Product & { isLive: boolean }).isLive)
-    .map(product => ({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      isLive: (product as Product & { isLive: boolean }).isLive
-    })) as BookingFormProduct[];
+  // Get all live services from all domains
+  const allServices = user.domains.flatMap(domain => domain.services);
+  const services = allServices
+    .filter(service => service.status?.isLive)
+    .map(service => ({
+      id: service.id,
+      name: service.name,
+      price: service.pricing?.price || 0,
+      isLive: service.status?.isLive || false
+    })) as BookingFormService[];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-center mb-8">
-          Book an Appointment with {user.name || "Us"}
-        </h1>
-        <BookingForm userId={user.id} products={products} />
+    <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
+      {/* Header Section */}
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex-1 text-center md:text-left">
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                {user.userBusinessProfile?.businessName || user.name || "Book an Appointment"}
+              </h1>
+              <p className="text-lg text-gray-600">
+                Schedule your appointment with us today
+              </p>
+            </div>
+            <div className="flex items-center gap-4 text-gray-600">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="w-5 h-5" />
+                <span>Online Booking</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                <span>Instant Confirmation</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Building2 className="w-5 h-5" />
+                <span>Professional Service</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="fixed bottom-4 right-4 z-50">
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Booking Form Section */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-xl shadow-lg p-6 md:p-8">
+              <BookingForm userId={user.id} services={services} />
+            </div>
+          </div>
+
+          {/* Info Section */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl shadow-lg p-6 md:p-8">
+              <h2 className="text-2xl font-semibold mb-4">Booking Information</h2>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="bg-primary/10 p-2 rounded-lg">
+                    <CalendarDays className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Flexible Scheduling</h3>
+                    <p className="text-sm text-gray-600">Choose a time that works best for you</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="bg-primary/10 p-2 rounded-lg">
+                    <Clock className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Instant Confirmation</h3>
+                    <p className="text-sm text-gray-600">Get immediate booking confirmation</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="bg-primary/10 p-2 rounded-lg">
+                    <Building2 className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Professional Service</h3>
+                    <p className="text-sm text-gray-600">Expert care and attention to detail</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Chatbot */}
+      <div className="fixed bottom-6 right-6 z-50">
         <AiChatBot
           userId={user.id}
           initialChatBot={{
-            name: user.name || "BookerBuddy",
+            name: user.userBusinessProfile?.businessName || user.name || "BookerBuddy",
             chatBot: user.chatBot,
             helpdesk: user.helpdesk
           }}

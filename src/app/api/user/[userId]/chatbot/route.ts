@@ -23,9 +23,11 @@ type UserWithRelations = {
   }[];
   domains: {
     name: string;
-    products: {
+    services: {
       name: string;
-      price: number;
+      pricing: {
+        price: number;
+      } | null;
     }[];
   }[];
 };
@@ -66,9 +68,9 @@ export async function GET(
       helpdeskQuestions: helpdesk || [],
       domains: user.domains.map(domain => ({
         name: domain.name,
-        products: domain.products.map(product => ({
-          name: product.name,
-          price: product.price,
+        services: domain.services.map(service => ({
+          name: service.name,
+          price: service.pricing?.price || 0,
         })),
       })),
     });
@@ -133,6 +135,17 @@ export async function POST(
 
     // If no relevant information found, use DeepSeek
     try {
+      const systemPrompt = `You are a helpful assistant for ${user.name}'s business. You can help with:
+- Booking appointments
+- Answering questions about services
+- Providing information about pricing
+- General inquiries
+
+Available services:
+${user.domains.flatMap(d => d.services).map(s => `${s.name} - $${s.pricing?.price || 0}`).join('\n') || "No services available"}
+
+Please be professional and helpful in your responses.`;
+
       const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
         method: 'POST',
         headers: {
@@ -144,31 +157,7 @@ export async function POST(
           messages: [
             {
               role: "system",
-              content: `You are a helpful assistant for ${user.name || "the business"}. Your goal is to help users with their questions.
-
-              IMPORTANT: Follow this EXACT response format with proper line breaks, tabs, and spacing. Copy this format exactly:
-
-              Hello! How can I assist you with your booking today?
-
-              Quick Options:
-                  - Popular Services: [service name] ($[price])
-                  - Next Available Slots:
-                      - [date]: [time] ([duration])
-
-              Would you like to book one of these times? Or ask a question? Just say "book" or type your question!
-
-              Available Services:
-                  ${user.domains.flatMap(d => d.products).map(p => `${p.name} - $${p.price}`).join('\n                ') || "No products available"}
-
-              FAQs:
-                  ${user.helpdesk?.map(hd => `Q: ${hd.question}\n                A: ${hd.answer}`).join('\n\n                ') || "No FAQ information available"}
-
-              Remember:
-              1. Use EXACTLY 4 spaces for indentation
-              2. Add TWO newlines between major sections
-              3. Add ONE newline between list items
-              4. Keep the exact format shown above
-              5. Don't add any extra formatting or emojis`
+              content: systemPrompt,
             },
             {
               role: "user",
