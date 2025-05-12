@@ -1,11 +1,11 @@
 // middleware.ts
-import { withAuth } from "next-auth/middleware";
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-export default withAuth({
-  pages: {
-    signIn: "/auth/sign-in",
-  },
-});
+export function middleware(request: NextRequest) {
+  // Redirect all protected routes to the homepage
+  return NextResponse.redirect(new URL('/#contact', request.url));
+}
 
 export const config = {
   matcher: [
@@ -15,5 +15,6 @@ export const config = {
     "/integration/:path*",
     "/conversation/:path*",
     "/settings/:path*",
+    "/auth/:path*",
   ],
 };

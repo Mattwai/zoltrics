@@ -8,12 +8,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { pricingCards } from "@/constants/pricing-cards";
 import { services } from "@/constants/landing-page";
 import clsx from "clsx";
-import { Check, Star, ArrowRight, MessageSquare, Calendar, Mail, Zap } from "lucide-react";
+import { Check, Star, ArrowRight, MessageSquare, Calendar, Mail, Zap, Phone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import ContactForm from "@/components/contact-form";
 
 export default async function Home() {
   return (
@@ -39,10 +39,10 @@ export default async function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/dashboard"
+              href="#contact"
               className="px-8 py-4 text-xl rounded-full bg-white text-black hover:bg-neutral-200 transition-all duration-300 flex items-center justify-center gap-2 group"
             >
-              Get Started for Free
+              Contact Sales
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
@@ -216,56 +216,19 @@ export default async function Home() {
         <HeroParallax services={services} />
       </section>
 
-      {/* Pricing Section */}
-      <section id="pricing" className="py-20">
+      {/* Contact Sales Section */}
+      <section id="contact" className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
-              Simple, Transparent Pricing
+              Get in Touch with Our Sales Team
             </h2>
             <p className="text-xl text-neutral-400 max-w-2xl mx-auto">
-              Choose the perfect plan for your business.
+              Contact us to learn more about how Zoltrics can help your business grow.
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {pricingCards.map((card) => (
-              <Card
-                key={card.title}
-                className={clsx(
-                  "flex flex-col justify-between border-2 transition-all duration-300 hover:scale-105",
-                  "border-neutral-800 bg-neutral-900"
-                )}
-              >
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-2xl text-white">{card.title}</CardTitle>
-                  <CardDescription className="text-neutral-400">
-                    {card.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-2">
-                    <span className="text-4xl font-bold text-white">{card.price}</span>
-                    <span className="text-neutral-400">/month</span>
-                  </div>
-                  <div className="space-y-3 min-h-[280px]">
-                    {card.features.map((feature) => (
-                      <div key={feature} className="flex items-start gap-2">
-                        <Check className="w-5 h-5 text-white flex-shrink-0 mt-1" />
-                        <p className="text-neutral-400">{feature}</p>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Link
-                    href={`/dashboard?plan=${card.title}`}
-                    className="w-full py-3 rounded-lg text-center font-medium transition-all duration-300 bg-neutral-800 text-white hover:bg-neutral-700"
-                  >
-                    Get Started
-                  </Link>
-                </CardFooter>
-              </Card>
-            ))}
+          <div className="max-w-3xl mx-auto">
+            <ContactForm />
           </div>
         </div>
       </section>
@@ -302,20 +265,33 @@ export default async function Home() {
 
       {/* CTA Section */}
       <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
-            Ready to Transform Your Business?
-          </h2>
-          <p className="text-xl text-neutral-400 mb-8 max-w-2xl mx-auto">
-            Join thousands of businesses that trust Zoltrics for their customer engagement needs.
-          </p>
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-2 px-8 py-4 text-xl rounded-full bg-purple-500 text-white hover:bg-purple-600 transition-all duration-300"
-          >
-            Start Your Free Trial
-            <ArrowRight className="w-5 h-5" />
-          </Link>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-gradient-to-r from-purple-900/50 to-indigo-900/50 p-12 rounded-3xl border border-purple-800/30">
+            <div className="text-center">
+              <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
+                Ready to Transform Your Business?
+              </h2>
+              <p className="text-xl text-neutral-300 mb-8 max-w-2xl mx-auto">
+                Contact our sales team today to get a personalized demo and pricing tailored to your business needs.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link
+                  href="#contact"
+                  className="px-8 py-4 text-xl rounded-full bg-purple-600 text-white hover:bg-purple-700 transition-all duration-300 flex items-center justify-center gap-2 group"
+                >
+                  Contact Sales
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
+                <a
+                  href="tel:+11234567890"
+                  className="px-8 py-4 text-xl rounded-full bg-transparent border border-white/20 text-white hover:bg-white/10 transition-all duration-300 flex items-center justify-center gap-2"
+                >
+                  <Phone className="w-5 h-5" />
+                  Call Us
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </main>
