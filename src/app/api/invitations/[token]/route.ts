@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { hash } from 'bcryptjs';
+import { hash } from 'bcrypt';
 import { InvitationStatus } from '@prisma/client';
 
 // GET - Validate invitation token
