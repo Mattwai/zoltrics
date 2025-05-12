@@ -1,13 +1,16 @@
-import { Metadata } from 'next';
+'use client';
+
+import { useState } from 'react';
 import InvitationList from './InvitationList';
 import CreateInvitationForm from './CreateInvitationForm';
 
-export const metadata: Metadata = {
-  title: 'Manage Invitations - Zoltrics',
-  description: 'Create and manage client invitations',
-};
-
 export default function InvitationsPage() {
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleInvitationCreated = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
   return (
     <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <div className="px-4 py-6 sm:px-0">
@@ -20,7 +23,7 @@ export default function InvitationsPage() {
             <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
               Create New Invitation
             </h3>
-            <CreateInvitationForm />
+            <CreateInvitationForm onInvitationCreated={handleInvitationCreated} />
           </div>
         </div>
 
@@ -29,7 +32,7 @@ export default function InvitationsPage() {
             <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
               Recent Invitations
             </h3>
-            <InvitationList />
+            <InvitationList key={refreshKey} />
           </div>
         </div>
       </div>

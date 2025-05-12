@@ -20,7 +20,7 @@ export async function middleware(request: NextRequest) {
   const userRole = token.role as string;
 
   // Check if the user is trying to access admin routes
-  if (request.nextUrl.pathname.startsWith('/admin')) {
+  if (request.nextUrl.pathname.startsWith('/api/admin')) {
     // Only allow access if user has admin role
     if (userRole !== 'ADMIN') {
       return NextResponse.redirect(new URL('/dashboard', request.url));
@@ -39,7 +39,6 @@ export const config = {
     "/integration/:path*",
     "/conversation/:path*",
     "/settings/:path*",
-    "/admin/:path*",
-    "/api/invitations/:path*",
+    "/api/admin/:path*",
   ],
 };

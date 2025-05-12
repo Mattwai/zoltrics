@@ -24,7 +24,7 @@ export default function InvitationList() {
 
   const fetchInvitations = async () => {
     try {
-      const response = await fetch('/api/invitations');
+      const response = await fetch('/api/admin/invitations');
       const data = await response.json();
 
       if (!response.ok) {

@@ -13,7 +13,11 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-export default function CreateInvitationForm() {
+interface Props {
+  onInvitationCreated?: () => void;
+}
+
+export default function CreateInvitationForm({ onInvitationCreated }: Props) {
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -33,7 +37,7 @@ export default function CreateInvitationForm() {
       setError('');
       setSuccess('');
 
-      const response = await fetch('/api/invitations', {
+      const response = await fetch('/api/admin/invitations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -49,6 +53,7 @@ export default function CreateInvitationForm() {
 
       setSuccess('Invitation sent successfully');
       reset();
+      onInvitationCreated?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
