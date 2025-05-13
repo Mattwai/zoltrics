@@ -95,10 +95,10 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
   }, [session, form]);
 
   const handleDateChange = async (date: Date | undefined) => {
-    if (date && session?.user?.id) {
+    if (date) {
       setIsLoading(true);
       try {
-        const slots = await fetchAvailableTimeSlots(date, session.user.id);
+        const slots = await fetchAvailableTimeSlots(date, userId);
         setAvailableTimeSlots(slots);
         if (selectedTime && !slots.some((slot) => slot.slot === selectedTime)) {
           setSelectedTime(null);
@@ -178,9 +178,9 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
   };
 
   useEffect(() => {
-    if (selectedDate && session?.user?.id) {
+    if (selectedDate) {
       setIsLoading(true);
-      fetchAvailableTimeSlots(selectedDate, session.user.id)
+      fetchAvailableTimeSlots(selectedDate, userId)
         .then((slots: AppointmentTimeSlots[]) => {
           console.log("Fetched time slots:", slots);
           console.log(
@@ -200,7 +200,7 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
     } else {
       setAvailableTimeSlots([]);
     }
-  }, [selectedDate, session?.user?.id]);
+  }, [selectedDate, userId]);
 
   const handleTimeSlotClick = (slot: AppointmentTimeSlots) => {
     setSelectedTime(slot.slot);

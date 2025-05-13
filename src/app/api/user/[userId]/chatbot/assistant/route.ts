@@ -19,17 +19,28 @@ type UserWithRelations = User & {
   }) | null;
 };
 
-export async function POST(req: Request) {
+export async function POST(req: Request, { params }: { params: { userId: string } }) {
   try {
-    const { messages } = await req.json();
+    const { message, chat } = await req.json();
+    
+    // Get userId from the URL params
+    const urlUserId = params.userId;
+    
+    // Check if the user is authenticated via session
     const session = await getServerSession(authConfig);
-    if (!session || !session.user) {
+    const isAuthenticated = session && session.user;
+    
+    // If authenticated, use the session user ID, otherwise use the URL userId
+    const userId = isAuthenticated ? session.user.id : urlUserId;
+    
+    // If we don't have any user ID, return unauthorized
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
       where: {
-        id: session.user.id,
+        id: userId,
       },
       select: {
         name: true,
@@ -78,6 +89,27 @@ ${user.domains.flatMap(d => d.services).map(s => `${s.name} ($${s.pricing?.price
 
 Please be professional and helpful in your responses.`;
 
+    // Convert message and chat to the format expected by the API
+    const messagesToSend = [
+      {
+        role: "system",
+        content: systemPrompt,
+      }
+    ];
+    
+    // Add previous chat messages if they exist
+    if (Array.isArray(chat) && chat.length > 0) {
+      messagesToSend.push(...chat);
+    }
+    
+    // Add the current message
+    if (message) {
+      messagesToSend.push({
+        role: "user",
+        content: message
+      });
+    }
+
     // Create booking assistant conversation
     const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
       method: "POST",
@@ -87,18 +119,15 @@ Please be professional and helpful in your responses.`;
       },
       body: JSON.stringify({
         model: "deepseek-chat",
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt,
-          },
-          ...messages,
-        ],
+        messages: messagesToSend,
       }),
     });
 
     const data = await response.json();
-    return NextResponse.json(data);
+    return NextResponse.json({ 
+      response: data.choices[0].message,
+      raw: data 
+    });
   } catch (error) {
     console.error("Error in chatbot assistant:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
