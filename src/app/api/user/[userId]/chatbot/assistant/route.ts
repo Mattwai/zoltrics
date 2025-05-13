@@ -17,6 +17,9 @@ type UserWithRelations = User & {
   userSettings: (UserSettings & {
     bookingCalendarSettings: BookingCalendarSettings | null;
   }) | null;
+  userBusinessProfile: {
+    businessName: string;
+  } | null;
 };
 
 export async function POST(req: Request, { params }: { params: { userId: string } }) {
@@ -44,6 +47,11 @@ export async function POST(req: Request, { params }: { params: { userId: string 
       },
       select: {
         name: true,
+        userBusinessProfile: {
+          select: {
+            businessName: true
+          }
+        },
         domains: {
           select: {
             services: {
@@ -78,7 +86,10 @@ export async function POST(req: Request, { params }: { params: { userId: string 
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const systemPrompt = `You are a helpful assistant for ${user.name}'s business. You can help with:
+    // Use business name if available, otherwise fall back to user name
+    const businessName = user.userBusinessProfile?.businessName || user.name;
+
+    const systemPrompt = `You are a helpful assistant for ${businessName}'s business. You can help with:
 - Booking appointments
 - Answering questions about services
 - Providing information about pricing

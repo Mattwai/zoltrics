@@ -30,6 +30,9 @@ type UserWithRelations = {
       } | null;
     }[];
   }[];
+  userBusinessProfile: {
+    businessName: string | null;
+  } | null;
 };
 
 export async function GET(
@@ -107,6 +110,11 @@ export async function POST(
       include: {
         chatBot: true,
         knowledgeBase: true,
+        userBusinessProfile: {
+          select: {
+            businessName: true
+          }
+        },
       },
     }) as UserWithRelations | null;
 
@@ -135,7 +143,10 @@ export async function POST(
 
     // If no relevant information found, use DeepSeek
     try {
-      const systemPrompt = `You are a helpful assistant for ${user.name}'s business. You can help with:
+      // Use business name if available, otherwise fall back to user name
+      const businessName = user.userBusinessProfile?.businessName || user.name;
+
+      const systemPrompt = `You are a helpful assistant for ${businessName}'s business. You can help with:
 - Booking appointments
 - Answering questions about services
 - Providing information about pricing
