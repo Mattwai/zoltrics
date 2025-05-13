@@ -6,8 +6,8 @@ export const onMailer = async (email: string) => {
     const result = await emailService.sendEmail({
       to: email,
       subject: "Realtime Support",
-      html: "<p>One of your customers on Zoltrics, just switched to realtime mode</p>",
-      text: "One of your customers on Zoltrics, just switched to realtime mode",
+      html: "<p>One of your customers on BookerBuddy, just switched to realtime mode</p>",
+      text: "One of your customers on BookerBuddy, just switched to realtime mode",
     });
     
     if (!result.success) {

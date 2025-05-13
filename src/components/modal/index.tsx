@@ -38,7 +38,7 @@ const Modal = ({
           <DialogContent>
             <div className="flex justify-center gap-3">
               <div className="w-12 h-12 relative">
-                <Image src={`${bookerbuddy_logo_path}.png`} fill alt="Zoltrics" />
+                <Image src={`${bookerbuddy_logo_path}.png`} fill alt="BookerBuddy" />
               </div>
               <div className="text-gray-400">
                 <ArrowLeft size={20} />

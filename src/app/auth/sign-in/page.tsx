@@ -22,7 +22,7 @@ const SignInPage = () => {
           <p className="mt-2 text-sm text-gray-600">
             {authAction === 'signin' 
               ? 'Sign in to access your account' 
-              : 'Sign up to get started with Zoltrics'}
+              : 'Sign up to get started with BookerBuddy'}
           </p>
         </div>
 

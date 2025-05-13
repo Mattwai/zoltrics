@@ -224,7 +224,7 @@ export default async function Home() {
               Get in Touch with Our Sales Team
             </h2>
             <p className="text-xl text-neutral-400 max-w-2xl mx-auto">
-              Contact us to learn more about how Zoltrics can help your business grow.
+              Contact us to learn more about how BookerBuddy can help your business grow.
             </p>
           </div>
           <div className="max-w-3xl mx-auto">
@@ -248,7 +248,7 @@ export default async function Home() {
                   ))}
                 </div>
                 <p className="text-neutral-300 mb-4">
-                  "Zoltrics has transformed how we handle customer interactions. The AI chatbot is incredibly intelligent and has helped us increase our response rate by 300%."
+                  "BookerBuddy has transformed how we handle customer interactions. The AI chatbot is incredibly intelligent and has helped us increase our response rate by 300%."
                 </p>
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-neutral-700"></div>

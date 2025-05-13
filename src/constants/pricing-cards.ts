@@ -1,7 +1,7 @@
 export const pricingCards = [
     {
       title: "Standard",
-      description: "Perfect for trying out Zoltrics",
+      description: "Perfect for trying out BookerBuddy",
       price: "$0",
       duration: "",
       highlight: "Key features",

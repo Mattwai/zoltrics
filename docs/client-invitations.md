@@ -1,6 +1,6 @@
 # Client Invitation System
 
-This document outlines the client invitation system that allows you to invite clients to your Zoltrics platform after they contact sales.
+This document outlines the client invitation system that allows you to invite clients to your BookerBuddy platform after they contact sales.
 
 ## Overview
 
@@ -11,7 +11,7 @@ The client invitation system provides a seamless flow for onboarding new clients
 3. You can invite them to create an account with appropriate access levels
 4. They receive an email invitation with a secure link
 5. They accept the invitation and create their account
-6. They can now access your Zoltrics platform with client permissions
+6. They can now access your BookerBuddy platform with client permissions
 
 ## Features
 
@@ -66,10 +66,10 @@ The client invitation system consists of:
 
 ### API Endpoints
 
-- `POST /api/invitations` - Create a new invitation
-- `GET /api/invitations` - List all invitations
-- `GET /api/invitations/:token` - Validate an invitation token
-- `PATCH /api/invitations/:token` - Accept an invitation
+- `POST /admin/invitations` - Create a new invitation
+- `GET /admin/invitations` - List all invitations
+- `GET /admin/invitations/:token` - Validate an invitation token
+- `PATCH /admin/invitations/:token` - Accept an invitation
 
 ### Database Schema
 

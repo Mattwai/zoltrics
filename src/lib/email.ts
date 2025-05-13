@@ -87,7 +87,7 @@ class EmailService {
       
       // Format mail options
       const mailOptions = {
-        from: process.env.EMAIL_FROM || 'noreply@zoltrics.com',
+        from: process.env.EMAIL_FROM || 'noreply@bookerbuddy.com',
         ...options
       };
       
@@ -168,12 +168,12 @@ class EmailService {
     
     return this.sendEmail({
       to: email,
-      subject: 'You\'ve been invited to Zoltrics',
+      subject: 'You\'ve been invited to BookerBuddy',
       html: `
         <div>
-          <h1>Welcome to Zoltrics!</h1>
+          <h1>Welcome to BookerBuddy!</h1>
           <p>Hi ${name},</p>
-          <p>You've been invited to join Zoltrics. Click the button below to accept the invitation and create your account.</p>
+          <p>You've been invited to join BookerBuddy. Click the button below to accept the invitation and create your account.</p>
           <p>
             <a href="${invitationUrl}" style="
               display: inline-block;
@@ -198,7 +198,7 @@ class EmailService {
   async sendContactFormEmail(formData: ContactFormData) {
     return this.sendEmail({
       to: process.env.EMAIL_TO || 'waidevelops@gmail.com',
-      subject: 'New Contact Form Submission from Zoltrics',
+      subject: 'New Contact Form Submission from BookerBuddy',
       text: `
 New contact form submission:
 
@@ -212,7 +212,7 @@ ${formData.message || 'No message provided'}
       `,
       html: `
 <h1>New Contact Form Submission</h1>
-<p>You have received a new contact request from the Zoltrics website.</p>
+<p>You have received a new contact request from the BookerBuddy website.</p>
 
 <h2>Contact Details</h2>
 <ul>
