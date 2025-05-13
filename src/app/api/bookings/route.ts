@@ -141,6 +141,61 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Parse the time slot to get start and end times
+    const timeRange = slot.split(" - ");
+    let startTimeStr = timeRange[0];
+    let endTimeStr = timeRange.length > 1 ? timeRange[1] : null;
+    
+    console.log(`Time slot: ${slot}, parsed as start: ${startTimeStr}, end: ${endTimeStr}`);
+    
+    // Make sure we have time in 24-hour format (HH:MM)
+    if (startTimeStr.includes('AM') || startTimeStr.includes('PM')) {
+      // Convert from 12-hour to 24-hour
+      const timeParts = startTimeStr.match(/(\d+):(\d+)\s?(AM|PM)/i);
+      if (timeParts) {
+        let hours = parseInt(timeParts[1]);
+        const minutes = parseInt(timeParts[2]);
+        const period = timeParts[3].toUpperCase();
+        
+        if (period === 'PM' && hours < 12) hours += 12;
+        if (period === 'AM' && hours === 12) hours = 0;
+        
+        startTimeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      }
+    }
+    
+    // Set the correct time on the appointment date
+    const [hours, minutes] = startTimeStr.split(':').map(Number);
+    appointmentDate.setHours(hours, minutes, 0, 0);
+    
+    // Calculate endTime based on parsed end time or default to 1 hour later
+    let endTime;
+    if (endTimeStr) {
+      if (endTimeStr.includes('AM') || endTimeStr.includes('PM')) {
+        // Convert from 12-hour to 24-hour
+        const timeParts = endTimeStr.match(/(\d+):(\d+)\s?(AM|PM)/i);
+        if (timeParts) {
+          let hours = parseInt(timeParts[1]);
+          const minutes = parseInt(timeParts[2]);
+          const period = timeParts[3].toUpperCase();
+          
+          if (period === 'PM' && hours < 12) hours += 12;
+          if (period === 'AM' && hours === 12) hours = 0;
+          
+          endTimeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+      }
+      
+      const [endHours, endMinutes] = endTimeStr.split(':').map(Number);
+      endTime = new Date(appointmentDate);
+      endTime.setHours(endHours, endMinutes, 0, 0);
+    } else {
+      // Default to 1 hour duration if no end time specified
+      endTime = new Date(appointmentDate.getTime() + 60 * 60 * 1000);
+    }
+    
+    console.log(`Appointment will be created from ${appointmentDate.toISOString()} to ${endTime.toISOString()}`);
+
     // Make sure the user exists
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -246,7 +301,7 @@ export async function POST(req: NextRequest) {
     const booking = await prisma.booking.create({
       data: {
         startTime: appointmentDate,
-        endTime: new Date(appointmentDate.getTime() + 60 * 60 * 1000), // 1 hour duration
+        endTime: endTime,
         status: "PENDING",
         customerId: customer.id,
         serviceId: serviceId || undefined,
@@ -292,12 +347,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Format the time for the email to use the same format as display
+    const formattedTime = `${format(appointmentDate, 'h:mm a')} - ${format(endTime, 'h:mm a')}`;
+
     // Send confirmation email
     await emailService.sendBookingConfirmationEmail({
       email,
       name,
       date: appointmentDate.toISOString(),
-      time: slot,
+      time: formattedTime, // Use our properly formatted time instead of the raw slot value
       service: serviceName,
       bookingId: booking.id,
       businessName,

@@ -53,7 +53,7 @@ const AllAppointments = ({ bookings, onBookingOptions, isDeleting }: Props) => {
                 {formatDate(booking.startTime)}
               </div>
               <div className="text-sm text-gray-600">
-                {formatTimeSlot(`${format(booking.startTime, 'HH:mm')}-${format(booking.endTime, 'HH:mm')}`, 60)}
+                {format(new Date(booking.startTime), 'h:mm a')} - {format(new Date(booking.endTime), 'h:mm a')}
               </div>
               {booking.bookingMetadata?.notes && (
                 <div className="mt-1 flex items-center text-xs text-gray-500">
