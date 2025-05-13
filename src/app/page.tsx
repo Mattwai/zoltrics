@@ -25,11 +25,11 @@ export default async function Home() {
         <div className="absolute inset-0 h-full w-full items-center px-5 py-24 [background:radial-gradient(125%_125%_at_50%_10%,#000_35%,#223_100%)]"></div>
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <Image
-            src="/images/zoltrics-logo.png"
-            width={150}
+            src="/images/bookerbuddy-icon.png"
+            width={175}
             height={50}
-            alt="Logo"
-            className="mx-auto mb-8"
+            alt="BookerBuddy Logo"
+            className="mx-auto mb-5"
           />
           <h1 className="text-4xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-white to-neutral-600 mb-6">
             Transform Your Business with AI-Powered Sales & CRM

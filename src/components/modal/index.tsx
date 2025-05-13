@@ -10,7 +10,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import React from "react";
 
-const zoltrics_logo_path = "/images/zoltrics-logo";
+const bookerbuddy_logo_path = "/images/bookerbuddy-icon";
 const stripe_logo_path = "/images/stripe-logo";
 
 type Props = {
@@ -38,7 +38,7 @@ const Modal = ({
           <DialogContent>
             <div className="flex justify-center gap-3">
               <div className="w-12 h-12 relative">
-                <Image src={`${zoltrics_logo_path}.png`} fill alt="Zoltrics" />
+                <Image src={`${bookerbuddy_logo_path}.png`} fill alt="Zoltrics" />
               </div>
               <div className="text-gray-400">
                 <ArrowLeft size={20} />

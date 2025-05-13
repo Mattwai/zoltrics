@@ -10,11 +10,11 @@ function NavBar() {
     >
       <aside className="flex items-center gap-[2px] pl-4">
         <Image
-          src="/images/logo.png"
-          alt="LOGO"
+          src="/images/bookerbuddy-banner.png"
+          alt="BookerBuddy Banner"
           sizes="100vw"
           style={{
-            width: "100px",
+            width: "200px",
             height: "auto",
           }}
           width={0}

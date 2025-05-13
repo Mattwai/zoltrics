@@ -39,8 +39,8 @@ const Layout = ({ children }: Props) => {
       <div className="w-[600px] ld:w-full flex flex-col items-start p-6">
         <button onClick={returnHome} className="focus:outline-none">
           <Image
-            src="/images/logo.png"
-            alt="LOGO"
+            src="/images/bookerbuddy-banner.png"
+            alt="bookerbuddy-banner"
             width={80}
             height={80}
             className="cursor-pointer"
