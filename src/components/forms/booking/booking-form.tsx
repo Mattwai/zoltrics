@@ -25,6 +25,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { DepositPayment } from "./deposit-payment-form";
+import Image from "next/image";
 
 // Define the AppointmentTimeSlots interface
 interface AppointmentTimeSlots {
@@ -545,20 +546,29 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
           />
         </div>
 
-        <Button 
-          type="submit" 
-          className="w-full h-11 text-base font-medium transition-colors"
+        <Button
+          type="submit"
           disabled={isLoading}
+          className="w-full h-12 text-base"
         >
-          {isLoading ? (
-            <div className="flex items-center justify-center">
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-              Booking...
-            </div>
-          ) : (
-            "Book Appointment"
-          )}
+          {isLoading ? "Booking..." : "Book Appointment"}
         </Button>
+        
+        <div className="flex justify-center items-center text-sm text-gray-500 pt-3 mt-2 border-t">
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Powered by</span>
+            <div className="flex items-center">
+              <Image
+                src="/images/bookerbuddy-icon.png"
+                width={22}
+                height={22}
+                alt="BookerBuddy Logo"
+                className="mr-1"
+              />
+              <span className="font-medium">BookerBuddy</span>
+            </div>
+          </div>
+        </div>
       </form>
     </Form>
   );
