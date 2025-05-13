@@ -242,6 +242,93 @@ ${formData.message || 'No message provided'}
       text: message
     });
   }
+
+  // Specific method for booking confirmation emails
+  async sendBookingConfirmationEmail({
+    email,
+    name,
+    date,
+    time,
+    service,
+    bookingId,
+    businessName,
+    price,
+    currency = "NZD"
+  }: {
+    email: string;
+    name: string;
+    date: string;
+    time: string;
+    service?: string;
+    bookingId: string;
+    businessName?: string;
+    price?: number;
+    currency?: string;
+  }) {
+    const formattedDate = new Date(date).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    // Format the price if provided
+    const formattedPrice = price !== undefined ? 
+      new Intl.NumberFormat('en-US', { 
+        style: 'currency', 
+        currency: currency 
+      }).format(price) : undefined;
+    
+    return this.sendEmail({
+      to: email,
+      subject: `Your Booking Confirmation${businessName ? ` - ${businessName}` : ''}`,
+      html: `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 5px; background-color: #ffffff;">
+  <h1 style="color: #4F46E5; text-align: center; margin-bottom: 20px;">Booking Confirmation</h1>
+  ${businessName ? `<h2 style="text-align: center; color: #374151; margin-bottom: 20px;">${businessName}</h2>` : ''}
+  
+  <p>Hi ${name},</p>
+  
+  <p>Thank you for your booking! Your appointment has been confirmed with the following details:</p>
+  
+  <div style="background-color: #f9f9f9; padding: 15px; border-radius: 4px; margin: 20px 0;">
+    <p><strong>Booking ID:</strong> ${bookingId}</p>
+    <p><strong>Date:</strong> ${formattedDate}</p>
+    <p><strong>Time:</strong> ${time}</p>
+    ${service ? `<p><strong>Service:</strong> ${service}</p>` : ''}
+    ${formattedPrice ? `<p><strong>Price:</strong> ${formattedPrice}</p>` : ''}
+  </div>
+  
+  <p>If you need to modify or cancel your booking, please contact us as soon as possible.</p>
+  
+  <p>We look forward to seeing you!</p>
+  
+  <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eaeaea; text-align: center; color: #666666; font-size: 12px;">
+    <p>This is an automated message. Please do not reply to this email.</p>
+    ${businessName ? `<p>&copy; ${new Date().getFullYear()} ${businessName}</p>` : ''}
+  </div>
+</div>
+      `,
+      text: `
+Booking Confirmation${businessName ? ` - ${businessName}` : ''}
+
+Hi ${name},
+
+Thank you for your booking! Your appointment has been confirmed with the following details:
+
+Booking ID: ${bookingId}
+Date: ${formattedDate}
+Time: ${time}
+${service ? `Service: ${service}` : ''}
+${formattedPrice ? `Price: ${formattedPrice}` : ''}
+
+If you need to modify or cancel your booking, please contact us as soon as possible.
+
+We look forward to seeing you!
+${businessName ? `\n\n${businessName}` : ''}
+      `
+    });
+  }
 }
 
 // Create a singleton instance
@@ -258,6 +345,21 @@ export function sendContactFormEmail(formData: ContactFormData) {
 
 export function sendNotificationEmail(email: string, subject: string, message: string) {
   return emailService.sendNotificationEmail(email, subject, message);
+}
+
+// Export new booking confirmation email function
+export function sendBookingConfirmationEmail(params: {
+  email: string;
+  name: string;
+  date: string;
+  time: string;
+  service?: string;
+  bookingId: string;
+  businessName?: string;
+  price?: number;
+  currency?: string;
+}) {
+  return emailService.sendBookingConfirmationEmail(params);
 }
 
 // Export the service as default

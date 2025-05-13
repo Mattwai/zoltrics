@@ -1,9 +1,10 @@
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import axios from "axios";
 import { differenceInDays, format, parse } from "date-fns";
-import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import { Options, PythonShell } from "python-shell";
+import emailService from "@/lib/email";
 
 // NZ public holidays for 2025 (static list)
 const NZ_HOLIDAYS_2025 = [
@@ -143,11 +144,17 @@ export async function POST(req: NextRequest) {
     // Make sure the user exists
     const user = await prisma.user.findUnique({
       where: { id: userId },
+      include: {
+        userBusinessProfile: true
+      }
     });
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+
+    // Get business name from user's business profile
+    const businessName = user.userBusinessProfile?.businessName || undefined;
 
     // If authenticated with Google, verify the user exists
     if (isAuthenticated && googleUserId) {
@@ -263,6 +270,39 @@ export async function POST(req: NextRequest) {
         bookingMetadata: true,
         bookingPayment: true
       }
+    });
+
+    // Fetch service name if serviceId was provided
+    let serviceName;
+    let servicePrice;
+    let serviceCurrency = "NZD"; // Default currency
+    
+    if (serviceId) {
+      const service = await prisma.service.findUnique({
+        where: { id: serviceId },
+        include: { pricing: true }
+      });
+      
+      if (service) {
+        serviceName = service.name;
+        if (service.pricing) {
+          servicePrice = service.pricing.price;
+          serviceCurrency = service.pricing.currency;
+        }
+      }
+    }
+
+    // Send confirmation email
+    await emailService.sendBookingConfirmationEmail({
+      email,
+      name,
+      date: appointmentDate.toISOString(),
+      time: slot,
+      service: serviceName,
+      bookingId: booking.id,
+      businessName,
+      price: servicePrice,
+      currency: serviceCurrency
     });
 
     return NextResponse.json(
