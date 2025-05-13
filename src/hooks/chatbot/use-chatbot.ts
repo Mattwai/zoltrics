@@ -110,7 +110,7 @@ export const useChatBot = (userId?: string, initialChatBot?: {
     const chatbot = await onGetCurrentChatBot(id);
     if (chatbot) {
       setCurrentBot({
-        name: chatbot.User?.name || "BookerBuddy",
+        name: chatbot.user?.name || "BookerBuddy",
         chatBot: {
           id: chatbot.id,
           welcomeMessage: chatbot.welcomeMessage,
@@ -118,7 +118,7 @@ export const useChatBot = (userId?: string, initialChatBot?: {
           textColor: chatbot.textColor,
           helpdesk: chatbot.helpdesk,
         },
-        helpdesk: chatbot.User?.helpdesk.map(h => ({
+        helpdesk: chatbot.user?.helpdesk.map(h => ({
           id: h.id,
           question: h.question,
           answer: h.answer,
@@ -134,21 +134,29 @@ export const useChatBot = (userId?: string, initialChatBot?: {
       const response = await fetch(`/api/user/${userId}/chatbot`);
       if (response.ok) {
         const data = await response.json();
-        if (data.chatbot) {
-          setCurrentBotId(data.chatbot.id);
-          setCurrentBot({
-            name: data.chatbot.name || "BookerBuddy",
-            chatBot: {
-              id: data.chatbot.id,
-              welcomeMessage: data.chatbot.welcomeMessage,
-              background: data.chatbot.background,
-              textColor: data.chatbot.textColor,
-              helpdesk: data.chatbot.helpdesk,
-            },
-            helpdesk: data.chatbot.helpdesk_data || [],
-          });
-          setLoading(false);
-        }
+        console.log("Chatbot data received:", data);
+        console.log("Helpdesk questions received:", data.helpdeskQuestions);
+        
+        // Set the current bot with the returned data
+        setCurrentBot({
+          name: data.name || "BookerBuddy",
+          chatBot: {
+            id: userId, // Use userId as the chatbot ID if none provided
+            welcomeMessage: data.welcomeMessage,
+            background: data.background,
+            textColor: data.textColor,
+            helpdesk: data.helpdesk || false,
+          },
+          helpdesk: data.helpdeskQuestions || [],
+        });
+        
+        console.log("Current bot after setting:", {
+          name: data.name || "BookerBuddy",
+          chatBotHelpdesk: data.helpdesk || false,
+          helpdeskLength: (data.helpdeskQuestions || []).length
+        });
+        
+        setLoading(false);
       }
     } catch (error) {
       console.error("Error fetching user chatbot:", error);

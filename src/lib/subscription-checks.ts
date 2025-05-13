@@ -1,4 +1,4 @@
-import { Plans } from "@prisma/client";
+import { Plans } from "@/types/prisma";
 import { SUBSCRIPTION_LIMITS } from "@/constants/subscription-limits";
 
 export function checkChatbotFeature(plan: Plans, feature: "customization" | "aiPowered" | "welcomeMessage" | "appearance"): boolean {

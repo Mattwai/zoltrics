@@ -159,7 +159,7 @@ export const BotWindow = forwardRef<HTMLDivElement, Props>(
               </form>
             </div>
           </TabsContent>
-          <TabsContent value="help">
+          <TabsContent value="helpdesk">
             <div className="px-3 h-[450px] overflow-y-auto py-3 space-y-3">
               <CardTitle>Common Questions</CardTitle>
               <CardDescription>

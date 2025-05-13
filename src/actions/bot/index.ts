@@ -6,7 +6,7 @@ import { onRealTimeChat } from "../conversation";
 import { onMailer } from "../mailer";
 import prisma from "@/lib/prisma";
 import { ChatBotMessageProps } from "@/schemas/conversation-schema";
-import { Plans } from "@prisma/client";
+import { Plans } from "@/types/prisma";
 
 // Helper function to call our secure API endpoint
 async function callChatAPI(messages: any[]) {
@@ -49,8 +49,8 @@ export const onStoreConversations = async (
     data: {
       message: {
         create: {
-          message,
-          role,
+          content: message,
+          seen: role === "user",
         },
       },
     },
@@ -76,12 +76,12 @@ type ChatBotWithRelations = {
   background: string | null;
   textColor: string | null;
   helpdesk: boolean;
-  User: {
+  user: {
     name: string | null;
     helpdesk: HelpDeskQuestion[];
     knowledgeBase: KnowledgeBaseEntry[];
     subscription: {
-      plan: Plans;
+      plan: string;
     } | null;
   } | null;
 };
@@ -98,7 +98,7 @@ export const onAiChatBotAssistant = async (
         id: botId,
       },
       include: {
-        User: {
+        user: {
           select: {
             name: true,
             helpdesk: true,
@@ -113,11 +113,11 @@ export const onAiChatBotAssistant = async (
       },
     }) as ChatBotWithRelations | null;
 
-    if (!bot || !bot.User) {
+    if (!bot || !bot.user) {
       throw new Error("Bot not found");
     }
 
-    const plan = bot.User.subscription?.plan || "STANDARD";
+    const plan = bot.user.subscription?.plan || "STANDARD";
     const isBusinessPlan = plan === "BUSINESS";
 
     // For non-business plans, use our own API endpoint
@@ -125,15 +125,15 @@ export const onAiChatBotAssistant = async (
       const response = await callChatAPI([
         {
           role: "system",
-          content: `You are a helpful assistant for ${bot.User.name || "the business"}. Your goal is to help users with their questions.
+          content: `You are a helpful assistant for ${bot.user.name || "the business"}. Your goal is to help users with their questions.
           
           Here is the information about FAQs:
           
           FAQs:
-          ${bot.User.helpdesk?.map(hd => `Q: ${hd.question}\nA: ${hd.answer}`).join('\n\n') || "No FAQ information available"}
+          ${bot.user.helpdesk?.map(hd => `Q: ${hd.question}\nA: ${hd.answer}`).join('\n\n') || "No FAQ information available"}
           
           Knowledge Base:
-          ${bot.User.knowledgeBase?.map(kb => `${kb.title}:\n${kb.content}`).join('\n\n') || "No knowledge base information available"}
+          ${bot.user.knowledgeBase?.map(kb => `${kb.title}:\n${kb.content}`).join('\n\n') || "No knowledge base information available"}
           
           Be friendly, professional, and direct in your responses.`
         },
@@ -168,15 +168,15 @@ export const onAiChatBotAssistant = async (
         messages: [
           {
             role: "system",
-            content: `You are a helpful assistant for ${bot.User.name || "the business"}. Your goal is to help users with their questions.
+            content: `You are a helpful assistant for ${bot.user.name || "the business"}. Your goal is to help users with their questions.
             
             Here is the information about FAQs:
             
             FAQs:
-            ${bot.User.helpdesk?.map(hd => `Q: ${hd.question}\nA: ${hd.answer}`).join('\n\n') || "No FAQ information available"}
+            ${bot.user.helpdesk?.map(hd => `Q: ${hd.question}\nA: ${hd.answer}`).join('\n\n') || "No FAQ information available"}
             
             Knowledge Base:
-            ${bot.User.knowledgeBase?.map(kb => `${kb.title}:\n${kb.content}`).join('\n\n') || "No knowledge base information available"}
+            ${bot.user.knowledgeBase?.map(kb => `${kb.title}:\n${kb.content}`).join('\n\n') || "No knowledge base information available"}
             
             Be friendly, professional, and direct in your responses.`
           },
@@ -215,7 +215,7 @@ export const onGetCurrentChatBot = async (botId: string) => {
         id: botId,
       },
       include: {
-        User: {
+        user: {
           select: {
             name: true,
             helpdesk: true,

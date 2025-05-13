@@ -445,13 +445,13 @@ export const onUpdateHelpDeskQuestion = async (
   }
 };
 
-export const onCreateFilterQuestions = async (userId: string, question: string) => {
+export const onCreateFilterQuestions = async (userId: string, question: string, answer: string = "") => {
   try {
     const filterQuestion = await client.filterQuestions.create({
       data: {
         question,
         userId,
-        answer: "",
+        answer,
       },
     });
 

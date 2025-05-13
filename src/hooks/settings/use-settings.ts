@@ -248,7 +248,7 @@ export const useFilterQuestions = (userId: string) => {
 
   const onAddFilterQuestions = handleSubmit(async (values) => {
     setLoading(true);
-    const questions = await onCreateFilterQuestions(userId, values.question);
+    const questions = await onCreateFilterQuestions(userId, values.question, values.answer);
     if (questions) {
       setIsQuestions(questions.questions!);
       toast({

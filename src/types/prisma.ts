@@ -30,4 +30,11 @@ export type ServiceWithRelations = Service & {
 
 export type DomainWithServices = Domain & {
   services: ServiceWithRelations[];
-}; 
+};
+
+// Define the Plans enum to match your Prisma schema
+export enum Plans {
+  STANDARD = "STANDARD",
+  PROFESSIONAL = "PROFESSIONAL",
+  BUSINESS = "BUSINESS"
+} 
