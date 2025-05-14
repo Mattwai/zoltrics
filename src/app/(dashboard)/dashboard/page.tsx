@@ -3,8 +3,8 @@ import { getUpcomingAppointments } from "@/actions/appointment";
 import {
   getUserBalance,
   getUserClients,
+  getUserActiveServicesCount,
   getUserPlanInfo,
-  getUserTotalServicePrices,
   getUserTransactions,
 } from "@/actions/dashboard";
 import DashboardCard from "@/components/dashboard/cards";
@@ -43,7 +43,7 @@ type Props = {};
 
 const Page = async (props: Props) => {
   // Wrap data fetching in try/catch to handle errors
-  let services = 0;
+  let activeServicesCount = 0;
   let sales = 0;
   let clients = 0;
   let bookings = 0;
@@ -53,9 +53,9 @@ const Page = async (props: Props) => {
   let errors = [];
 
   try {
-    services = await getUserTotalServicePrices() || 0;
+    activeServicesCount = await getUserActiveServicesCount() || 0;
   } catch (error) {
-    console.error("Error fetching service prices:", error);
+    console.error("Error fetching active services count:", error);
     errors.push("Failed to load service information");
   }
 
@@ -109,8 +109,8 @@ const Page = async (props: Props) => {
   const nextAppointmentTime = bookings > 0 ? "Tomorrow at 2:00 PM" : null;
 
   // Calculate average service price safely
-  const avgServicePrice = services > 0 && sales > 0 
-    ? (sales / services).toFixed(2) 
+  const avgServicePrice = activeServicesCount > 0 && sales > 0 
+    ? (sales / activeServicesCount).toFixed(2) 
     : "0.00";
 
   // Calculate usage metrics
@@ -186,7 +186,7 @@ const Page = async (props: Props) => {
             icon={<TrendingUp className="w-5 h-5" />}
           />
           <DashboardCard
-            value={services}
+            value={activeServicesCount}
             title="Active Services"
             icon={<Package className="w-5 h-5" />}
           />
@@ -343,7 +343,7 @@ const Page = async (props: Props) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
               <div>
                 <p className="text-sm text-gray-600">Total Services</p>
-                <p className="text-2xl font-bold mt-1">{services}</p>
+                <p className="text-2xl font-bold mt-1">{activeServicesCount}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Avg. Service Price</p>
@@ -355,7 +355,7 @@ const Page = async (props: Props) => {
               <div>
                 <p className="text-sm text-gray-600">Revenue/Service Ratio</p>
                 <p className="text-2xl font-bold mt-1">
-                  {services > 0 ? (sales / (services || 1)).toFixed(1) : "0.0"}x
+                  {activeServicesCount > 0 ? (sales / (activeServicesCount || 1)).toFixed(1) : "0.0"}x
                 </p>
                 <p className="text-xs text-gray-500 mt-1">Multiplier</p>
               </div>

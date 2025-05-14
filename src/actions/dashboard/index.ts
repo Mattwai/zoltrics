@@ -94,7 +94,7 @@ export const getUserPlanInfo = async () => {
   }
 };
 
-export const getUserTotalServicePrices = async () => {
+export const getUserActiveServicesCount = async () => {
   const session = await getServerSession(authConfig);
   if (!session || !session.user) return;
 
@@ -105,22 +105,17 @@ export const getUserTotalServicePrices = async () => {
           id: session.user.id,
         },
       },
-      select: {
-        pricing: {
-          select: {
-            price: true
-          }
-        }
+      include: {
+        status: true
       }
     });
 
-    const total = services.reduce((total: number, next: { pricing: { price: number } | null }) => {
-      return total + (next.pricing?.price || 0);
-    }, 0);
+    // Count active services where status.isLive is true
+    const activeServicesCount = services.filter(service => service.status?.isLive === true).length;
 
-    return total;
+    return activeServicesCount;
   } catch (error) {
-    console.error("Error fetching total service prices:", error);
+    console.error("Error fetching active services count:", error);
     return 0;
   }
 };
