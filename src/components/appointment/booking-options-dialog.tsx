@@ -180,11 +180,14 @@ export const BookingOptionsDialog = ({
           setIsLoading(true);
           // Format date for API request
           const formattedDate = selectedDate.toISOString().split('T')[0];
-          const response = await fetch(`/api/appointments/available-slots?date=${formattedDate}`);
+          
+          // If we have a current booking ID, exclude it from conflict checks
+          const excludeParam = currentBooking?.id ? `&excludeBookingId=${currentBooking.id}` : '';
+          const response = await fetch(`/api/appointments/available-slots?date=${formattedDate}${excludeParam}`);
           
           if (response.ok) {
             const data = await response.json();
-            console.log("Available slots from API:", data.slots);
+            console.log("Available slots from API:", data);
             
             // If we have a current booking for this date, make sure its slot is in the list
             if (currentBooking?.startTime && currentBooking?.endTime) {
@@ -196,14 +199,18 @@ export const BookingOptionsDialog = ({
                 const formattedBookingSlot = `${format(startTime, 'HH:mm')} - ${format(endTime, 'HH:mm')}`;
                 
                 // Add the current booking slot to the available slots if not already included
-                const updatedSlots = data.slots.includes(formattedBookingSlot) 
-                  ? data.slots 
-                  : [formattedBookingSlot, ...data.slots];
+                let updatedSlots = data.slots;
+                if (!data.slots.includes(formattedBookingSlot)) {
+                  updatedSlots = [formattedBookingSlot, ...data.slots];
+                }
                 
                 setAvailableSlots(updatedSlots);
                 
                 // If we don't have a selected slot yet, select the booking's slot
                 if (!selectedSlot) {
+                  setSelectedSlot(formattedBookingSlot);
+                } else if (!updatedSlots.includes(selectedSlot)) {
+                  // If the previously selected slot is no longer available, default to the booking's slot
                   setSelectedSlot(formattedBookingSlot);
                 }
               } else {
@@ -218,8 +225,22 @@ export const BookingOptionsDialog = ({
               // If we don't have a selected slot yet and have available slots, select the first one
               if ((!selectedSlot || !data.slots.includes(selectedSlot)) && data.slots.length > 0) {
                 setSelectedSlot(data.slots[0]);
+              } else if (selectedSlot && !data.slots.includes(selectedSlot) && data.slots.length > 0) {
+                // If the previously selected slot is no longer available, default to the first available slot
+                setSelectedSlot(data.slots[0]);
               }
             }
+            
+            // If this date is blocked, show an alert
+            if (data.isBlocked) {
+              toast.info("This date is blocked in your calendar. No slots available.");
+            }
+            
+            // If there are no available slots
+            if (data.slots.length === 0 && !data.isBlocked) {
+              toast.info("No available time slots for this date.");
+            }
+            
           } else {
             console.error("Failed to fetch available slots:", await response.text());
             // If API fails, keep current slot only as fallback
@@ -255,8 +276,12 @@ export const BookingOptionsDialog = ({
       };
       
       fetchAvailableSlots();
+    } else {
+      // Clear available slots if no date is selected
+      setAvailableSlots([]);
+      setSelectedSlot('');
     }
-  }, [selectedDate, selectedSlot, currentBooking]);
+  }, [selectedDate, currentBooking?.id]);
 
   // Handle date change manually since DatePicker manages its own state
   const handleDateChange = (date: Date | undefined) => {
@@ -499,22 +524,38 @@ export const BookingOptionsDialog = ({
                 <Label htmlFor="reschedule-date">New Date</Label>
                 <DatePicker
                   onDateChange={handleDateChange}
+                  initialDate={selectedDate}
+                  disablePastDates={true}
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Select a date to see available time slots
+                </p>
               </div>
               <div>
                 <Label htmlFor="reschedule-slot">New Time Slot</Label>
-                <Select value={selectedSlot} onValueChange={setSelectedSlot} disabled={isLoading}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select time slot" />
+                <Select value={selectedSlot} onValueChange={setSelectedSlot} disabled={isLoading || availableSlots.length === 0}>
+                  <SelectTrigger className={availableSlots.length === 0 ? "text-gray-400" : ""}>
+                    <SelectValue placeholder={availableSlots.length === 0 ? "No slots available" : "Select time slot"} />
                   </SelectTrigger>
                   <SelectContent className="max-h-[200px] overflow-y-auto">
-                    {availableSlots.map((slot) => (
-                      <SelectItem key={slot} value={slot}>
-                        {slot}
-                      </SelectItem>
-                    ))}
+                    {availableSlots.length === 0 ? (
+                      <div className="py-2 px-2 text-sm text-center text-gray-500">
+                        No available time slots for this date
+                      </div>
+                    ) : (
+                      availableSlots.map((slot) => (
+                        <SelectItem key={slot} value={slot}>
+                          {slot}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {availableSlots.length > 0 
+                    ? `${availableSlots.length} time slot${availableSlots.length !== 1 ? 's' : ''} available` 
+                    : "No available slots for this date"}
+                </p>
               </div>
             </div>
           </div>
@@ -550,6 +591,7 @@ export const BookingOptionsDialog = ({
                   isLoading ||
                   !selectedDate ||
                   !selectedSlot ||
+                  availableSlots.length === 0 ||
                   (selectedDate && 
                     new Date(activeBooking?.startTime || "").toDateString() === selectedDate.toDateString() &&
                     selectedSlot === `${format(new Date(activeBooking?.startTime || ""), 'HH:mm')} - ${format(new Date(activeBooking?.endTime || ""), 'HH:mm')}`)
