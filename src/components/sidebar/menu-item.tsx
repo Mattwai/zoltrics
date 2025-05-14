@@ -1,10 +1,11 @@
-import { cn } from "@/lib/utils";
+import React from "react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 type Props = {
   size: "max" | "min";
   label: string;
-  icon: JSX.Element;
+  icon: React.ReactNode;
   path?: string;
   current?: string;
   onSignOut?(): void;

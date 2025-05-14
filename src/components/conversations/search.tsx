@@ -1,7 +1,7 @@
 import { FieldValues, UseFormRegister } from "react-hook-form";
 
 type Props = {
-  register: UseFormRegister<FieldValues>;
+  register: UseFormRegister<any>;
   domains?:
     | {
         name: string;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
@@ -13,8 +13,8 @@ export default function AcceptInviteAfterGoogleAuth() {
   const router = useRouter();
   const { data: session, status } = useSession();
 
-  // Define the function outside useEffect
-  const associateInvitation = async (userId: string, email: string) => {
+  // Wrap the function in useCallback
+  const associateInvitation = useCallback(async (userId: string, email: string) => {
     try {
       const response = await fetch(`/api/invitations/${token}/google`, {
         method: 'POST',
@@ -43,7 +43,7 @@ export default function AcceptInviteAfterGoogleAuth() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [token, router]);
 
   useEffect(() => {
     // Wait for auth to complete
@@ -64,7 +64,7 @@ export default function AcceptInviteAfterGoogleAuth() {
 
     // Now TypeScript knows these values are defined
     associateInvitation(session.user.id, session.user.email);
-  }, [token, session, status, router]);
+  }, [token, session, status, router, associateInvitation]);
 
   if (isLoading) {
     return (

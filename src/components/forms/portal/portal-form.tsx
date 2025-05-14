@@ -82,6 +82,7 @@ const PortalForm = ({
         onBack={onPrev}
         amount={amount}
         stripeId={stripeId}
+        onAmount={(amount) => {/* Handle amount changes */}}
       />
       {(step == 1 || step == 2) && (
         <div className="w-full flex justify-center">

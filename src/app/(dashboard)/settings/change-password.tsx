@@ -1,9 +1,9 @@
 "use client";
 import { useChangePassword } from "@/hooks/settings/use-settings";
-import FormGenerator from "../forms/form-generator";
-import { Loader } from "../loader";
-import Section from "../section-label";
-import { Button } from "../ui/button";
+import FormGenerator from "@/components/forms/form-generator";
+import { Loader } from "@/components/loader";
+import Section from "@/components/section-label";
+import { Button } from "@/components/ui/button";
 
 type Props = {};
 

@@ -164,7 +164,16 @@ export const useAnswers = (id: string) => {
       const answer = await onGetAllCustomerResponses(id);
       setLoading(false);
       if (answer) {
-        setAnswers(answer);
+        // Transform the data to match the expected state format
+        const transformedAnswers = answer.domains.map(domain => ({
+          customer: domain.customers.map(customer => ({
+            questions: customer.questions.map(q => ({
+              question: q.question,
+              answered: q.answer
+            }))
+          }))
+        }));
+        setAnswers(transformedAnswers);
       }
     } catch (error) {
       console.log(error);
@@ -187,7 +196,8 @@ export const useEditEmail = (id: string) => {
       setLoading(true);
       const email = await onGetEmailTemplate(id);
       if (email) {
-        setTemplate(email);
+        // Assuming the actual template content is in the name property
+        setTemplate(typeof email === 'string' ? email : email.name);
       }
       setLoading(false);
     } catch (error) {

@@ -248,7 +248,7 @@ export default async function Home() {
                   ))}
                 </div>
                 <p className="text-neutral-300 mb-4">
-                  "BookerBuddy has transformed how we handle customer interactions. The AI chatbot is incredibly intelligent and has helped us increase our response rate by 300%."
+                  &quot;BookerBuddy has transformed how we handle customer interactions. The AI chatbot is incredibly intelligent and has helped us increase our response rate by 300%.&quot;
                 </p>
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-neutral-700"></div>

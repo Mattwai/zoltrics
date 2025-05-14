@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { FieldErrors, FieldValues, UseFormRegister } from "react-hook-form";
 import BookAppointmentDate from "./booking-date";
-import ServiceCheckout from "./service-checkout";
+import { ServiceCheckout } from "./service-checkout";
 import QuestionsForm from "./questions";
 
 type Props = {

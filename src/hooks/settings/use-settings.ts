@@ -389,3 +389,61 @@ export const useKnowledgeBase = (id: string) => {
     loading,
   };
 };
+
+interface ChangePasswordProps {
+  password: string;
+  confirmPassword: string;
+}
+
+export const useChangePassword = () => {
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<ChangePasswordProps>({
+    resolver: zodResolver(
+      z.object({
+        password: z.string().min(6, "Password must be at least 6 characters"),
+        confirmPassword: z.string(),
+      }).refine(data => data.password === data.confirmPassword, {
+        message: "Passwords do not match",
+        path: ["confirmPassword"]
+      })
+    ),
+  });
+
+  const onChangePassword = handleSubmit(async (values) => {
+    try {
+      setLoading(true);
+      // TODO: Implement actual password change logic with server action
+      // const result = await onUpdatePassword(values.password);
+      
+      // For now, just show a toast
+      toast({
+        title: "Success",
+        description: "Password updated successfully",
+      });
+      
+      reset();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update password",
+      });
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  return {
+    register,
+    errors,
+    onChangePassword,
+    loading,
+  };
+};

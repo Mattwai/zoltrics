@@ -18,14 +18,13 @@ export async function GET(request: NextRequest) {
     const customSlots = await client.customTimeSlot.findMany({
       where: {
         userId,
-        date: {
+        startTime: {
           gte: new Date(), // Only return future dates
         },
       },
-      orderBy: [
-        { date: 'asc' },
-        { startTime: 'asc' },
-      ],
+      orderBy: {
+        startTime: 'asc',
+      },
     });
 
     return NextResponse.json({ 

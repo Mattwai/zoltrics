@@ -80,7 +80,7 @@ const SignInPage = () => {
           <p className="text-gray-600">
             {authAction === 'signin' ? (
               <>
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <button 
                   onClick={() => setAuthAction('signup')}
                   className="font-medium text-indigo-600 hover:text-indigo-500"

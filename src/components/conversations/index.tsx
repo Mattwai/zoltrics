@@ -8,6 +8,7 @@ import { Separator } from "../ui/separator";
 import { TabsContent } from "../ui/tabs";
 import ChatCard from "./chat-card";
 import ConversationSearch from "./search";
+import { UseFormRegister, FieldValues } from "react-hook-form";
 
 type Props = {
   domains?:
@@ -26,7 +27,10 @@ const ConversationMenu = ({ domains }: Props) => {
     <div className="py-3 px-0">
       <TabsMenu triggers={TABS_MENU}>
         <TabsContent value="unread">
-          <ConversationSearch domains={domains} register={register} />
+          <ConversationSearch 
+            domains={domains} 
+            register={register as unknown as UseFormRegister<FieldValues>} 
+          />
           <div className="flex flex-col">
             <Loader loading={loading}>
               {chatRooms.length ? (

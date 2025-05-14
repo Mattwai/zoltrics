@@ -44,7 +44,8 @@ export const usePortal = (
           customerId,
           values.slot,
           values.date,
-          email
+          email,
+          ""
         );
         if (booked && booked.status == 200) {
           toast({

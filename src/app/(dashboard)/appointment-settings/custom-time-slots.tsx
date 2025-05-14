@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Loader } from "@/components/loader";
 import Section from "@/components/section-label";
 import { Calendar } from "@/components/ui/calendar";
-import { format, isAfter, isBefore, startOfDay } from "date-fns";
+import { format, isAfter, isBefore, startOfDay, addMinutes, parse, isToday, isSameDay } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { 
@@ -87,13 +87,7 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
     maxSlots: 1
   });
 
-  useEffect(() => {
-    if (selectedDate) {
-      fetchTimeSlots(format(selectedDate, "yyyy-MM-dd"));
-    }
-  }, [selectedDate]);
-
-  const fetchTimeSlots = async (date: string) => {
+  const fetchTimeSlots = useCallback(async (date: string) => {
     setLoading(true);
     try {
       const response = await fetch(`/api/bookings/custom-slots?date=${date}&userId=${userId}`);
@@ -125,7 +119,13 @@ export const CustomTimeSlots = ({ userId }: CustomTimeSlotsProps) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, toast]);
+
+  useEffect(() => {
+    if (selectedDate) {
+      fetchTimeSlots(format(selectedDate, "yyyy-MM-dd"));
+    }
+  }, [selectedDate, fetchTimeSlots]);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {

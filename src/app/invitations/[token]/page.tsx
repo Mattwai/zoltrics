@@ -283,7 +283,7 @@ export default function InvitationPage({ params }: { params: { token: string } }
                 Sign up with Google
               </button>
               <p className="mt-3 text-sm text-center text-gray-600">
-                We'll link your invitation to your Google account. If you don't have a Google account yet, you'll be prompted to create one.
+                We&apos;ll link your invitation to your Google account. If you don&apos;t have a Google account yet, you&apos;ll be prompted to create one.
               </p>
             </div>
           )}

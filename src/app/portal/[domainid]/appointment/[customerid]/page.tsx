@@ -12,13 +12,26 @@ const CustomerSignUpForm = async ({ params }: Props) => {
 
   if (!questions) return null;
 
+  // Transform the bookings data to match the expected format
+  const formattedBookings = bookings?.map(booking => ({
+    date: booking.startTime, // Use startTime as the date
+    slot: `${booking.startTime.getHours()}:${booking.startTime.getMinutes().toString().padStart(2, '0')} - ${booking.endTime.getHours()}:${booking.endTime.getMinutes().toString().padStart(2, '0')}`
+  }));
+
+  // Transform questions to match expected format
+  const formattedQuestions = questions.questions.map(q => ({
+    id: q.id,
+    question: q.question,
+    answered: q.answer
+  }));
+
   return (
     <PortalForm
-      bookings={bookings}
+      bookings={formattedBookings}
       email={questions.email!}
       domainid={params.domainid}
       customerId={params.customerid}
-      questions={questions.questions}
+      questions={formattedQuestions}
       type="Appointment"
     />
   );

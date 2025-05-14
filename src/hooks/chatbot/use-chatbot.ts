@@ -62,7 +62,7 @@ export const useChatBot = (userId?: string, initialChatBot?: {
           ...prev,
           {
             role: "assistant",
-            content: currentBot.chatBot.welcomeMessage
+            content: currentBot?.chatBot?.welcomeMessage || "Hello! How can I help you today?"
           }
         ]);
       }
