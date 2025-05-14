@@ -9,6 +9,10 @@ const nextConfig = {
       },
     ],
   },
+  transpilePackages: [],
+  experimental: {
+    forceSwcTransforms: true, // Force SWC transforms to be used
+  },
 };
 
 export default nextConfig;
