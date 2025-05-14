@@ -213,6 +213,26 @@ export const AppointmentClient = ({
       return dateA.getTime() - dateB.getTime();
     });
 
+  // Helper function to format price properly
+  const formatServicePrice = (booking: Booking) => {
+    // Log the booking data for debugging
+    console.log("Booking service data:", booking.service);
+    
+    // First check if service has pricing
+    const serviceData = booking.service as any;
+    if (serviceData?.pricing?.price) {
+      return `$${serviceData.pricing.price}`;
+    }
+    
+    // Then try payment amount
+    if (booking.bookingPayment?.amount) {
+      return `$${booking.bookingPayment.amount}`;
+    }
+    
+    // Default fallback
+    return "$0";
+  };
+
   // Get next day's bookings if there are any
   const nextDayBookings: Booking[] = [];
   
@@ -285,7 +305,7 @@ export const AppointmentClient = ({
                     <div>
                       <p className="text-sm font-medium text-gray-500">Price</p>
                       <p className="text-base">
-                        ${booking.bookingPayment?.amount || 0}
+                        {formatServicePrice(booking)}
                       </p>
                     </div>
                     {booking.bookingPayment && (

@@ -145,7 +145,9 @@ export const onGetAllBookingsForCurrentUser = async (id: string) => {
         },
         service: {
           select: {
+            id: true,
             name: true,
+            pricing: true
           },
         },
         bookingMetadata: {
@@ -193,7 +195,9 @@ export const onGetAllBookingsForCurrentUser = async (id: string) => {
         },
         service: {
           select: {
+            id: true,
             name: true,
+            pricing: true
           },
         },
         bookingMetadata: {
