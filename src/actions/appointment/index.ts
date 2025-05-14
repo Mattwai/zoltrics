@@ -12,6 +12,7 @@ export const onDomainCustomerResponses = async (customerId: string) => {
       },
       select: {
         email: true,
+        name: true,
         questions: {
           select: {
             id: true,

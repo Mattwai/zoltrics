@@ -1,6 +1,8 @@
 import { onGetUser } from "@/actions/settings";
 import { NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const user = await onGetUser();

@@ -3,6 +3,9 @@ import SideBar from "@/components/sidebar";
 import { ChatProvider } from "@/context/chat-context";
 import React from "react";
 
+// Add export to mark this route as dynamic
+export const dynamic = 'force-dynamic';
+
 type Props = {
   children: React.ReactNode;
 };

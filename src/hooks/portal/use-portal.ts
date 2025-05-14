@@ -6,7 +6,8 @@ import { useForm } from "react-hook-form";
 export const usePortal = (
   customerId: string,
   domainId: string,
-  email: string
+  email: string,
+  name?: string
 ) => {
   const {
     register,
@@ -45,7 +46,7 @@ export const usePortal = (
           values.slot,
           values.date,
           email,
-          ""
+          name || email.split('@')[0] // Use name if provided, otherwise use email prefix as fallback
         );
         if (booked && booked.status == 200) {
           toast({

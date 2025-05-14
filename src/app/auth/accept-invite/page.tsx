@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
-export default function AcceptInviteAfterGoogleAuth() {
+// Create a separate component to use searchParams
+function AcceptInviteContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -106,23 +107,40 @@ export default function AcceptInviteAfterGoogleAuth() {
     );
   }
 
-  if (success) {
-    return (
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center">
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+            Account Setup Complete!
+          </h2>
+          <p className="mt-2 text-gray-600">
+            Your Google account has been successfully associated with the invitation.
+          </p>
+          <p className="mt-2 text-gray-600">
+            Redirecting you to the dashboard...
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Wrap the content in Suspense to handle useSearchParams
+export default function AcceptInviteAfterGoogleAuth() {
+  return (
+    <Suspense fallback={
       <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
-            <h2 className="mt-6 text-2xl font-extrabold text-gray-900">
-              Invitation Accepted Successfully!
+            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+              Loading...
             </h2>
-            <p className="mt-2 text-gray-600">
-              Your account has been set up. Redirecting to dashboard...
-            </p>
           </div>
         </div>
       </div>
-    );
-  }
-
-  // This should never be rendered, but just in case
-  return null;
+    }>
+      <AcceptInviteContent />
+    </Suspense>
+  );
 } 

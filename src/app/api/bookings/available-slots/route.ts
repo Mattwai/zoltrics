@@ -24,6 +24,8 @@ function isOverlapping(startTime1: Date, endTime1: Date, startTime2: Date, endTi
   return startTime1 < endTime2 && startTime2 < endTime1;
 }
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;

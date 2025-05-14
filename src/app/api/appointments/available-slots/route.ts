@@ -19,6 +19,9 @@ interface TimeSlotsMap {
   [key: number]: TimeSlot[] | undefined;
 }
 
+// Add export to mark this route as dynamic
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Check authentication

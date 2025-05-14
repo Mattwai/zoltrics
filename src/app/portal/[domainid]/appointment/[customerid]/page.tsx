@@ -4,6 +4,9 @@ import {
 } from "@/actions/appointment";
 import PortalForm from "@/components/forms/portal/portal-form";
 
+// Add export to mark this route as dynamic
+export const dynamic = 'force-dynamic';
+
 type Props = { params: { domainid: string; customerid: string } };
 
 const CustomerSignUpForm = async ({ params }: Props) => {
@@ -33,6 +36,7 @@ const CustomerSignUpForm = async ({ params }: Props) => {
       customerId={params.customerid}
       questions={formattedQuestions}
       type="Appointment"
+      name={questions.name}
     />
   );
 };

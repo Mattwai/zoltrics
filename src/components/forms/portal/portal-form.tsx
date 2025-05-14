@@ -27,6 +27,7 @@ type PortalFormProps = {
   }[];
   amount?: number;
   stripeId?: string;
+  name?: string;
 };
 
 const PortalForm = ({
@@ -39,6 +40,7 @@ const PortalForm = ({
   email,
   amount,
   stripeId,
+  name,
 }: PortalFormProps) => {
   const {
     step,
@@ -52,7 +54,7 @@ const PortalForm = ({
     onSelectedTimeSlot,
     selectedSlot,
     loading,
-  } = usePortal(customerId, domainid, email);
+  } = usePortal(customerId, domainid, email, name);
 
   useEffect(() => {
     if (questions.every((question) => question.answered)) {
