@@ -16,10 +16,16 @@ const CustomerSignUpForm = async ({ params }: Props) => {
   if (!questions) return null;
 
   // Transform the bookings data to match the expected format
-  const formattedBookings = bookings?.map(booking => ({
-    date: booking.startTime, // Use startTime as the date
-    slot: `${booking.startTime.getHours()}:${booking.startTime.getMinutes().toString().padStart(2, '0')} - ${booking.endTime.getHours()}:${booking.endTime.getMinutes().toString().padStart(2, '0')}`
-  }));
+  const formattedBookings = bookings?.map(booking => {
+    // Ensure we have proper Date objects
+    const startDateTime = booking.startTime instanceof Date ? booking.startTime : new Date(booking.startTime);
+    const endDateTime = booking.endTime instanceof Date ? booking.endTime : new Date(booking.endTime);
+    
+    return {
+      date: startDateTime, // Use startTime as the date
+      slot: `${startDateTime.getHours()}:${startDateTime.getMinutes().toString().padStart(2, '0')} - ${endDateTime.getHours()}:${endDateTime.getMinutes().toString().padStart(2, '0')}`
+    };
+  });
 
   // Transform questions to match expected format
   const formattedQuestions = questions.questions.map(q => ({

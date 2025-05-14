@@ -26,6 +26,22 @@ import {
 import { format, parseISO } from "date-fns";
 import { formatTimeSlot } from "@/lib/time-slots";
 
+// Extended service types to match the API response structure
+interface ServicePricing {
+  price: number;
+  currency: string;
+}
+
+interface ServiceWithRelations {
+  name: string;
+  pricing?: ServicePricing | null;
+}
+
+// Extended booking type with the proper service structure
+interface ExtendedBooking extends Omit<Booking, 'service'> {
+  service: ServiceWithRelations | null;
+}
+
 interface BookingOptionsDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -72,14 +88,18 @@ export const BookingOptionsDialog = ({
   const [selectedSlot, setSelectedSlot] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
   const [originalNotes, setOriginalNotes] = useState<string>("");
-  const [currentBooking, setCurrentBooking] = useState<Booking | null>(null);
+  const [currentBooking, setCurrentBooking] = useState<ExtendedBooking | null>(null);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const hasFetchedRef = useRef(false);
+  const hasClosedDialogRef = useRef(false);
 
   // Reset fetch flag when dialog closes
   useEffect(() => {
     if (!isOpen) {
       hasFetchedRef.current = false;
+      hasClosedDialogRef.current = true;
+    } else {
+      hasClosedDialogRef.current = false;
     }
   }, [isOpen]);
 
@@ -100,7 +120,12 @@ export const BookingOptionsDialog = ({
             const data = await response.json();
             console.log("Fetched booking date:", data.startTime);
             setCurrentBooking(data);
-            setSelectedSlot(`${format(new Date(data.startTime), 'HH:mm')} - ${format(new Date(data.endTime), 'HH:mm')}`);
+            
+            // Use the time from the actual booking, not local time
+            const startTime = new Date(data.startTime);
+            const endTime = new Date(data.endTime);
+            setSelectedSlot(`${format(startTime, 'HH:mm')} - ${format(endTime, 'HH:mm')}`);
+            
             const bookingNotes = data.bookingMetadata?.notes || "";
             setNotes(bookingNotes);
             setOriginalNotes(bookingNotes);
@@ -112,8 +137,13 @@ export const BookingOptionsDialog = ({
             }
           } else {
             // Fall back to the booking data passed by props
-            setCurrentBooking(booking);
-            setSelectedSlot(`${format(new Date(booking.startTime), 'HH:mm')} - ${format(new Date(booking.endTime), 'HH:mm')}`);
+            setCurrentBooking(booking as ExtendedBooking);
+            
+            // Format time properly from the booking object
+            const startTime = new Date(booking.startTime);
+            const endTime = new Date(booking.endTime);
+            setSelectedSlot(`${format(startTime, 'HH:mm')} - ${format(endTime, 'HH:mm')}`);
+            
             const bookingNotes = booking.bookingMetadata?.notes || "";
             setNotes(bookingNotes);
             setOriginalNotes(bookingNotes);
@@ -122,8 +152,13 @@ export const BookingOptionsDialog = ({
         } catch (error) {
           console.error("Error fetching booking details:", error);
           // Fall back to the booking data passed by props
-          setCurrentBooking(booking);
-          setSelectedSlot(`${format(new Date(booking.startTime), 'HH:mm')} - ${format(new Date(booking.endTime), 'HH:mm')}`);
+          setCurrentBooking(booking as ExtendedBooking);
+          
+          // Format time properly from the booking object
+          const startTime = new Date(booking.startTime);
+          const endTime = new Date(booking.endTime);
+          setSelectedSlot(`${format(startTime, 'HH:mm')} - ${format(endTime, 'HH:mm')}`);
+          
           const bookingNotes = booking.bookingMetadata?.notes || "";
           setNotes(bookingNotes);
           setOriginalNotes(bookingNotes);
@@ -150,12 +185,40 @@ export const BookingOptionsDialog = ({
           if (response.ok) {
             const data = await response.json();
             console.log("Available slots from API:", data.slots);
-            setAvailableSlots(data.slots);
             
-            // If we don't have a selected slot yet or the current one is not available,
-            // and we have available slots, select the first one
-            if ((!selectedSlot || !data.slots.includes(selectedSlot)) && data.slots.length > 0) {
-              setSelectedSlot(data.slots[0]);
+            // If we have a current booking for this date, make sure its slot is in the list
+            if (currentBooking?.startTime && currentBooking?.endTime) {
+              const startTime = new Date(currentBooking.startTime);
+              const endTime = new Date(currentBooking.endTime);
+              
+              // Only add current booking slot if the selected date matches the booking date
+              if (startTime.toDateString() === selectedDate.toDateString()) {
+                const formattedBookingSlot = `${format(startTime, 'HH:mm')} - ${format(endTime, 'HH:mm')}`;
+                
+                // Add the current booking slot to the available slots if not already included
+                const updatedSlots = data.slots.includes(formattedBookingSlot) 
+                  ? data.slots 
+                  : [formattedBookingSlot, ...data.slots];
+                
+                setAvailableSlots(updatedSlots);
+                
+                // If we don't have a selected slot yet, select the booking's slot
+                if (!selectedSlot) {
+                  setSelectedSlot(formattedBookingSlot);
+                }
+              } else {
+                setAvailableSlots(data.slots);
+                // If we don't have a selected slot yet and have available slots, select the first one
+                if ((!selectedSlot || !data.slots.includes(selectedSlot)) && data.slots.length > 0) {
+                  setSelectedSlot(data.slots[0]);
+                }
+              }
+            } else {
+              setAvailableSlots(data.slots);
+              // If we don't have a selected slot yet and have available slots, select the first one
+              if ((!selectedSlot || !data.slots.includes(selectedSlot)) && data.slots.length > 0) {
+                setSelectedSlot(data.slots[0]);
+              }
             }
           } else {
             console.error("Failed to fetch available slots:", await response.text());
@@ -163,7 +226,9 @@ export const BookingOptionsDialog = ({
             if (selectedSlot) {
               setAvailableSlots([selectedSlot]);
             } else if (currentBooking?.startTime && currentBooking?.endTime) {
-              const formattedSlot = `${format(new Date(currentBooking.startTime), 'HH:mm')} - ${format(new Date(currentBooking.endTime), 'HH:mm')}`;
+              const startTime = new Date(currentBooking.startTime);
+              const endTime = new Date(currentBooking.endTime);
+              const formattedSlot = `${format(startTime, 'HH:mm')} - ${format(endTime, 'HH:mm')}`;
               setAvailableSlots([formattedSlot]);
               setSelectedSlot(formattedSlot);
             } else {
@@ -176,7 +241,9 @@ export const BookingOptionsDialog = ({
           if (selectedSlot) {
             setAvailableSlots([selectedSlot]);
           } else if (currentBooking?.startTime && currentBooking?.endTime) {
-            const formattedSlot = `${format(new Date(currentBooking.startTime), 'HH:mm')} - ${format(new Date(currentBooking.endTime), 'HH:mm')}`;
+            const startTime = new Date(currentBooking.startTime);
+            const endTime = new Date(currentBooking.endTime);
+            const formattedSlot = `${format(startTime, 'HH:mm')} - ${format(endTime, 'HH:mm')}`;
             setAvailableSlots([formattedSlot]);
             setSelectedSlot(formattedSlot);
           } else {
@@ -200,7 +267,7 @@ export const BookingOptionsDialog = ({
   if (!booking) return null;
 
   // Use currentBooking if available, otherwise use booking from props
-  const activeBooking = currentBooking || booking;
+  const activeBooking = currentBooking || (booking as ExtendedBooking);
 
   const handleUpdateNotes = async () => {
     if (!activeBooking) return;
@@ -280,8 +347,8 @@ export const BookingOptionsDialog = ({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ 
-          startTime: newStartTime.toISOString(),
-          endTime: newEndTime.toISOString(),
+          startTime: newStartTime instanceof Date ? newStartTime.toISOString() : newStartTime,
+          endTime: newEndTime instanceof Date ? newEndTime.toISOString() : newEndTime,
           notes: activeBooking.bookingMetadata?.notes
         }),
       });
@@ -321,7 +388,24 @@ export const BookingOptionsDialog = ({
   };
 
   const handleDialogClose = () => {
-    // Only close, no auto-save
+    // Store current booking data in case we need to restore it
+    const bookingToPreserve = currentBooking || activeBooking;
+    
+    // If onBookingUpdate is available, make sure we update with the latest data
+    // This ensures the booking details don't get lost when closing the dialog
+    if (onBookingUpdate && bookingToPreserve) {
+      // Clone the booking to avoid reference issues
+      const bookingCopy = JSON.parse(JSON.stringify(bookingToPreserve));
+      
+      // Make sure the service information is preserved
+      if (!bookingCopy.service && booking?.service) {
+        bookingCopy.service = booking.service;
+      }
+      
+      onBookingUpdate(bookingCopy as Booking);
+    }
+    
+    // Close the dialog
     onClose();
   };
 
@@ -329,6 +413,16 @@ export const BookingOptionsDialog = ({
   const formatDisplayDate = (date: Date | string) => {
     const dateObj = typeof date === 'string' ? new Date(date) : date;
     return format(dateObj, 'MMMM d, yyyy');
+  };
+  
+  // Format the price with currency
+  const formatPrice = (service: ServiceWithRelations | null) => {
+    if (!service || !service.pricing) return "None";
+    const { price, currency = "NZD" } = service.pricing;
+    return new Intl.NumberFormat('en-NZ', { 
+      style: 'currency', 
+      currency: currency 
+    }).format(price);
   };
   
   return (
@@ -344,6 +438,14 @@ export const BookingOptionsDialog = ({
             <h3 className="text-sm font-medium text-gray-500">Booking Details</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
+                <Label className="text-sm text-gray-500">Name</Label>
+                <p>{activeBooking?.customer?.name}</p>
+              </div>
+              <div>
+                <Label className="text-sm text-gray-500">Email</Label>
+                <p>{activeBooking?.customer?.email}</p>
+              </div>
+              <div>
                 <Label className="text-sm text-gray-500">Date</Label>
                 <p>{activeBooking?.startTime ? formatDisplayDate(activeBooking.startTime) : "Not set"}</p>
               </div>
@@ -352,35 +454,30 @@ export const BookingOptionsDialog = ({
                 <p>{selectedSlot}</p>
               </div>
               <div>
-                <Label className="text-sm text-gray-500">Email</Label>
-                <p>{activeBooking?.customer?.email}</p>
+                <Label className="text-sm text-gray-500">Service</Label>
+                <p>{activeBooking?.service?.name || "None"}</p>
               </div>
               <div>
-                <Label className="text-sm text-gray-500">Type</Label>
-                <p>{activeBooking?.customer?.domain?.name || "Direct Booking"}</p>
+                <Label className="text-sm text-gray-500">Service Price</Label>
+                <p>{formatPrice(activeBooking?.service)}</p>
               </div>
+              {activeBooking?.bookingPayment && (
+                <div>
+                  <Label className="text-sm text-gray-500">Payment Status</Label>
+                  <p
+                    className={cn(
+                      "text-sm font-medium",
+                      activeBooking.bookingPayment.status === "paid"
+                        ? "text-green-600"
+                        : "text-amber-600"
+                    )}
+                  >
+                    {activeBooking.bookingPayment.status === "paid" ? "Paid" : "Pending"}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
-
-          {/* Payment Status */}
-          {activeBooking?.bookingPayment && (
-            <div className="grid gap-2">
-              <h3 className="text-sm font-medium text-gray-500">Payment Status</h3>
-              <div className="flex items-center gap-2">
-                <p className="text-sm">Deposit:</p>
-                <p
-                  className={cn(
-                    "text-sm font-medium",
-                    activeBooking.bookingPayment.status === "paid"
-                      ? "text-green-600"
-                      : "text-amber-600"
-                  )}
-                >
-                  {activeBooking.bookingPayment.status === "paid" ? "Paid" : "Pending"}
-                </p>
-              </div>
-            </div>
-          )}
 
           {/* Notes Section */}
           <div className="grid gap-2">
@@ -436,7 +533,7 @@ export const BookingOptionsDialog = ({
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={onClose}
+                onClick={handleDialogClose}
                 disabled={isLoading}
               >
                 Close

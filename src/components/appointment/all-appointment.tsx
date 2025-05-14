@@ -11,7 +11,8 @@ import { useState } from "react";
 import { Booking } from "@/types/booking";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
-import { formatTimeSlot } from "@/lib/time-slots";
+import { formatTimeSlot, NZ_TIMEZONE } from "@/lib/time-slots";
+import { toZonedTime } from 'date-fns-tz';
 
 interface Props {
   bookings: Booking[];
@@ -33,12 +34,26 @@ const AllAppointments = ({ bookings, onBookingOptions, isDeleting }: Props) => {
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const currentBookings = bookings.slice(startIndex, endIndex);
   
-  // Format date to ensure correct month display
+  // Format date to ensure correct month display in NZT
   const formatDate = (date: Date | string) => {
     if (!date) return '';
     const dateObj = typeof date === 'string' ? new Date(date) : date;
     if (isNaN(dateObj.getTime())) return '';
-    return format(dateObj, 'MMMM d, yyyy');
+    
+    // Convert to NZ timezone
+    const nzDate = toZonedTime(dateObj, NZ_TIMEZONE);
+    return format(nzDate, 'MMMM d, yyyy');
+  };
+
+  // Format time in NZ timezone
+  const formatTime = (date: Date | string) => {
+    if (!date) return '';
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) return '';
+    
+    // Convert to NZ timezone
+    const nzDate = toZonedTime(dateObj, NZ_TIMEZONE);
+    return format(nzDate, 'h:mm a');
   };
 
   return (
@@ -53,7 +68,7 @@ const AllAppointments = ({ bookings, onBookingOptions, isDeleting }: Props) => {
                 {formatDate(booking.startTime)}
               </div>
               <div className="text-sm text-gray-600">
-                {format(new Date(booking.startTime), 'h:mm a')} - {format(new Date(booking.endTime), 'h:mm a')}
+                {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
               </div>
               {booking.bookingMetadata?.notes && (
                 <div className="mt-1 flex items-center text-xs text-gray-500">

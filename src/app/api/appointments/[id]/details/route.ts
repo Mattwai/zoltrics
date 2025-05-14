@@ -26,6 +26,11 @@ export async function GET(
             }
           }
         },
+        service: {
+          include: {
+            pricing: true
+          }
+        },
         bookingMetadata: true,
         bookingPayment: true
       }

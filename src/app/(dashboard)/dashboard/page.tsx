@@ -1,4 +1,5 @@
 import { getUserAppointments } from "@/actions/appointment";
+import { getUpcomingAppointments } from "@/actions/appointment";
 import {
   getUserBalance,
   getUserClients,
@@ -15,6 +16,28 @@ import CalIcon from "@/icons/cal-icon";
 import PersonIcon from "@/icons/person-icon";
 import { TransactionsIcon } from "@/icons/transactions-icon";
 import { DollarSign, MessageSquare, Package, Calendar, TrendingUp, Users, Clock, AlertCircle } from "lucide-react";
+import { format } from "date-fns";
+import Link from "next/link";
+import { getServerSession } from "next-auth";
+import { authConfig } from "@/lib/auth";
+
+// Simplified booking type that matches what getUpcomingAppointments returns
+interface SimpleBooking {
+  id: string;
+  startTime: Date;
+  endTime: Date;
+  status: string;
+  customer: {
+    name: string;
+    email: string;
+    domain?: {
+      name: string;
+    } | null;
+  } | null;
+  bookingMetadata: {
+    notes: string | null;
+  } | null;
+}
 
 type Props = {};
 
@@ -26,6 +49,7 @@ const Page = async (props: Props) => {
   let bookings = 0;
   let plan = null;
   let transactions = null;
+  let upcomingAppointments: SimpleBooking[] = [];
   let errors = [];
 
   try {
@@ -70,6 +94,17 @@ const Page = async (props: Props) => {
     errors.push("Failed to load transaction information");
   }
 
+  // Fetch upcoming appointments
+  try {
+    const session = await getServerSession(authConfig);
+    if (session?.user?.id) {
+      upcomingAppointments = await getUpcomingAppointments(session.user.id, 3) || [];
+    }
+  } catch (error) {
+    console.error("Error fetching upcoming appointments:", error);
+    errors.push("Failed to load upcoming appointment details");
+  }
+
   // Calculate next appointment time (example - would typically come from actual appointment data)
   const nextAppointmentTime = bookings > 0 ? "Tomorrow at 2:00 PM" : null;
 
@@ -81,6 +116,38 @@ const Page = async (props: Props) => {
   // Calculate usage metrics
   const totalConversations = 0; // Would come from actual chatbot data
   const avgResponseTime = "0.5s"; // Would come from actual chatbot data
+
+  // Format upcoming appointment time
+  const formatAppointmentDate = (date: Date | string) => {
+    if (!date) return '';
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) return '';
+    
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+    
+    // Check if date is today
+    if (
+      dateObj.getDate() === today.getDate() &&
+      dateObj.getMonth() === today.getMonth() &&
+      dateObj.getFullYear() === today.getFullYear()
+    ) {
+      return `Today at ${format(dateObj, 'h:mm a')}`;
+    }
+    
+    // Check if date is tomorrow
+    if (
+      dateObj.getDate() === tomorrow.getDate() &&
+      dateObj.getMonth() === tomorrow.getMonth() &&
+      dateObj.getFullYear() === tomorrow.getFullYear()
+    ) {
+      return `Tomorrow at ${format(dateObj, 'h:mm a')}`;
+    }
+    
+    // Otherwise return full date with time
+    return format(dateObj, 'MMM d, yyyy') + ' at ' + format(dateObj, 'h:mm a');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -107,8 +174,9 @@ const Page = async (props: Props) => {
             icon={<Users className="w-5 h-5" />}
           />
           <DashboardCard
-            value={bookings}
+            value={upcomingAppointments.length || bookings}
             title="Appointments"
+            subtitle={upcomingAppointments.length > 0 ? "Upcoming bookings" : "Total appointments"}
             icon={<Calendar className="w-5 h-5" />}
           />
           <DashboardCard
@@ -139,34 +207,38 @@ const Page = async (props: Props) => {
                     <p className="text-sm text-gray-500">Your next scheduled meetings</p>
                   </div>
                 </div>
-                <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                <Link href="/appointment" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
                   View All
-                </button>
+                </Link>
               </div>
             </div>
             <div className="p-6">
-              {bookings > 0 ? (
+              {upcomingAppointments.length > 0 ? (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Clock className="w-5 h-5 text-gray-400" />
-                      <div>
-                        <p className="font-medium text-gray-900">Next Appointment</p>
-                        <p className="text-sm text-gray-500">{nextAppointmentTime}</p>
+                  {upcomingAppointments.map((appointment) => (
+                    <div key={appointment.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Clock className="w-5 h-5 text-gray-400" />
+                        <div>
+                          <p className="font-medium text-gray-900">{appointment.customer?.name}</p>
+                          <p className="text-sm text-gray-500">{formatAppointmentDate(appointment.startTime)}</p>
+                        </div>
                       </div>
+                      {appointment.customer?.domain?.name && (
+                        <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-sm font-medium">
+                          {appointment.customer.domain.name}
+                        </span>
+                      )}
                     </div>
-                    <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-sm font-medium">
-                      {bookings} Total
-                    </span>
-                  </div>
+                  ))}
                 </div>
               ) : (
                 <div className="text-center py-8">
                   <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                   <p className="text-gray-600">No upcoming appointments</p>
-                  <button className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium">
+                  <Link href="/appointment" className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium inline-block">
                     Schedule Now
-                  </button>
+                  </Link>
                 </div>
               )}
             </div>
