@@ -244,25 +244,59 @@ export default async function Home() {
             Trusted by Businesses Worldwide
           </h2>
           <div className="grid md:grid-cols-3 gap-8">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="p-6 rounded-2xl bg-neutral-800 border border-neutral-700">
-                <div className="flex items-center gap-1 mb-4">
-                  {[...Array(5)].map((_, j) => (
-                    <Star key={j} className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-                  ))}
-                </div>
-                <p className="text-neutral-300 mb-4">
-                  &quot;BookerBuddy has transformed how we handle customer interactions. The AI chatbot is incredibly intelligent and has helped us increase our response rate by 300%.&quot;
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-neutral-700"></div>
-                  <div>
-                    <div className="font-medium text-white">John Smith</div>
-                    <div className="text-sm text-neutral-400">CEO, TechCorp</div>
-                  </div>
+            <div className="p-6 rounded-2xl bg-neutral-800 border border-neutral-700 flex flex-col">
+              <div className="flex items-center gap-1 mb-4">
+                {[...Array(5)].map((_, j) => (
+                  <Star key={j} className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                ))}
+              </div>
+              <p className="text-neutral-300 mb-6 flex-grow">
+                &quot;BookerBuddy completely transformed how I run my spa. I used to be exhausted juggling all the appointments and follow-ups. Now I finally have time to focus on what I love - actually connecting with my clients and growing my business.&quot;
+              </p>
+              <div className="flex items-center gap-3 mt-auto">
+                <div className="w-3 h-12 bg-purple-500 rounded-l-full"></div>
+                <div>
+                  <div className="font-medium text-white">Sarah Chen</div>
+                  <div className="text-sm text-neutral-400">Owner, Rejuvenate Wellness Spa</div>
                 </div>
               </div>
-            ))}
+            </div>
+            
+            <div className="p-6 rounded-2xl bg-neutral-800 border border-neutral-700 flex flex-col">
+              <div className="flex items-center gap-1 mb-4">
+                {[...Array(5)].map((_, j) => (
+                  <Star key={j} className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                ))}
+              </div>
+              <p className="text-neutral-300 mb-6 flex-grow">
+                &quot;I was constantly missing potential clients because I couldn't respond fast enough. With BookerBuddy, I never miss an opportunity and finally feel like I can compete with the bigger agencies in town. It's been a game-changer for my confidence as a business owner.&quot;
+              </p>
+              <div className="flex items-center gap-3 mt-auto">
+                <div className="w-3 h-12 bg-purple-500 rounded-l-full"></div>
+                <div>
+                  <div className="font-medium text-white">Marcus Johnson</div>
+                  <div className="text-sm text-neutral-400">Broker, Skyline Properties</div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 rounded-2xl bg-neutral-800 border border-neutral-700 flex flex-col">
+              <div className="flex items-center gap-1 mb-4">
+                {[...Array(5)].map((_, j) => (
+                  <Star key={j} className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                ))}
+              </div>
+              <p className="text-neutral-300 mb-6 flex-grow">
+                &quot;Our front desk staff was burning out from the endless phone calls and scheduling chaos. Since using BookerBuddy, I've seen a complete change in our office atmosphere. Everyone is calmer, happier, and actually enjoys coming to work again.&quot;
+              </p>
+              <div className="flex items-center gap-3 mt-auto">
+                <div className="w-3 h-12 bg-purple-500 rounded-l-full"></div>
+                <div>
+                  <div className="font-medium text-white">Dr. Amelia Patel</div>
+                  <div className="text-sm text-neutral-400">Director, Brightsmile Dental</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -276,7 +310,7 @@ export default async function Home() {
                 Ready to Transform Your Business?
               </h2>
               <p className="text-xl text-neutral-300 mb-8 max-w-2xl mx-auto">
-                Contact our sales team today to get a personalized demo and pricing tailored to your business needs.
+                Contact our sales team today to get a personalised demo and pricing tailored to your business needs.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
@@ -286,13 +320,6 @@ export default async function Home() {
                   Contact Sales
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
-                <a
-                  href="tel:+11234567890"
-                  className="px-8 py-4 text-xl rounded-full bg-transparent border border-white/20 text-white hover:bg-white/10 transition-all duration-300 flex items-center justify-center gap-2"
-                >
-                  <Phone className="w-5 h-5" />
-                  Call Us
-                </a>
               </div>
             </div>
           </div>
