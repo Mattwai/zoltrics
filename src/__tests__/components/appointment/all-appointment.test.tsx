@@ -2,6 +2,7 @@ import React from 'react';
 import { render } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import AllAppointments from '@/components/appointment/all-appointment';
+import { Booking } from '@/types/booking';
 
 // Mock the components used by AllAppointments
 jest.mock('@/components/table', () => ({
@@ -22,50 +23,67 @@ jest.mock('@/components/ui/table', () => ({
   ),
 }));
 
+jest.mock('@/components/ui/tooltip', () => ({
+  Tooltip: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  TooltipContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  TooltipProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  TooltipTrigger: ({ children, asChild }: { children: React.ReactNode, asChild?: boolean }) => <div>{children}</div>
+}));
+
 jest.mock('@/constants/menu', () => ({
-  APPOINTMENT_TABLE_HEADER: ['Name', 'Email', 'Date', 'Created At', 'Booking Type', 'Deposit Paid']
+  APPOINTMENT_TABLE_HEADER: ['Name', 'Email', 'Date', 'Service', 'Actions']
 }));
 
 describe('AllAppointments Component', () => {
   const mockDate = new Date('2023-05-15T10:00:00Z');
+  const mockEndDate = new Date('2023-05-15T11:00:00Z');
   
-  const mockBookings = [
+  const mockBookings: Booking[] = [
     {
       id: '1',
-      name: 'John Doe',
-      email: 'john@example.com',
-      date: mockDate,
-      slot: 'Morning',
+      startTime: mockDate,
+      endTime: mockEndDate,
+      status: 'confirmed',
       createdAt: mockDate,
-      domainId: null,
-      Customer: {
-        Domain: null
+      updatedAt: mockDate,
+      customer: {
+        name: 'John Doe',
+        email: 'john@example.com',
+        domain: null
       },
-      source: 'direct_link',
-      depositRequired: false,
-      depositPaid: false,
-      no_show: false,
-      riskScore: 20,
-      updatedAt: mockDate
+      service: {
+        name: 'Consultation'
+      },
+      bookingMetadata: {
+        notes: null
+      },
+      bookingPayment: null
     },
     {
       id: '2',
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      date: mockDate,
-      slot: 'Afternoon',
+      startTime: mockDate,
+      endTime: mockEndDate,
+      status: 'confirmed',
       createdAt: mockDate,
-      domainId: '123',
-      Customer: {
-        Domain: {
+      updatedAt: mockDate,
+      customer: {
+        name: 'Jane Smith',
+        email: 'jane@example.com',
+        domain: {
           name: 'Test Domain'
         }
       },
-      depositRequired: true,
-      depositPaid: true,
-      no_show: false,
-      riskScore: 60,
-      updatedAt: mockDate
+      service: {
+        name: 'Therapy Session'
+      },
+      bookingMetadata: {
+        notes: 'Customer requested a follow-up'
+      },
+      bookingPayment: {
+        amount: 100,
+        currency: 'USD',
+        status: 'paid'
+      }
     }
   ];
 
@@ -75,7 +93,7 @@ describe('AllAppointments Component', () => {
     );
     
     expect(getByTestId('mock-data-table')).toBeInTheDocument();
-    expect(getByTestId('mock-headers')).toHaveTextContent('Name,Email,Date,Created At,Booking Type,Deposit Paid');
+    expect(getByTestId('mock-headers')).toHaveTextContent('Name,Email,Date,Service,Actions');
     
     // Should have two table rows (one for each booking)
     const tableRows = getAllByTestId('mock-table-row');
@@ -84,7 +102,7 @@ describe('AllAppointments Component', () => {
 
   it('renders a message when no bookings are available', () => {
     const { getByText } = render(
-      <AllAppointments bookings={undefined} />
+      <AllAppointments bookings={undefined as unknown as Booking[]} />
     );
     
     expect(getByText('No Appointments')).toBeInTheDocument();
@@ -95,8 +113,6 @@ describe('AllAppointments Component', () => {
       <AllAppointments bookings={[]} />
     );
     
-    // With an empty array, there should be no table rows
-    // And the component should still render without errors
-    expect(true).toBeTruthy();
+    expect(getByText('No appointments found')).toBeInTheDocument();
   });
 }); 

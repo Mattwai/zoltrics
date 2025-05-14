@@ -3,6 +3,12 @@ import { render } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Page from '@/app/(dashboard)/appointment/page';
 
+// Mock @auth/prisma-adapter to fix ES module import issues
+jest.mock('@auth/prisma-adapter', () => ({
+  __esModule: true,
+  PrismaAdapter: jest.fn().mockImplementation(() => ({}))
+}));
+
 // Mock the components used in the page
 jest.mock('@/components/infobar', () => ({
   __esModule: true,

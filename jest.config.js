@@ -22,6 +22,11 @@ const customJestConfig = {
     '!src/**/*.d.ts',
     '!**/node_modules/**',
   ],
+  // Transform ES modules in node_modules
+  transformIgnorePatterns: [
+    // Transform ESM modules in node_modules that need to be processed
+    '/node_modules/(?!(@auth|next|@swc|next-auth|react-day-picker|@radix-ui|stripe|@stripe|@hookform|date-fns)).+\\.js$'
+  ],
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config
