@@ -141,12 +141,14 @@ export default async function Home() {
               </div>
             </div>
             <div className="relative">
-              <div className="aspect-square rounded-2xl overflow-hidden border border-neutral-800">
+              <div className="rounded-2xl overflow-hidden border border-neutral-800 bg-neutral-900 relative" style={{ aspectRatio: '2618/1616' }}>
                 <Image
-                  src="/images/p2.png"
+                  src="/images/p1.png"
                   alt="AI Chatbot Interface"
                   fill
-                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 1200px"
+                  priority
+                  style={{ objectFit: 'cover', objectPosition: 'center' }}
                 />
               </div>
               <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl"></div>
@@ -160,12 +162,14 @@ export default async function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="order-2 md:order-1 relative">
-              <div className="aspect-square rounded-2xl overflow-hidden border border-neutral-800">
+              <div className="rounded-2xl overflow-hidden border border-neutral-800 bg-neutral-900 relative" style={{ aspectRatio: '2598/1616' }}>
                 <Image
-                  src="/images/p1.png"
+                  src="/images/p2.png"
                   alt="Appointment Booking Interface"
                   fill
-                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 1200px"
+                  priority
+                  style={{ objectFit: 'cover', objectPosition: 'center' }}
                 />
               </div>
               <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl"></div>

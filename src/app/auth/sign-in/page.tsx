@@ -12,14 +12,14 @@ const SignInPage = () => {
   const [authAction, setAuthAction] = useState<'signin' | 'signup'>('signin');
 
   return (
-    <div className="flex-1 flex items-center justify-center min-h-screen bg-gradient-to-b from-gray-50 to-white py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+    <div className="w-full">
+      <div className="w-full space-y-6">
         {/* Header */}
-        <div className="text-center">
-          <h2 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-gray-900">
             {authAction === 'signin' ? 'Welcome back' : 'Create your account'}
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-gray-600">
             {authAction === 'signin' 
               ? 'Sign in to access your account' 
               : 'Sign up to get started with BookerBuddy'}
@@ -30,20 +30,20 @@ const SignInPage = () => {
         <div className="flex bg-gray-50 p-1 rounded-lg">
           <button
             onClick={() => setAuthAction('signin')}
-            className={`w-full py-2 text-sm font-medium rounded-md ${
+            className={`w-full py-2 text-sm font-medium rounded-md transition-all duration-200 ${
               authAction === 'signin'
                 ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-900'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             Sign In
           </button>
           <button
             onClick={() => setAuthAction('signup')}
-            className={`w-full py-2 text-sm font-medium rounded-md ${
+            className={`w-full py-2 text-sm font-medium rounded-md transition-all duration-200 ${
               authAction === 'signup'
                 ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-900'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             Sign Up
@@ -83,7 +83,7 @@ const SignInPage = () => {
                 Don&apos;t have an account?{' '}
                 <button 
                   onClick={() => setAuthAction('signup')}
-                  className="font-medium text-indigo-600 hover:text-indigo-500"
+                  className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
                 >
                   Sign up
                 </button>
@@ -93,7 +93,7 @@ const SignInPage = () => {
                 Already have an account?{' '}
                 <button 
                   onClick={() => setAuthAction('signin')}
-                  className="font-medium text-indigo-600 hover:text-indigo-500"
+                  className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
                 >
                   Sign in
                 </button>

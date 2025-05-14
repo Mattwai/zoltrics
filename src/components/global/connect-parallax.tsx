@@ -57,7 +57,7 @@ export const HeroParallax = ({
   return (
     <div
       ref={ref}
-      className="h-[135vh] py-40 overflow-hidden  antialiased relative flex flex-col self-auto [perspective:500px] [transform-style:preserve-3d]"
+      className="h-[150vh] py-40 overflow-hidden antialiased relative flex flex-col self-auto [perspective:500px] [transform-style:preserve-3d]"
     >
       <Header />
       <motion.div
@@ -67,9 +67,9 @@ export const HeroParallax = ({
           translateY,
           opacity,
         }}
-        className=""
+        className="mt-12"
       >
-        <motion.div className="flex flex-row-reverse space-x-reverse space-x-20 mb-10">
+        <motion.div className="flex flex-row-reverse space-x-reverse space-x-20 mb-20">
           {firstRow.map((service) => (
             <ServiceCard
               service={service}
@@ -78,7 +78,7 @@ export const HeroParallax = ({
             />
           ))}
         </motion.div>
-        <motion.div className="flex flex-row-reverse space-x-reverse space-x-20 ">
+        <motion.div className="flex flex-row-reverse space-x-reverse space-x-20">
           {secondRow.map((service) => (
             <ServiceCard
               service={service}
@@ -128,24 +128,31 @@ export const ServiceCard = ({
         y: -20,
       }}
       key={service.title}
-      className="group/service h-96 w-[30rem] relative flex-shrink-0"
+      className="group/service w-[30rem] relative flex-shrink-0"
     >
       <Link
         href={service.link}
-        className="block group-hover/service:shadow-2xl "
+        className="block group-hover/service:shadow-2xl w-full"
       >
-        <Image
-          src={service.thumbnail}
-          height="600"
-          width="600"
-          className="object-cover object-left-top absolute h-full w-full inset-0"
-          alt={service.title}
-        />
+        <div className="relative w-full overflow-hidden rounded-lg bg-neutral-900" style={{ aspectRatio: '2618/1610' }}>
+          <Image
+            src={service.thumbnail}
+            fill
+            sizes="(max-width: 768px) 100vw, 1200px"
+            className="transition-transform duration-500 group-hover/service:scale-105"
+            alt={service.title}
+            priority
+            style={{ 
+              objectFit: 'cover', 
+              objectPosition: 'center',
+            }}
+          />
+          <div className="absolute inset-0 bg-black opacity-0 group-hover/service:opacity-60 transition-opacity duration-300 pointer-events-none"></div>
+          <h2 className="absolute bottom-6 left-6 text-xl font-semibold text-white opacity-0 group-hover/service:opacity-100 transition-opacity duration-300 z-10">
+            {service.title}
+          </h2>
+        </div>
       </Link>
-      <div className="absolute inset-0 h-full w-full opacity-0 group-hover/service:opacity-80 bg-black pointer-events-none"></div>
-      <h2 className="absolute bottom-4 left-4 opacity-0 group-hover/service:opacity-100 text-white">
-        {service.title}
-      </h2>
     </motion.div>
   );
 };

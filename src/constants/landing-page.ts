@@ -1,16 +1,16 @@
 export const services = [
   {
-    title: "Dashboard",
+    title: "Appointment Scheduling",
     link: "/",
     thumbnail: "/images/p1.png",
   },
   {
-    title: "Chatbot",
+    title: "View Appointments",
     link: "/",
     thumbnail: "/images/p2.png",
   },
   {
-    title: "Email Marketing",
+    title: "Booking Form",
     link: "/",
     thumbnail: "/images/p3.png",
   },
