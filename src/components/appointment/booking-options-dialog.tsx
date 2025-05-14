@@ -13,7 +13,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "./date-picker";
-import { Booking } from "@/types/booking";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -26,6 +25,41 @@ import {
 import { format, parseISO } from "date-fns";
 import { formatTimeSlot } from "@/lib/time-slots";
 
+// Override the Booking type with complete definition
+interface FullBooking {
+  id: string;
+  startTime: Date;
+  endTime: Date;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+  userId?: string;
+  customer: {
+    name: string;
+    email: string;
+    userId?: string;
+    domain: {
+      name: string;
+    } | null;
+  } | null;
+  service: {
+    id: string;
+    name: string;
+    pricing?: {
+      price: number;
+      currency: string;
+    } | null;
+  } | null;
+  bookingMetadata: {
+    notes: string | null;
+  } | null;
+  bookingPayment: {
+    amount: number;
+    currency: string;
+    status: string;
+  } | null;
+}
+
 // Extended service types to match the API response structure
 interface ServicePricing {
   price: number;
@@ -33,21 +67,22 @@ interface ServicePricing {
 }
 
 interface ServiceWithRelations {
+  id: string;
   name: string;
   pricing?: ServicePricing | null;
 }
 
 // Extended booking type with the proper service structure
-interface ExtendedBooking extends Omit<Booking, 'service'> {
+interface ExtendedBooking extends Omit<FullBooking, 'service'> {
   service: ServiceWithRelations | null;
 }
 
 interface BookingOptionsDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  booking: Booking | null;
+  booking: FullBooking | null;
   onCancel: () => void;
-  onBookingUpdate?: (updatedBooking: Booking) => void;
+  onBookingUpdate?: (updatedBooking: FullBooking) => void;
 }
 
 // Helper function to properly format dates from the API - using UTC to avoid timezone issues
@@ -92,6 +127,11 @@ export const BookingOptionsDialog = ({
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const hasFetchedRef = useRef(false);
   const hasClosedDialogRef = useRef(false);
+  const [availableServices, setAvailableServices] = useState<ServiceWithRelations[]>([]);
+  const [selectedServiceId, setSelectedServiceId] = useState<string>("");
+  const [originalServiceId, setOriginalServiceId] = useState<string>("");
+  const [paymentStatus, setPaymentStatus] = useState<string>("pending");
+  const [originalPaymentStatus, setOriginalPaymentStatus] = useState<string>("pending");
 
   // Reset fetch flag when dialog closes
   useEffect(() => {
@@ -104,6 +144,27 @@ export const BookingOptionsDialog = ({
   }, [isOpen]);
 
   console.log("Current date from booking:", booking?.startTime);
+
+  // Fetch available services when dialog opens
+  useEffect(() => {
+    if (isOpen && booking?.userId) {
+      const fetchServices = async () => {
+        try {
+          const response = await fetch(`/api/services?userId=${booking.userId}`);
+          if (response.ok) {
+            const data = await response.json();
+            setAvailableServices(data.services || []);
+          } else {
+            console.error("Failed to fetch services");
+          }
+        } catch (error) {
+          console.error("Error fetching services:", error);
+        }
+      };
+      
+      fetchServices();
+    }
+  }, [isOpen, booking?.userId]);
 
   // Fetch latest booking data from the database when dialog opens
   useEffect(() => {
@@ -118,7 +179,9 @@ export const BookingOptionsDialog = ({
           
           if (response.ok) {
             const data = await response.json();
-            console.log("Fetched booking date:", data.startTime);
+            console.log("Fetched booking data:", data);
+            console.log("Payment info:", data.bookingPayment);
+            
             setCurrentBooking(data);
             
             // Use the time from the actual booking, not local time
@@ -131,11 +194,26 @@ export const BookingOptionsDialog = ({
             setOriginalNotes(bookingNotes);
             setSelectedDate(new Date(data.startTime));
             
+            // Set service and payment status
+            if (data.service?.id) {
+              setSelectedServiceId(data.service.id);
+              setOriginalServiceId(data.service.id);
+            }
+            
+            // Set default payment status explicitly and log it
+            const statusValue = data.bookingPayment?.status || "pending";
+            console.log("Setting payment status to:", statusValue);
+            setPaymentStatus(statusValue);
+            setOriginalPaymentStatus(statusValue);
+            
             // Update parent component with fresh data
             if (onBookingUpdate) {
               onBookingUpdate(data);
             }
           } else {
+            console.log("Fallback to props booking data:", booking);
+            console.log("Props payment info:", booking.bookingPayment);
+            
             // Fall back to the booking data passed by props
             setCurrentBooking(booking as ExtendedBooking);
             
@@ -148,9 +226,24 @@ export const BookingOptionsDialog = ({
             setNotes(bookingNotes);
             setOriginalNotes(bookingNotes);
             setSelectedDate(new Date(booking.startTime));
+            
+            // Set service and payment status from props
+            if (booking.service?.id) {
+              setSelectedServiceId(booking.service.id);
+              setOriginalServiceId(booking.service.id);
+            }
+            
+            // Set default payment status explicitly and log it
+            const statusValue = booking.bookingPayment?.status || "pending";
+            console.log("Setting payment status (fallback) to:", statusValue);
+            setPaymentStatus(statusValue);
+            setOriginalPaymentStatus(statusValue);
           }
         } catch (error) {
           console.error("Error fetching booking details:", error);
+          console.log("Error fallback booking data:", booking);
+          console.log("Error fallback payment info:", booking.bookingPayment);
+          
           // Fall back to the booking data passed by props
           setCurrentBooking(booking as ExtendedBooking);
           
@@ -163,6 +256,18 @@ export const BookingOptionsDialog = ({
           setNotes(bookingNotes);
           setOriginalNotes(bookingNotes);
           setSelectedDate(new Date(booking.startTime));
+          
+          // Set service and payment status from props
+          if (booking.service?.id) {
+            setSelectedServiceId(booking.service.id);
+            setOriginalServiceId(booking.service.id);
+          }
+          
+          // Set default payment status explicitly and log it
+          const statusValue = booking.bookingPayment?.status || "pending";
+          console.log("Setting payment status (error fallback) to:", statusValue);
+          setPaymentStatus(statusValue);
+          setOriginalPaymentStatus(statusValue);
         } finally {
           setIsLoading(false);
         }
@@ -294,6 +399,15 @@ export const BookingOptionsDialog = ({
   // Use currentBooking if available, otherwise use booking from props
   const activeBooking = currentBooking || (booking as ExtendedBooking);
 
+  // For debugging: Log the active booking and payment status just before render
+  useEffect(() => {
+    if (activeBooking) {
+      console.log("Active booking before render:", activeBooking);
+      console.log("Payment status before render:", paymentStatus);
+      console.log("Payment info before render:", activeBooking.bookingPayment);
+    }
+  }, [activeBooking, paymentStatus]);
+
   const handleUpdateNotes = async () => {
     if (!activeBooking) return;
     
@@ -346,6 +460,104 @@ export const BookingOptionsDialog = ({
     } catch (error) {
       console.error("Error updating notes:", error);
       toast.error(error instanceof Error ? error.message : "Failed to update notes");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateService = async () => {
+    if (!activeBooking) return;
+    
+    // Prevent service change if payment is completed
+    if (activeBooking.bookingPayment?.status === "paid") {
+      toast.error("Cannot change service for a paid booking");
+      // Reset selected service to original
+      setSelectedServiceId(originalServiceId);
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/appointments/${activeBooking.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          serviceId: selectedServiceId,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || "Failed to update service");
+      }
+
+      // Get the updated booking data from the response
+      const updatedBooking = await response.json();
+      
+      // Update current booking with the new data
+      setCurrentBooking(updatedBooking);
+      
+      // Update original service ID after successful save
+      setOriginalServiceId(selectedServiceId);
+      
+      // Update the parent component with the new booking data
+      if (onBookingUpdate) {
+        onBookingUpdate(updatedBooking);
+      }
+      
+      toast.success("Service updated successfully");
+    } catch (error) {
+      console.error("Error updating service:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to update service");
+      // Reset selected service to original on error
+      setSelectedServiceId(originalServiceId);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdatePaymentStatus = async () => {
+    if (!activeBooking) return;
+    
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/appointments/${activeBooking.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          paymentStatus: paymentStatus,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || "Failed to update payment status");
+      }
+
+      // Get the updated booking data from the response
+      const updatedBooking = await response.json();
+      
+      // Update current booking with the new data
+      setCurrentBooking(updatedBooking);
+      
+      // Update original payment status after successful save
+      setOriginalPaymentStatus(paymentStatus);
+      
+      // Update the parent component with the new booking data
+      if (onBookingUpdate) {
+        onBookingUpdate(updatedBooking);
+      }
+      
+      toast.success("Payment status updated successfully");
+    } catch (error) {
+      console.error("Error updating payment status:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to update payment status");
+      // Reset payment status to original on error
+      setPaymentStatus(originalPaymentStatus);
     } finally {
       setIsLoading(false);
     }
@@ -427,7 +639,7 @@ export const BookingOptionsDialog = ({
         bookingCopy.service = booking.service;
       }
       
-      onBookingUpdate(bookingCopy as Booking);
+      onBookingUpdate(bookingCopy as FullBooking);
     }
     
     // Close the dialog
@@ -450,6 +662,9 @@ export const BookingOptionsDialog = ({
     }).format(price);
   };
   
+  // Check if service can be changed (only if payment is not completed)
+  const canChangeService = activeBooking?.bookingPayment?.status !== "paid";
+
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogClose}>
       <DialogContent className="sm:max-w-[600px]">
@@ -480,27 +695,73 @@ export const BookingOptionsDialog = ({
               </div>
               <div>
                 <Label className="text-sm text-gray-500">Service</Label>
-                <p>{activeBooking?.service?.name || "None"}</p>
+                <div className="mt-1">
+                  <Select
+                    key={`service-${selectedServiceId || 'none'}`}
+                    value={selectedServiceId || undefined}
+                    onValueChange={(value) => {
+                      console.log("Service changed to:", value);
+                      setSelectedServiceId(value);
+                      if (value !== originalServiceId) {
+                        // Auto-save service change if different
+                        setTimeout(() => handleUpdateService(), 100);
+                      }
+                    }}
+                    disabled={isLoading || !canChangeService}
+                  >
+                    <SelectTrigger className="w-full h-8 text-sm">
+                      <SelectValue>
+                        {activeBooking?.service?.name || "Select a service"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableServices.map((service) => (
+                        <SelectItem key={service.id} value={service.id} className="text-sm">
+                          {service.name} ({formatPrice(service)})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!canChangeService && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      Cannot change service for a paid booking
+                    </p>
+                  )}
+                </div>
               </div>
               <div>
                 <Label className="text-sm text-gray-500">Service Price</Label>
                 <p>{formatPrice(activeBooking?.service)}</p>
               </div>
-              {activeBooking?.bookingPayment && (
-                <div>
-                  <Label className="text-sm text-gray-500">Payment Status</Label>
-                  <p
-                    className={cn(
-                      "text-sm font-medium",
-                      activeBooking.bookingPayment.status === "paid"
-                        ? "text-green-600"
-                        : "text-amber-600"
-                    )}
+              <div>
+                <Label className="text-sm text-gray-500">Payment Status</Label>
+                <div className="mt-1">
+                  <Select
+                    key={`payment-status-${paymentStatus || 'pending'}`}
+                    value={paymentStatus || 'pending'}
+                    defaultValue="pending"
+                    onValueChange={(value) => {
+                      console.log("Payment status changed to:", value);
+                      setPaymentStatus(value);
+                      if (value !== originalPaymentStatus) {
+                        // Auto-save payment status change if different
+                        setTimeout(() => handleUpdatePaymentStatus(), 100);
+                      }
+                    }}
+                    disabled={isLoading}
                   >
-                    {activeBooking.bookingPayment.status === "paid" ? "Paid" : "Pending"}
-                  </p>
+                    <SelectTrigger className="w-full h-8 text-sm">
+                      <SelectValue>
+                        {paymentStatus === 'paid' ? 'Paid' : 'Pending'}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending" className="text-sm">Pending</SelectItem>
+                      <SelectItem value="paid" className="text-sm">Paid</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
+              </div>
             </div>
           </div>
 
@@ -527,14 +788,14 @@ export const BookingOptionsDialog = ({
                   initialDate={selectedDate}
                   disablePastDates={true}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Select a date to see available time slots
-                </p>
               </div>
               <div>
                 <Label htmlFor="reschedule-slot">New Time Slot</Label>
                 <Select value={selectedSlot} onValueChange={setSelectedSlot} disabled={isLoading || availableSlots.length === 0}>
-                  <SelectTrigger className={availableSlots.length === 0 ? "text-gray-400" : ""}>
+                  <SelectTrigger className={cn(
+                    "w-full h-8 text-sm",
+                    availableSlots.length === 0 ? "text-gray-400" : ""
+                  )}>
                     <SelectValue placeholder={availableSlots.length === 0 ? "No slots available" : "Select time slot"} />
                   </SelectTrigger>
                   <SelectContent className="max-h-[200px] overflow-y-auto">
@@ -544,18 +805,13 @@ export const BookingOptionsDialog = ({
                       </div>
                     ) : (
                       availableSlots.map((slot) => (
-                        <SelectItem key={slot} value={slot}>
+                        <SelectItem key={slot} value={slot} className="text-sm">
                           {slot}
                         </SelectItem>
                       ))
                     )}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-gray-500 mt-1">
-                  {availableSlots.length > 0 
-                    ? `${availableSlots.length} time slot${availableSlots.length !== 1 ? 's' : ''} available` 
-                    : "No available slots for this date"}
-                </p>
               </div>
             </div>
           </div>

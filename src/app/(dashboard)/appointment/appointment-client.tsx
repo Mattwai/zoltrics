@@ -22,6 +22,41 @@ import { DeleteAppointmentDialog } from "@/components/appointment/delete-appoint
 import { BookingOptionsDialog } from "@/components/appointment/booking-options-dialog";
 import { formatTimeSlot, NZ_TIMEZONE } from "@/lib/time-slots";
 
+// Import FullBooking type from booking-options-dialog
+type FullBooking = {
+  id: string;
+  startTime: Date;
+  endTime: Date;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+  userId?: string;
+  customer: {
+    name: string;
+    email: string;
+    userId?: string;
+    domain: {
+      name: string;
+    } | null;
+  } | null;
+  service: {
+    id: string;
+    name: string;
+    pricing?: {
+      price: number;
+      currency: string;
+    } | null;
+  } | null;
+  bookingMetadata: {
+    notes: string | null;
+  } | null;
+  bookingPayment: {
+    amount: number;
+    currency: string;
+    status: string;
+  } | null;
+};
+
 interface AppointmentClientProps {
   initialBookings: Booking[];
   userId: string;
@@ -332,9 +367,9 @@ export const AppointmentClient = ({
         <BookingOptionsDialog
           isOpen={bookingDialogOpen}
           onClose={closeBookingDialog}
-          booking={selectedBooking}
+          booking={selectedBooking as unknown as FullBooking}
           onCancel={openDeleteDialog}
-          onBookingUpdate={handleBookingUpdate}
+          onBookingUpdate={handleBookingUpdate as (updatedBooking: FullBooking) => void}
         />
       )}
 

@@ -77,19 +77,26 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { notes, startTime, endTime } = body;
+    const { notes, startTime, endTime, serviceId, paymentStatus } = body;
 
-    // Validate date strings
-    if (!startTime || !endTime) {
-      return new NextResponse("Start time and end time are required", { status: 400 });
+    // Validate required fields based on what's being updated
+    if (startTime !== undefined && endTime !== undefined) {
+      if (!startTime || !endTime) {
+        return new NextResponse("Start time and end time are required", { status: 400 });
+      }
     }
 
-    // Parse dates and validate them
-    const parsedStartTime = new Date(startTime);
-    const parsedEndTime = new Date(endTime);
+    // Parse dates and validate them if provided
+    let parsedStartTime;
+    let parsedEndTime;
+    
+    if (startTime && endTime) {
+      parsedStartTime = new Date(startTime);
+      parsedEndTime = new Date(endTime);
 
-    if (isNaN(parsedStartTime.getTime()) || isNaN(parsedEndTime.getTime())) {
-      return new NextResponse("Invalid date format", { status: 400 });
+      if (isNaN(parsedStartTime.getTime()) || isNaN(parsedEndTime.getTime())) {
+        return new NextResponse("Invalid date format", { status: 400 });
+      }
     }
 
     // First, check if the booking exists
@@ -103,6 +110,11 @@ export async function PATCH(
                 name: true
               }
             }
+          }
+        },
+        service: {
+          include: {
+            pricing: true
           }
         },
         bookingMetadata: true,
@@ -124,18 +136,74 @@ export async function PATCH(
       return new NextResponse("Unauthorized to update this booking", { status: 403 });
     }
 
+    // If booking is paid and trying to change service, prevent it
+    if (serviceId && 
+        booking.bookingPayment?.status === "paid" && 
+        serviceId !== booking.serviceId) {
+      return new NextResponse(
+        "Cannot change service for a paid booking", 
+        { status: 400 }
+      );
+    }
+
+    // Fetch the new service if serviceId is changing
+    let newService = null;
+    if (serviceId && serviceId !== booking.serviceId) {
+      newService = await prisma.service.findUnique({
+        where: { id: serviceId },
+        include: { pricing: true }
+      });
+      
+      if (!newService) {
+        return new NextResponse("Service not found", { status: 404 });
+      }
+    }
+
+    // Prepare the update data
+    const updateData: any = {
+      bookingMetadata: notes !== undefined ? {
+        update: {
+          notes: notes || null
+        }
+      } : undefined,
+    };
+
+    // Add time updates if provided
+    if (parsedStartTime && parsedEndTime) {
+      updateData.startTime = parsedStartTime;
+      updateData.endTime = parsedEndTime;
+    }
+
+    // Add service update if provided and allowed
+    if (serviceId && serviceId !== booking.serviceId) {
+      updateData.serviceId = serviceId;
+      
+      // Update payment amount if service has pricing
+      if (newService?.pricing && booking.bookingPayment) {
+        updateData.bookingPayment = {
+          update: {
+            amount: newService.pricing.price,
+            currency: newService.pricing.currency || "NZD"
+          }
+        };
+      }
+    }
+
+    // Update payment status if provided
+    if (paymentStatus !== undefined && booking.bookingPayment) {
+      // Initialize bookingPayment if it wasn't set earlier
+      if (!updateData.bookingPayment) {
+        updateData.bookingPayment = { update: {} };
+      }
+      
+      // Add status to the update
+      updateData.bookingPayment.update.status = paymentStatus;
+    }
+
     // Update the booking
     const updatedBooking = await prisma.booking.update({
       where: { id: params.id },
-      data: {
-        startTime: parsedStartTime,
-        endTime: parsedEndTime,
-        bookingMetadata: {
-          update: {
-            notes: notes || null
-          }
-        }
-      },
+      data: updateData,
       include: {
         customer: {
           include: {
@@ -144,6 +212,11 @@ export async function PATCH(
                 name: true
               }
             }
+          }
+        },
+        service: {
+          include: {
+            pricing: true
           }
         },
         bookingMetadata: true,
