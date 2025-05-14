@@ -24,7 +24,6 @@ const Page = async (props: Props) => {
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-semibold text-gray-900">Account Settings</h2>
-              <RoleBadge role={session.user.role || "USER"} className="text-sm px-4 py-1.5" />
             </div>
             <BusinessName 
               userId={session.user.id}

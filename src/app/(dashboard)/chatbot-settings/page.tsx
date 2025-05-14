@@ -46,10 +46,6 @@ const Page = async (props: Props) => {
         <div className="flex flex-col gap-8">
           <div className="flex flex-col gap-3">
             <div className="flex gap-4 items-center">
-              <div className="flex gap-1 bg-cream rounded-full px-3 py-1 text-xs items-center font-bold">
-                <PremiumBadge />
-                {plan.charAt(0) + plan.slice(1).toLowerCase()}
-              </div>
             </div>
             <Separator orientation="horizontal" />
             <div className="w-full">

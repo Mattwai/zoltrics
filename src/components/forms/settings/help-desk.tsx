@@ -75,12 +75,6 @@ const HelpDesk = ({ id, plan }: Props) => {
               ? `You can add up to ${maxFaqs} FAQs on your current plan.`
               : "You can add unlimited FAQs on your current plan."}
           </p>
-          <p className="text-sm text-gray-500 mt-1">
-            Current FAQs: {isQuestions.length}
-            {typeof maxFaqs === "number" && maxFaqs !== -1
-              ? ` / ${maxFaqs}`
-              : ""}
-          </p>
         </div>
         {editingQuestion ? (
           <form onSubmit={handleUpdate} className="flex flex-col gap-6 mt-4">
