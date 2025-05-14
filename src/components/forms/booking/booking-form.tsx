@@ -21,7 +21,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { CalendarIcon, CheckCircle } from "lucide-react";
 import { signIn, useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { DepositPayment } from "./deposit-payment-form";
@@ -114,7 +114,7 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
     }
   };
 
-  const fetchAvailableTimeSlots = async (date: Date, userId: string) => {
+  const fetchAvailableTimeSlots = useCallback(async (date: Date, userId: string) => {
     try {
       // Format the date in YYYY-MM-DD format to preserve the selected date regardless of timezone
       const formattedDate = `${date.getFullYear()}-${String(
@@ -124,9 +124,11 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
       const response = await fetch(
         `/api/bookings/available-slots?date=${formattedDate}&userId=${userId}`
       );
+      
       if (!response.ok) {
         throw new Error("Failed to fetch available time slots");
       }
+      
       const data = await response.json();
 
       // If no slots are returned, the date might be blocked
@@ -135,13 +137,13 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
       }
 
       // Process the slots to include formatted duration and calculate slots remaining
-      const processedSlots = data.slots.map((slot: any) => {
+      const processedSlots = data.slots.map((slot: AppointmentTimeSlots) => {
         // Calculate end time if not provided
         const endTimeValue =
-          slot.endTime || calculateEndTime(slot.slot, slot.duration);
+          slot.endTime || calculateEndTime(slot.slot, slot.duration || 30);
 
         // Format duration for display (e.g., "30 mins")
-        const formattedDuration = `${slot.duration} mins`;
+        const formattedDuration = `${slot.duration || 30} mins`;
 
         // Calculate slots remaining if maxSlots is provided
         const slotsRemaining = slot.maxSlots || 1;
@@ -162,7 +164,7 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
       console.error("Error fetching time slots:", error);
       throw error;
     }
-  };
+  }, []);
 
   // Helper function to calculate end time based on start time and duration
   const calculateEndTime = (startTime: string, durationMinutes: number) => {
@@ -180,13 +182,9 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
   useEffect(() => {
     if (selectedDate) {
       setIsLoading(true);
+      setError(null);
       fetchAvailableTimeSlots(selectedDate, userId)
-        .then((slots: AppointmentTimeSlots[]) => {
-          console.log("Fetched time slots:", slots);
-          console.log(
-            "Custom slots count:",
-            slots.filter((slot) => slot.isCustom).length
-          );
+        .then((slots) => {
           setAvailableTimeSlots(slots);
           setError(null);
         })
@@ -200,7 +198,7 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
     } else {
       setAvailableTimeSlots([]);
     }
-  }, [selectedDate, userId]);
+  }, [selectedDate, userId, fetchAvailableTimeSlots]);
 
   const handleTimeSlotClick = (slot: AppointmentTimeSlots) => {
     setSelectedTime(slot.slot);

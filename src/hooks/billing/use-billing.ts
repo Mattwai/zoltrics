@@ -10,7 +10,7 @@ import {
 } from "@stripe/react-stripe-js";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export const useStripe = () => {
   const [onStripeAccountPending, setOnStripeAccountPending] =
@@ -37,7 +37,7 @@ export const useStripeCustomer = (amount: number, stripeId: string) => {
   const [stripeSecret, setStripeSecret] = useState<string>("");
   const [loadForm, setLoadForm] = useState<boolean>(false);
 
-  const onGetCustomerIntent = async (amount: number) => {
+  const onGetCustomerIntent = useCallback(async (amount: number) => {
     try {
       setLoadForm(true);
       const intent = await onCreateCustomerPaymentIntentSecret(
@@ -51,11 +51,11 @@ export const useStripeCustomer = (amount: number, stripeId: string) => {
     } catch (error) {
       console.log(error);
     }
-  };
+  }, [stripeId]);
 
   useEffect(() => {
     onGetCustomerIntent(amount);
-  }, []);
+  }, [amount, onGetCustomerIntent]);
 
   return { stripeSecret, loadForm };
 };

@@ -26,7 +26,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useForm, UseFormRegister } from "react-hook-form";
 import { z } from "zod";
 import { HelpDesk } from "@prisma/client";
@@ -199,26 +199,18 @@ export const useHelpDesk = (id: string) => {
     }
   };
 
-  const getAllQuestions = async () => {
-    try {
-      setLoading(true);
-      const response = await onGetAllHelpDeskQuestions(id);
-      if (response?.status === 200) {
-        setIsQuestions(response.questions);
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Something went wrong",
-      });
-    } finally {
+  const getAllQuestions = useCallback(async () => {
+    setLoading(true);
+    const questions = await onGetAllHelpDeskQuestions(id);
+    if (questions) {
+      setIsQuestions(questions.questions!);
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     getAllQuestions();
-  }, [id]);
+  }, [getAllQuestions]);
 
   return {
     register,
@@ -260,18 +252,18 @@ export const useFilterQuestions = (userId: string) => {
     }
   });
 
-  const onGetQuestions = async () => {
+  const onGetQuestions = useCallback(async () => {
     setLoading(true);
     const questions = await onGetAllFilterQuestions(userId);
     if (questions) {
       setIsQuestions(questions.questions);
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   useEffect(() => {
     onGetQuestions();
-  }, []);
+  }, [onGetQuestions]);
 
   return {
     loading,
@@ -368,18 +360,18 @@ export const useKnowledgeBase = (id: string) => {
     setLoading(false);
   });
 
-  const onGetEntries = async () => {
+  const onGetEntries = useCallback(async () => {
     setLoading(true);
     const result = await onGetAllKnowledgeBaseEntries(id);
     if (result) {
       setEntries(result.entries.map(e => ({ ...e, category: e.category || undefined })));
     }
     setLoading(false);
-  };
+  }, [id]);
 
   useEffect(() => {
     onGetEntries();
-  }, []);
+  }, [onGetEntries]);
 
   return {
     register,

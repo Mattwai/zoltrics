@@ -5,7 +5,7 @@ import {
   ChatBotMessageSchema,
 } from "@/schemas/conversation-schema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 
 export const useChatBot = (userId?: string, initialChatBot?: {
@@ -74,7 +74,7 @@ export const useChatBot = (userId?: string, initialChatBot?: {
     { role: "assistant" | "user"; content: string; link?: string }[]
   >([]);
   const [onAiTyping, setOnAiTyping] = useState<boolean>(false);
-  const [currentBotId, setCurrentBotId] = useState<string>();
+  const [currentBotId, setCurrentBotId] = useState<string | null>(null);
   const [onRealTime, setOnRealTime] = useState<
     { chatroom: string; mode: boolean } | undefined
   >(undefined);
@@ -103,33 +103,38 @@ export const useChatBot = (userId?: string, initialChatBot?: {
     );
   }, [botOpened]);
 
-  let limitRequest = 0;
+  const limitRequestRef = useRef<number>(0);
 
-  const onGetDomainChatBot = async (id: string) => {
-    setCurrentBotId(id);
-    const chatbot = await onGetCurrentChatBot(id);
-    if (chatbot) {
-      setCurrentBot({
-        name: chatbot.user?.name || "BookerBuddy",
-        chatBot: {
-          id: chatbot.id,
-          welcomeMessage: chatbot.welcomeMessage,
-          background: chatbot.background,
-          textColor: chatbot.textColor,
-          helpdesk: chatbot.helpdesk,
-        },
-        helpdesk: chatbot.user?.helpdesk.map(h => ({
-          id: h.id,
-          question: h.question,
-          answer: h.answer,
-          domainId: null
-        })) || [],
-      });
-      setLoading(false);
+  const onGetDomainChatBot = useCallback(async (id: string) => {
+    try {
+      setLoading(true);
+      const chatbot = await onGetCurrentChatBot(id);
+      if (chatbot) {
+        setCurrentBotId(id);
+        setCurrentBot({
+          name: "BookerBuddy",
+          chatBot: {
+            id: chatbot.id,
+            welcomeMessage: chatbot.welcomeMessage,
+            background: chatbot.background,
+            textColor: chatbot.textColor,
+            helpdesk: chatbot.helpdesk,
+          },
+          helpdesk: chatbot.user?.helpdesk.map((h: any) => ({
+            id: h.id,
+            question: h.question,
+            answer: h.answer,
+            domainId: null
+          })) || [],
+        });
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error("Error fetching domain chatbot:", error);
     }
-  };
+  }, []);
   
-  const onGetUserChatBot = async (userId: string) => {
+  const onGetUserChatBot = useCallback(async (userId: string) => {
     try {
       const response = await fetch(`/api/user/${userId}/chatbot`);
       if (response.ok) {
@@ -161,7 +166,7 @@ export const useChatBot = (userId?: string, initialChatBot?: {
     } catch (error) {
       console.error("Error fetching user chatbot:", error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (initialChatBot) {
@@ -172,13 +177,13 @@ export const useChatBot = (userId?: string, initialChatBot?: {
       window.addEventListener("message", (e) => {
         console.log(e.data);
         const botid = e.data;
-        if (limitRequest < 1 && typeof botid == "string") {
+        if (limitRequestRef.current < 1 && typeof botid == "string") {
           onGetDomainChatBot(botid);
-          limitRequest++;
+          limitRequestRef.current++;
         }
       });
     }
-  }, [userId, initialChatBot]);
+  }, [userId, initialChatBot, onGetUserChatBot, onGetDomainChatBot]);
 
   const onStartChatting = handleSubmit(async (values) => {
     if (!values.content?.trim()) {
