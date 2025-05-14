@@ -7,31 +7,49 @@ import { Booking } from '@/types/booking';
 // Mock the components used by AllAppointments
 jest.mock('@/components/table', () => ({
   DataTable: ({ children, headers }: { children: React.ReactNode, headers: any[] }) => (
-    <div data-testid="mock-data-table">
-      <div data-testid="mock-headers">{headers.join(',')}</div>
-      <div data-testid="mock-content">{children}</div>
-    </div>
+    <table data-testid="mock-data-table">
+      <thead>
+        <tr>
+          {headers.map((header, index) => (
+            <th key={index}>{header}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {children}
+      </tbody>
+    </table>
   ),
 }));
 
 jest.mock('@/components/ui/table', () => ({
   TableCell: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="mock-table-cell">{children}</div>
+    <td data-testid="mock-table-cell">{children}</td>
   ),
   TableRow: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="mock-table-row">{children}</div>
+    <tr data-testid="mock-table-row">{children}</tr>
   ),
 }));
 
 jest.mock('@/components/ui/tooltip', () => ({
-  Tooltip: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  TooltipContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  TooltipProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  TooltipTrigger: ({ children, asChild }: { children: React.ReactNode, asChild?: boolean }) => <div>{children}</div>
+  Tooltip: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+  TooltipContent: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+  TooltipProvider: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+  TooltipTrigger: ({ children, asChild }: { children: React.ReactNode, asChild?: boolean }) => <span>{children}</span>
 }));
 
 jest.mock('@/constants/menu', () => ({
   APPOINTMENT_TABLE_HEADER: ['Name', 'Email', 'Date', 'Service', 'Actions']
+}));
+
+// This mock fixes the HTML nesting issue
+jest.mock('lucide-react', () => ({
+  ChevronLeft: () => <span>←</span>,
+  ChevronRight: () => <span>→</span>,
+  MoreVertical: () => <span>⋮</span>,
+  StickyNote: () => <span>📝</span>,
+  ArrowDown: () => <span>↓</span>,
+  ArrowUp: () => <span>↑</span>,
 }));
 
 describe('AllAppointments Component', () => {
@@ -88,16 +106,25 @@ describe('AllAppointments Component', () => {
   ];
 
   it('renders with bookings', () => {
-    const { getByTestId, getAllByTestId } = render(
+    const { getByText, getAllByTestId } = render(
       <AllAppointments bookings={mockBookings} />
     );
     
-    expect(getByTestId('mock-data-table')).toBeInTheDocument();
-    expect(getByTestId('mock-headers')).toHaveTextContent('Name,Email,Date,Service,Actions');
+    // Check headers are rendered
+    expect(getByText('Name')).toBeInTheDocument();
+    expect(getByText('Email')).toBeInTheDocument();
+    expect(getByText('Date ↑')).toBeInTheDocument();
+    expect(getByText('Service')).toBeInTheDocument();
     
     // Should have two table rows (one for each booking)
     const tableRows = getAllByTestId('mock-table-row');
     expect(tableRows).toHaveLength(2);
+    
+    // Check for specific content
+    expect(getByText('John Doe')).toBeInTheDocument();
+    expect(getByText('jane@example.com')).toBeInTheDocument();
+    expect(getByText('Consultation')).toBeInTheDocument();
+    expect(getByText('Therapy Session')).toBeInTheDocument();
   });
 
   it('renders a message when no bookings are available', () => {

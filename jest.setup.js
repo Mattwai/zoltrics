@@ -68,4 +68,12 @@ global.fetch = jest.fn();
 // Cleanup after each test
 afterEach(() => {
   jest.clearAllMocks();
-}); 
+});
+
+// Optional: add any global setup needed for tests
+// This file is run before each test file
+
+// Load environment variables for tests
+require('dotenv').config({ path: '.env.test' });
+
+// Add any other test setup here 

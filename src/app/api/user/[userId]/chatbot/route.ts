@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { ChatBot, HelpDesk, Prisma, User } from "@prisma/client";
+import { DEFAULT_LLM_PARAMS, LLMParameters } from "@/lib/ai-params";
 
 type HelpDeskQuestion = {
   id: string;
@@ -93,15 +94,15 @@ export async function POST(
   { params }: { params: { userId: string } }
 ) {
   try {
-    const { message } = await request.json();
+    const { message, temperature, top_p, max_tokens, frequency_penalty, presence_penalty } = await request.json();
 
-      if (!process.env.DEEPSEEK_API_KEY) {
-        console.error("DeepSeek API key is not set");
-        return NextResponse.json(
-          { error: "DeepSeek API key is not configured" },
-          { status: 500 }
-        );
-      }
+    if (!process.env.DEEPSEEK_API_KEY) {
+      console.error("DeepSeek API key is not set");
+      return NextResponse.json(
+        { error: "DeepSeek API key is not configured" },
+        { status: 500 }
+      );
+    }
 
     const user = await prisma.user.findUnique({
       where: {
@@ -141,6 +142,16 @@ export async function POST(
       return NextResponse.json({ response });
     }
 
+    // Collect AI parameters, using defaults if not provided
+    const aiParams: LLMParameters = {
+      ...DEFAULT_LLM_PARAMS,
+      ...(temperature !== undefined && { temperature }),
+      ...(top_p !== undefined && { top_p }),
+      ...(max_tokens !== undefined && { max_tokens }),
+      ...(frequency_penalty !== undefined && { frequency_penalty }),
+      ...(presence_penalty !== undefined && { presence_penalty })
+    };
+
     // If no relevant information found, use DeepSeek
     try {
       // Use business name if available, otherwise fall back to user name
@@ -175,6 +186,11 @@ Please be professional and helpful in your responses.`;
               content: message,
             },
           ],
+          temperature: aiParams.temperature,
+          top_p: aiParams.top_p,
+          max_tokens: aiParams.max_tokens,
+          frequency_penalty: aiParams.frequency_penalty,
+          presence_penalty: aiParams.presence_penalty
         }),
       });
 

@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { User, Domain, Service, ServicePricing, ServiceStatus, ChatBot, HelpDesk, KnowledgeBase, BookingCalendarSettings, UserSettings } from "@prisma/client";
+import { DEFAULT_LLM_PARAMS, LLMParameters } from "@/lib/ai-params";
 
 type UserWithRelations = User & {
   domains: (Domain & {
@@ -24,7 +25,7 @@ type UserWithRelations = User & {
 
 export async function POST(req: Request, { params }: { params: { userId: string } }) {
   try {
-    const { message, chat } = await req.json();
+    const { message, chat, temperature, top_p, max_tokens, frequency_penalty, presence_penalty } = await req.json();
     
     // Get userId from the URL params
     const urlUserId = params.userId;
@@ -86,6 +87,14 @@ export async function POST(req: Request, { params }: { params: { userId: string 
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    if (!process.env.DEEPSEEK_API_KEY) {
+      console.error("DeepSeek API key is not set");
+      return NextResponse.json(
+        { error: "DeepSeek API key is not configured" },
+        { status: 500 }
+      );
+    }
+
     // Use business name if available, otherwise fall back to user name
     const businessName = user.userBusinessProfile?.businessName || user.name;
 
@@ -121,6 +130,16 @@ Please be professional and helpful in your responses.`;
       });
     }
 
+    // Collect AI parameters, using defaults if not provided
+    const aiParams: LLMParameters = {
+      ...DEFAULT_LLM_PARAMS,
+      ...(temperature !== undefined && { temperature }),
+      ...(top_p !== undefined && { top_p }),
+      ...(max_tokens !== undefined && { max_tokens }),
+      ...(frequency_penalty !== undefined && { frequency_penalty }),
+      ...(presence_penalty !== undefined && { presence_penalty })
+    };
+
     // Create booking assistant conversation
     const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
       method: "POST",
@@ -131,10 +150,33 @@ Please be professional and helpful in your responses.`;
       body: JSON.stringify({
         model: "deepseek-chat",
         messages: messagesToSend,
+        temperature: aiParams.temperature,
+        top_p: aiParams.top_p,
+        max_tokens: aiParams.max_tokens,
+        frequency_penalty: aiParams.frequency_penalty,
+        presence_penalty: aiParams.presence_penalty
       }),
     });
 
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("DeepSeek API error:", errorData);
+      return NextResponse.json(
+        { error: errorData.error?.message || "Failed to generate response" },
+        { status: 500 }
+      );
+    }
+
     const data = await response.json();
+    console.log("DeepSeek response received:", data);
+
+    if (!data.choices?.[0]?.message) {
+      return NextResponse.json(
+        { error: "Failed to generate response" },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({ 
       response: data.choices[0].message,
       raw: data 
