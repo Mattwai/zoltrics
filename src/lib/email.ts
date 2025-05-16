@@ -197,7 +197,7 @@ class EmailService {
   // Specific method for contact form emails
   async sendContactFormEmail(formData: ContactFormData) {
     return this.sendEmail({
-      to: process.env.EMAIL_TO || 'waidevelops@gmail.com',
+      to: process.env.EMAIL_TO || 'sales@bookerbuddy.xyz',
       subject: 'New Contact Form Submission from BookerBuddy',
       text: `
 New contact form submission:
