@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import prisma from "./prisma";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import { compare } from "bcrypt";
+import { compare } from "bcryptjs";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
