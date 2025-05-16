@@ -269,7 +269,7 @@ export default async function Home() {
                 ))}
               </div>
               <p className="text-neutral-300 mb-6 flex-grow">
-                &quot;I was constantly missing potential clients because I couldn't respond fast enough. With BookerBuddy, I never miss an opportunity and finally feel like I can compete with the bigger agencies in town. It's been a game-changer for my confidence as a business owner.&quot;
+                &quot;I was constantly missing potential clients because I couldn&apos;t respond fast enough. With BookerBuddy, I never miss an opportunity and finally feel like I can compete with the bigger agencies in town. It&apos;s been a game-changer for my confidence as a business owner.&quot;
               </p>
               <div className="flex items-center gap-3 mt-auto">
                 <div className="w-3 h-12 bg-purple-500 rounded-l-full"></div>
@@ -287,7 +287,7 @@ export default async function Home() {
                 ))}
               </div>
               <p className="text-neutral-300 mb-6 flex-grow">
-                &quot;Our front desk staff was burning out from the endless phone calls and scheduling chaos. Since using BookerBuddy, I've seen a complete change in our office atmosphere. Everyone is calmer, happier, and actually enjoys coming to work again.&quot;
+                &quot;Our front desk staff was burning out from the endless phone calls and scheduling chaos. Since using BookerBuddy, I&apos;ve seen a complete change in our office atmosphere. Everyone is calmer, happier, and actually enjoys coming to work again.&quot;
               </p>
               <div className="flex items-center gap-3 mt-auto">
                 <div className="w-3 h-12 bg-purple-500 rounded-l-full"></div>

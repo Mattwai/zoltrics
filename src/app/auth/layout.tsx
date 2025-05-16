@@ -68,7 +68,7 @@ const Layout = ({ children }: Props) => {
         <div className="relative flex flex-col h-full px-12 pt-24 z-10">
           <div className="max-w-2xl">
             <h2 className="text-gray-900 text-4xl font-bold leading-tight mb-4">
-              Hi, I'm your AI powered sales assistant, BookerBuddy!
+              Hi, I&apos;m your AI powered sales assistant, BookerBuddy!
             </h2>
           </div>
           <div className="relative mt-6">

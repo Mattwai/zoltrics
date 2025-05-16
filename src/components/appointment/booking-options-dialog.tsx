@@ -386,7 +386,7 @@ export const BookingOptionsDialog = ({
       setAvailableSlots([]);
       setSelectedSlot('');
     }
-  }, [selectedDate, currentBooking?.id]);
+  }, [selectedDate, currentBooking?.id, currentBooking?.startTime, currentBooking?.endTime, selectedSlot]);
 
   // Handle date change manually since DatePicker manages its own state
   const handleDateChange = (date: Date | undefined) => {
@@ -394,11 +394,10 @@ export const BookingOptionsDialog = ({
     setSelectedDate(date);
   };
 
-  if (!booking) return null;
-
+  // Define activeBooking before conditional return
   // Use currentBooking if available, otherwise use booking from props
   const activeBooking = currentBooking || (booking as ExtendedBooking);
-
+  
   // For debugging: Log the active booking and payment status just before render
   useEffect(() => {
     if (activeBooking) {
@@ -407,6 +406,8 @@ export const BookingOptionsDialog = ({
       console.log("Payment info before render:", activeBooking.bookingPayment);
     }
   }, [activeBooking, paymentStatus]);
+
+  if (!booking) return null;
 
   const handleUpdateNotes = async () => {
     if (!activeBooking) return;
