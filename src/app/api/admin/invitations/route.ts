@@ -5,6 +5,8 @@ import emailService from '@/lib/email';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth';
 
+
+export const dynamic = 'force-dynamic';
 // GET - List all invitations
 export async function GET(request: Request) {
   try {

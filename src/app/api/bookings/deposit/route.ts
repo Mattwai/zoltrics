@@ -4,6 +4,8 @@ import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
+
+export const dynamic = 'force-dynamic';
 const stripe = new Stripe(process.env.STRIPE_SECRET!, {
   typescript: true,
   apiVersion: "2024-04-10",

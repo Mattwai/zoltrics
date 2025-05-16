@@ -3,6 +3,8 @@ import { client } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authConfig } from "@/lib/auth";
 
+
+export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authConfig);

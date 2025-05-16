@@ -5,6 +5,8 @@ import { NextResponse } from "next/server";
 import { User, Domain, Service, ServicePricing, ServiceStatus, ChatBot, HelpDesk, KnowledgeBase, BookingCalendarSettings, UserSettings } from "@prisma/client";
 import { DEFAULT_LLM_PARAMS, LLMParameters } from "@/lib/ai-params";
 
+
+export const dynamic = 'force-dynamic';
 type UserWithRelations = User & {
   domains: (Domain & {
     services: (Service & {

@@ -4,6 +4,8 @@ import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth';
 import emailService from '@/lib/email';
 
+export const dynamic = 'force-dynamic';
+
 // POST - Resend an invitation
 export async function POST(
   request: Request,
