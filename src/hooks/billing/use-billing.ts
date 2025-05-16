@@ -65,6 +65,7 @@ export const useCompleteCustomerPayment = (onNext: () => void) => {
   const { toast } = useToast();
   const stripe = useStripeHook();
   const elements = useElements();
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
   const onMakePayment = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -80,7 +81,7 @@ export const useCompleteCustomerPayment = (onNext: () => void) => {
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: "http://localhost:3000/settings",
+          return_url: `${baseUrl}/settings`,
         },
         redirect: "if_required",
       });
@@ -179,6 +180,7 @@ export const useCompletePayment = (
   const { toast } = useToast();
   const stripe = useStripeHook();
   const elements = useElements();
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
   const onMakePayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -192,7 +194,7 @@ export const useCompletePayment = (
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: "http://localhost:3000/settings",
+          return_url: `${baseUrl}/settings`,
         },
         redirect: "if_required",
       });
