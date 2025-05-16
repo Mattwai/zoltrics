@@ -21,10 +21,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { CalendarIcon, CheckCircle } from "lucide-react";
 import { signIn, useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { DepositPayment } from "./deposit-payment-form";
+import Image from "next/image";
 
 // Define the AppointmentTimeSlots interface
 interface AppointmentTimeSlots {
@@ -94,10 +95,10 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
   }, [session, form]);
 
   const handleDateChange = async (date: Date | undefined) => {
-    if (date && session?.user?.id) {
+    if (date) {
       setIsLoading(true);
       try {
-        const slots = await fetchAvailableTimeSlots(date, session.user.id);
+        const slots = await fetchAvailableTimeSlots(date, userId);
         setAvailableTimeSlots(slots);
         if (selectedTime && !slots.some((slot) => slot.slot === selectedTime)) {
           setSelectedTime(null);
@@ -113,7 +114,7 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
     }
   };
 
-  const fetchAvailableTimeSlots = async (date: Date, userId: string) => {
+  const fetchAvailableTimeSlots = useCallback(async (date: Date, userId: string) => {
     try {
       // Format the date in YYYY-MM-DD format to preserve the selected date regardless of timezone
       const formattedDate = `${date.getFullYear()}-${String(
@@ -123,9 +124,11 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
       const response = await fetch(
         `/api/bookings/available-slots?date=${formattedDate}&userId=${userId}`
       );
+      
       if (!response.ok) {
         throw new Error("Failed to fetch available time slots");
       }
+      
       const data = await response.json();
 
       // If no slots are returned, the date might be blocked
@@ -134,13 +137,13 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
       }
 
       // Process the slots to include formatted duration and calculate slots remaining
-      const processedSlots = data.slots.map((slot: any) => {
+      const processedSlots = data.slots.map((slot: AppointmentTimeSlots) => {
         // Calculate end time if not provided
         const endTimeValue =
-          slot.endTime || calculateEndTime(slot.slot, slot.duration);
+          slot.endTime || calculateEndTime(slot.slot, slot.duration || 30);
 
         // Format duration for display (e.g., "30 mins")
-        const formattedDuration = `${slot.duration} mins`;
+        const formattedDuration = `${slot.duration || 30} mins`;
 
         // Calculate slots remaining if maxSlots is provided
         const slotsRemaining = slot.maxSlots || 1;
@@ -161,7 +164,7 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
       console.error("Error fetching time slots:", error);
       throw error;
     }
-  };
+  }, []);
 
   // Helper function to calculate end time based on start time and duration
   const calculateEndTime = (startTime: string, durationMinutes: number) => {
@@ -177,15 +180,11 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
   };
 
   useEffect(() => {
-    if (selectedDate && session?.user?.id) {
+    if (selectedDate) {
       setIsLoading(true);
-      fetchAvailableTimeSlots(selectedDate, session.user.id)
-        .then((slots: AppointmentTimeSlots[]) => {
-          console.log("Fetched time slots:", slots);
-          console.log(
-            "Custom slots count:",
-            slots.filter((slot) => slot.isCustom).length
-          );
+      setError(null);
+      fetchAvailableTimeSlots(selectedDate, userId)
+        .then((slots) => {
           setAvailableTimeSlots(slots);
           setError(null);
         })
@@ -199,7 +198,7 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
     } else {
       setAvailableTimeSlots([]);
     }
-  }, [selectedDate, session?.user?.id]);
+  }, [selectedDate, userId, fetchAvailableTimeSlots]);
 
   const handleTimeSlotClick = (slot: AppointmentTimeSlots) => {
     setSelectedTime(slot.slot);
@@ -545,20 +544,29 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
           />
         </div>
 
-        <Button 
-          type="submit" 
-          className="w-full h-11 text-base font-medium transition-colors"
+        <Button
+          type="submit"
           disabled={isLoading}
+          className="w-full h-12 text-base"
         >
-          {isLoading ? (
-            <div className="flex items-center justify-center">
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-              Booking...
-            </div>
-          ) : (
-            "Book Appointment"
-          )}
+          {isLoading ? "Booking..." : "Book Appointment"}
         </Button>
+        
+        <div className="flex justify-center items-center text-sm text-gray-500 pt-3 mt-2 border-t">
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Powered by</span>
+            <div className="flex items-center">
+              <Image
+                src="/images/bookerbuddy-icon.png"
+                width={22}
+                height={22}
+                alt="BookerBuddy Logo"
+                className="mr-1"
+              />
+              <span className="font-medium">BookerBuddy</span>
+            </div>
+          </div>
+        </div>
       </form>
     </Form>
   );

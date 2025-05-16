@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { useKnowledgeBase } from "@/hooks/settings/use-settings";
 import FormGenerator from "../form-generator";
-import { Plans } from "@prisma/client";
+import { Plans } from "@/types/prisma";
 import { checkHelpdeskFeature } from "@/lib/subscription-checks";
 
 type Props = {

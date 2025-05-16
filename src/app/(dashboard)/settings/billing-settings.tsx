@@ -48,7 +48,7 @@ const BillingSettings = async (props: Props) => {
               </Card>
           }
         >
-          <SubscriptionForm plan={plan!} />
+          <SubscriptionForm plan={(plan as "STANDARD" | "PROFESSIONAL" | "BUSINESS") || "STANDARD"} />
         </Modal>
       </div>
       <div className="lg:col-span-2">

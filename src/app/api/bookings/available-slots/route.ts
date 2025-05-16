@@ -20,6 +20,12 @@ interface TimeSlot {
   isCustom?: boolean;
 }
 
+function isOverlapping(startTime1: Date, endTime1: Date, startTime2: Date, endTime2: Date): boolean {
+  return startTime1 < endTime2 && startTime2 < endTime1;
+}
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -81,7 +87,7 @@ export async function GET(request: NextRequest) {
     console.log(`Found ${customTimeSlots.length} custom time slots for ${date}`);
     if (customTimeSlots.length > 0) {
       customTimeSlots.forEach(slot => {
-        console.log(`Custom slot: ${slot.startTime.toISOString()} - ${slot.endTime.toISOString()}, duration: ${slot.duration}`);
+        console.log(`Custom slot: ${slot.startTime.toISOString()} - ${slot.endTime.toISOString()}`);
       });
     }
 
@@ -232,29 +238,39 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Add custom time slots
+    // Process custom time slots to add to availableSlots
     if (customTimeSlots.length > 0) {
       customTimeSlots.forEach(slot => {
-        // Extract hours and minutes to preserve the time parts while ensuring
-        // they display correctly for the user's selected date
+        // Extract hours and minutes
         const hours = slot.startTime.getHours();
         const minutes = slot.startTime.getMinutes();
         const endHours = slot.endTime.getHours();
         const endMinutes = slot.endTime.getMinutes();
-        
-        // Format the times in 24-hour format
+
+        // Format times in 24-hour format
         const startTimeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
         const endTimeStr = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
         
-        availableSlots.push({
-          slot: `${startTimeStr} - ${endTimeStr}`,
-          startTime: startTimeStr,
-          endTime: endTimeStr,
-          duration: slot.duration || Math.round((slot.endTime.getTime() - slot.startTime.getTime()) / (1000 * 60)),
-          isCustom: true,
-          maxSlots: slot.maxSlots || 1,
-          id: slot.id
-        });
+        // Calculate duration in minutes from start/end time
+        const durationMinutes = Math.round((slot.endTime.getTime() - slot.startTime.getTime()) / (1000 * 60));
+        
+        // Check if this slot is already fully booked
+        const bookedCount = existingBookings.filter(booking => 
+          isOverlapping(booking.startTime, booking.endTime, slot.startTime, slot.endTime)
+        ).length;
+        
+        // Only add if not fully booked
+        if (bookedCount < 1) { // Assuming max 1 booking per slot
+          availableSlots.push({
+            slot: `${startTimeStr} - ${endTimeStr}`,
+            startTime: startTimeStr,
+            endTime: endTimeStr,
+            duration: durationMinutes,
+            isCustom: true,
+            maxSlots: 1,
+            id: slot.id
+          });
+        }
       });
     }
 

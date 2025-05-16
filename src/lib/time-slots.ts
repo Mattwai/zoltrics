@@ -1,6 +1,10 @@
 // Utility functions for handling time slots
 
 import { format, parse, addMinutes } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
+
+// NZ Timezone constant
+export const NZ_TIMEZONE = 'Pacific/Auckland';
 
 /**
  * Generate individual time slots based on start time, end time, and duration
@@ -91,14 +95,43 @@ export const generateTimeSlots = (
   };
   
   /**
-   * Format a time slot to always show "start time - end time" format with AM/PM
+   * Format a time slot to always show "start time - end time" format with AM/PM in New Zealand Time
    * @param slot The time slot (could be just start time or already in start-end format)
    * @param defaultDuration Default duration in minutes if only start time is provided
    * @returns Formatted time slot string
    */
-  export const formatTimeSlot = (slot: string, defaultDuration: number = 60): string => {
+  export const formatTimeSlot = (slot: string | Date, defaultDuration: number = 60): string => {
+    // Handle Date object input
+    if (slot instanceof Date) {
+      try {
+        // Convert to NZ timezone
+        const nzDate = toZonedTime(slot, NZ_TIMEZONE);
+        // Calculate end time
+        const endTime = toZonedTime(addMinutes(slot, defaultDuration), NZ_TIMEZONE);
+        return `${format(nzDate, 'h:mm a')} - ${format(endTime, 'h:mm a')}`;
+      } catch (error) {
+        console.warn('Error formatting Date to NZT:', error);
+        return '';
+      }
+    }
+
+    // For string input
+    // Check if the input is a full ISO string (from a Date object)
+    if (typeof slot === 'string' && slot.includes('T') && slot.includes('Z')) {
+      try {
+        const date = new Date(slot);
+        // Convert to NZ timezone
+        const nzDate = toZonedTime(date, NZ_TIMEZONE);
+        // Calculate end time
+        const endTime = toZonedTime(addMinutes(date, defaultDuration), NZ_TIMEZONE);
+        return `${format(nzDate, 'h:mm a')} - ${format(endTime, 'h:mm a')}`;
+      } catch (error) {
+        console.warn('Error formatting ISO time to NZT:', error);
+      }
+    }
+
     // If the slot already has a dash or hyphen, it's already in the "start - end" format
-    if (slot.includes('-') || slot.includes('–')) {
+    if (typeof slot === 'string' && (slot.includes('-') || slot.includes('–'))) {
       // Check if the parts already have AM/PM
       const parts = slot.split(/[-–]/);
       if (parts.length === 2) {
@@ -127,56 +160,61 @@ export const generateTimeSlots = (
       }
     }
     
-    try {
-      // Try to parse the start time
-      let startTime: Date;
-      
-      // Check format - time could be in 12-hour or 24-hour format
-      if (slot.toLowerCase().includes('am') || slot.toLowerCase().includes('pm')) {
-        // 12-hour format
-        startTime = parse(slot, 'h:mm a', new Date());
-      } else {
-        // 24-hour format
-        startTime = parse(slot, 'HH:mm', new Date());
-      }
-      
-      // Calculate end time by adding the default duration
-      const endTime = addMinutes(startTime, defaultDuration);
-      
-      // Always format with AM/PM
-      return `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`;
-    } catch (error) {
-      console.warn('Error formatting time slot:', error);
-      
-      // Last resort: try to make a best effort to add AM/PM if it looks like a time
-      if (/^\d{1,2}:\d{2}$/.test(slot)) {
-        try {
-          const [hours, minutes] = slot.split(':').map(Number);
-          const period = hours >= 12 ? 'PM' : 'AM';
-          const hours12 = hours % 12 || 12; // Convert 0 to 12
-          const formattedStart = `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
-          
-          // Calculate end time
-          let endHours = hours;
-          let endMinutes = minutes + defaultDuration;
-          while (endMinutes >= 60) {
-            endHours = (endHours + 1) % 24;
-            endMinutes -= 60;
-          }
-          const endPeriod = endHours >= 12 ? 'PM' : 'AM';
-          const endHours12 = endHours % 12 || 12;
-          const formattedEnd = `${endHours12}:${endMinutes.toString().padStart(2, '0')} ${endPeriod}`;
-          
-          return `${formattedStart} - ${formattedEnd}`;
-        } catch {
-          // If all else fails, return the original slot
-          return slot;
+    // Rest of the function for string processing
+    if (typeof slot === 'string') {
+      try {
+        // Try to parse the start time
+        let startTime: Date;
+        
+        // Check format - time could be in 12-hour or 24-hour format
+        if (slot.toLowerCase().includes('am') || slot.toLowerCase().includes('pm')) {
+          // 12-hour format
+          startTime = parse(slot, 'h:mm a', new Date());
+        } else {
+          // 24-hour format
+          startTime = parse(slot, 'HH:mm', new Date());
         }
+        
+        // Calculate end time by adding the default duration
+        const endTime = addMinutes(startTime, defaultDuration);
+        
+        // Always format with AM/PM
+        return `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`;
+      } catch (error) {
+        console.warn('Error formatting time slot:', error);
+        
+        // Last resort: try to make a best effort to add AM/PM if it looks like a time
+        if (/^\d{1,2}:\d{2}$/.test(slot)) {
+          try {
+            const [hours, minutes] = slot.split(':').map(Number);
+            const period = hours >= 12 ? 'PM' : 'AM';
+            const hours12 = hours % 12 || 12; // Convert 0 to 12
+            const formattedStart = `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+            
+            // Calculate end time
+            let endHours = hours;
+            let endMinutes = minutes + defaultDuration;
+            while (endMinutes >= 60) {
+              endHours = (endHours + 1) % 24;
+              endMinutes -= 60;
+            }
+            const endPeriod = endHours >= 12 ? 'PM' : 'AM';
+            const endHours12 = endHours % 12 || 12;
+            const formattedEnd = `${endHours12}:${endMinutes.toString().padStart(2, '0')} ${endPeriod}`;
+            
+            return `${formattedStart} - ${formattedEnd}`;
+          } catch {
+            // If all else fails, return the original slot
+            return slot;
+          }
+        }
+        
+        // If parsing fails, return the original slot
+        return slot;
       }
-      
-      // If parsing fails, return the original slot
-      return slot;
     }
+    
+    return String(slot); // Fallback for unexpected input types
   };
   
   /**

@@ -14,9 +14,9 @@ import { Button } from "../ui/button";
 type EditEmailProps = {
   id: string;
   onCreate(): void;
-  register: UseFormRegister<FieldValues>;
-  errors: FieldErrors<FieldValues>;
-  setDefault: UseFormSetValue<FieldValues>;
+  register: UseFormRegister<any>;
+  errors: FieldErrors<any>;
+  setDefault: UseFormSetValue<any>;
 };
 
 export const EditEmail = ({

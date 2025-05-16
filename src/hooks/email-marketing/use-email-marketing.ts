@@ -13,7 +13,7 @@ import {
 } from "@/schemas/marketing-schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 
 export const useEmailMarketing = () => {
@@ -158,22 +158,31 @@ export const useAnswers = (id: string) => {
   >([]);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const onGetCustomerAnswers = async () => {
+  const onGetCustomerAnswers = useCallback(async () => {
     try {
       setLoading(true);
       const answer = await onGetAllCustomerResponses(id);
       setLoading(false);
       if (answer) {
-        setAnswers(answer);
+        // Transform the data to match the expected state format
+        const transformedAnswers = answer.domains.map(domain => ({
+          customer: domain.customers.map(customer => ({
+            questions: customer.questions.map(q => ({
+              question: q.question,
+              answered: q.answer
+            }))
+          }))
+        }));
+        setAnswers(transformedAnswers);
       }
     } catch (error) {
       console.log(error);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     onGetCustomerAnswers();
-  }, []);
+  }, [onGetCustomerAnswers]);
 
   return { answers, loading };
 };
@@ -182,22 +191,23 @@ export const useEditEmail = (id: string) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [template, setTemplate] = useState<string>("");
 
-  const onGetTemplate = async (id: string) => {
+  const onGetTemplate = useCallback(async (id: string) => {
     try {
       setLoading(true);
       const email = await onGetEmailTemplate(id);
       if (email) {
-        setTemplate(email);
+        // Assuming the actual template content is in the name property
+        setTemplate(typeof email === 'string' ? email : email.name);
       }
       setLoading(false);
     } catch (error) {
       console.log(error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     onGetTemplate(id);
-  }, []);
+  }, [id, onGetTemplate]);
 
   return { loading, template };
 };

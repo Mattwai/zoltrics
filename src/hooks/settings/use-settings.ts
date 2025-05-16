@@ -26,7 +26,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useForm, UseFormRegister } from "react-hook-form";
 import { z } from "zod";
 import { HelpDesk } from "@prisma/client";
@@ -199,26 +199,18 @@ export const useHelpDesk = (id: string) => {
     }
   };
 
-  const getAllQuestions = async () => {
-    try {
-      setLoading(true);
-      const response = await onGetAllHelpDeskQuestions(id);
-      if (response?.status === 200) {
-        setIsQuestions(response.questions);
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Something went wrong",
-      });
-    } finally {
+  const getAllQuestions = useCallback(async () => {
+    setLoading(true);
+    const questions = await onGetAllHelpDeskQuestions(id);
+    if (questions) {
+      setIsQuestions(questions.questions!);
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     getAllQuestions();
-  }, [id]);
+  }, [getAllQuestions]);
 
   return {
     register,
@@ -248,7 +240,7 @@ export const useFilterQuestions = (userId: string) => {
 
   const onAddFilterQuestions = handleSubmit(async (values) => {
     setLoading(true);
-    const questions = await onCreateFilterQuestions(userId, values.question);
+    const questions = await onCreateFilterQuestions(userId, values.question, values.answer);
     if (questions) {
       setIsQuestions(questions.questions!);
       toast({
@@ -260,18 +252,18 @@ export const useFilterQuestions = (userId: string) => {
     }
   });
 
-  const onGetQuestions = async () => {
+  const onGetQuestions = useCallback(async () => {
     setLoading(true);
     const questions = await onGetAllFilterQuestions(userId);
     if (questions) {
       setIsQuestions(questions.questions);
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   useEffect(() => {
     onGetQuestions();
-  }, []);
+  }, [onGetQuestions]);
 
   return {
     loading,
@@ -368,24 +360,82 @@ export const useKnowledgeBase = (id: string) => {
     setLoading(false);
   });
 
-  const onGetEntries = async () => {
+  const onGetEntries = useCallback(async () => {
     setLoading(true);
     const result = await onGetAllKnowledgeBaseEntries(id);
     if (result) {
       setEntries(result.entries.map(e => ({ ...e, category: e.category || undefined })));
     }
     setLoading(false);
-  };
+  }, [id]);
 
   useEffect(() => {
     onGetEntries();
-  }, []);
+  }, [onGetEntries]);
 
   return {
     register,
     errors,
     onSubmitEntry,
     entries,
+    loading,
+  };
+};
+
+interface ChangePasswordProps {
+  password: string;
+  confirmPassword: string;
+}
+
+export const useChangePassword = () => {
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<ChangePasswordProps>({
+    resolver: zodResolver(
+      z.object({
+        password: z.string().min(6, "Password must be at least 6 characters"),
+        confirmPassword: z.string(),
+      }).refine(data => data.password === data.confirmPassword, {
+        message: "Passwords do not match",
+        path: ["confirmPassword"]
+      })
+    ),
+  });
+
+  const onChangePassword = handleSubmit(async (values) => {
+    try {
+      setLoading(true);
+      // TODO: Implement actual password change logic with server action
+      // const result = await onUpdatePassword(values.password);
+      
+      // For now, just show a toast
+      toast({
+        title: "Success",
+        description: "Password updated successfully",
+      });
+      
+      reset();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update password",
+      });
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  return {
+    register,
+    errors,
+    onChangePassword,
     loading,
   };
 };

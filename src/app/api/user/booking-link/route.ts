@@ -20,11 +20,30 @@ export async function POST(request: Request) {
 
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
-      data: { bookingLink },
-      select: { bookingLink: true },
+      data: { 
+        userBusinessProfile: {
+          update: {
+            bookingLink: {
+              upsert: {
+                create: { link: bookingLink },
+                update: { link: bookingLink }
+              }
+            }
+          }
+        }
+      },
+      select: { 
+        userBusinessProfile: {
+          select: {
+            bookingLink: true
+          }
+        }
+      },
     });
 
-    return NextResponse.json({ bookingLink: updatedUser.bookingLink });
+    return NextResponse.json({ 
+      bookingLink: updatedUser.userBusinessProfile?.bookingLink || null 
+    });
   } catch (error) {
     console.error("Error updating booking link:", error);
     return NextResponse.json({ error: "Failed to update booking link" }, { status: 500 });

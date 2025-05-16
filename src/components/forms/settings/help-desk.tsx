@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { useHelpDesk } from "@/hooks/settings/use-settings";
 import FormGenerator from "../form-generator";
-import { Plans } from "@prisma/client";
+import { Plans } from "@/types/prisma";
 import { checkHelpdeskFeature } from "@/lib/subscription-checks";
 import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -74,12 +74,6 @@ const HelpDesk = ({ id, plan }: Props) => {
             {typeof maxFaqs === "number" && maxFaqs !== -1
               ? `You can add up to ${maxFaqs} FAQs on your current plan.`
               : "You can add unlimited FAQs on your current plan."}
-          </p>
-          <p className="text-sm text-gray-500 mt-1">
-            Current FAQs: {isQuestions.length}
-            {typeof maxFaqs === "number" && maxFaqs !== -1
-              ? ` / ${maxFaqs}`
-              : ""}
           </p>
         </div>
         {editingQuestion ? (

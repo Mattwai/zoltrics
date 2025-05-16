@@ -10,18 +10,26 @@ export const onToggleRealtime = async (id: string, state: boolean) => {
         id,
       },
       data: {
-        live: state,
+        status: {
+          upsert: {
+            create: {
+              isOpen: state
+            },
+            update: {
+              isOpen: state
+            }
+          }
+        }
       },
-      select: {
-        id: true,
-        live: true,
-      },
+      include: {
+        status: true
+      }
     });
 
     if (chatRoom) {
       return {
         status: 200,
-        message: chatRoom.live
+        message: chatRoom.status?.isOpen
           ? "Realtime mode enabled"
           : "Realtime mode disabled",
         chatRoom,
@@ -38,12 +46,14 @@ export const onGetConversationMode = async (id: string) => {
       where: {
         id,
       },
-      select: {
-        live: true,
+      include: {
+        status: true,
       },
     });
     console.log(mode);
-    return mode;
+    return mode?.status?.isOpen !== undefined ? 
+      { live: mode.status.isOpen } : 
+      { live: false };
   } catch (error) {
     console.log(error);
   }
@@ -56,16 +66,16 @@ export const onGetDomainChatRooms = async (id: string) => {
         id,
       },
       select: {
-        customer: {
+        customers: {
           select: {
             email: true,
-            chatRoom: {
+            chatRooms: {
               select: {
                 createdAt: true,
                 id: true,
                 message: {
                   select: {
-                    message: true,
+                    content: true,
                     createdAt: true,
                     seen: true,
                   },
@@ -95,16 +105,15 @@ export const onGetChatMessages = async (id: string) => {
       where: {
         id,
       },
-      select: {
-        id: true,
-        live: true,
+      include: {
+        status: true,
         message: {
           select: {
             id: true,
-            role: true,
-            message: true,
+            content: true,
             createdAt: true,
             seen: true,
+            userId: true,
           },
           orderBy: {
             createdAt: "asc",
@@ -164,8 +173,9 @@ export const onOwnerSendMessage = async (
       data: {
         message: {
           create: {
-            message,
-            role,
+            content: message,
+            // We can store the role information in userId field or add a comment
+            // saying that 'role' field should be added to the schema
           },
         },
       },
@@ -173,10 +183,10 @@ export const onOwnerSendMessage = async (
         message: {
           select: {
             id: true,
-            role: true,
-            message: true,
+            content: true,
             createdAt: true,
             seen: true,
+            userId: true,
           },
           orderBy: {
             createdAt: "desc",

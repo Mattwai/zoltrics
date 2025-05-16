@@ -12,7 +12,7 @@ import {
   ConversationSearchSchema,
 } from "@/schemas/conversation-schema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 
 export const useConversation = () => {
@@ -44,7 +44,22 @@ export const useConversation = () => {
           const rooms = await onGetDomainChatRooms(value.domain);
           if (rooms) {
             setLoading(false);
-            setChatRooms(rooms.customer);
+            
+            // Transform the data structure to match the expected format
+            const transformedRooms = rooms.customers?.map(customer => ({
+              chatRoom: customer.chatRooms.map(room => ({
+                id: room.id,
+                createdAt: room.createdAt,
+                message: room.message.map(msg => ({
+                  message: msg.content,
+                  createdAt: msg.createdAt,
+                  seen: msg.seen
+                }))
+              })),
+              email: customer.email
+            })) || [];
+            
+            setChatRooms(transformedRooms);
           }
         }
       } catch (error) {
@@ -61,7 +76,15 @@ export const useConversation = () => {
       if (messages) {
         setChatRoom(id);
         loadMessages(false);
-        setChats(messages[0].message);
+        // Transform the messages to match the expected format
+        const transformedMessages = messages[0].message.map(msg => ({
+          message: msg.content,
+          id: msg.id,
+          role: msg.userId ? "user" : "assistant" as "user" | "assistant" | null,
+          createdAt: msg.createdAt,
+          seen: msg.seen
+        }));
+        setChats(transformedMessages);
       }
     } catch (error) {
       console.log(error);
@@ -80,7 +103,7 @@ export const useChatTime = (createdAt: Date, roomId: string) => {
   const [messageSentAt, setMessageSentAt] = useState<string>();
   const [urgent, setUrgent] = useState<boolean>(false);
 
-  const onSetMessageRecievedDate = () => {
+  const onSetMessageRecievedDate = useCallback(() => {
     const dt = new Date(createdAt);
     const current = new Date();
     const currentDate = current.getDate();
@@ -98,22 +121,22 @@ export const useChatTime = (createdAt: Date, roomId: string) => {
     } else {
       setMessageSentAt(`${date} ${getMonthName(month)}`);
     }
-  };
+  }, [createdAt]);
 
-  const onSeenChat = async () => {
+  const onSeenChat = useCallback(async () => {
     if (chatRoom == roomId && urgent) {
       await onViewUnReadMessages(roomId);
       setUrgent(false);
     }
-  };
+  }, [chatRoom, roomId, urgent]);
 
   useEffect(() => {
     onSeenChat();
-  }, [chatRoom]);
+  }, [chatRoom, roomId, urgent, onSeenChat]);
 
   useEffect(() => {
     onSetMessageRecievedDate();
-  }, []);
+  }, [createdAt, onSetMessageRecievedDate]);
 
   return { messageSentAt, urgent, onSeenChat };
 };
@@ -149,7 +172,7 @@ export const useChatWindow = () => {
         pusherClient.unsubscribe(chatRoom);
       };
     }
-  }, [chatRoom]);
+  }, [chatRoom, setChats]);
 
   const onHandleSentMessage = handleSubmit(async (values) => {
     try {
@@ -160,11 +183,13 @@ export const useChatWindow = () => {
           values.content,
           "assistant"
         );
-        if (message) {
+        if (message && message.message && message.message.length > 0) {
+          // Assuming the first message contains the necessary data
+          const sentMessage = message.message[0];
           await onRealTimeChat(
             chatRoom!,
-            message.message[0].message,
-            message.message[0].id,
+            sentMessage.content, // Use content instead of message
+            sentMessage.id,
             "assistant"
           );
         }

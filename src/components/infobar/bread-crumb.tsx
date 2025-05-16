@@ -38,7 +38,7 @@ const BreadCrumb = (props: Props) => {
           : page == "appointment-settings"
           ? "Configure your booking link, calendar availability, and custom time slots"
           : page == "integration"
-          ? "Connect third-party applications into Zoltrics"
+          ? "Connect third-party applications into BookerBuddy"
           : "Modify domain settings, change chatbot options, enter sales questions and train your bot to do what you want it to."}
       </p>
       </div>

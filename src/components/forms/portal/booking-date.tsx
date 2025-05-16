@@ -5,7 +5,7 @@ import { Card, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { FieldValues, UseFormRegister } from "react-hook-form";
 
 interface TimeSlot {
@@ -45,15 +45,7 @@ const BookAppointmentDate = ({
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState<boolean>(false);
 
-  useEffect(() => {
-    if (date && userId) {
-      fetchTimeSlots();
-    } else {
-      setAvailableSlots([]);
-    }
-  }, [date, userId]);
-
-  const fetchTimeSlots = async () => {
+  const fetchTimeSlots = useCallback(async () => {
     if (!date || !userId) return;
     
     setIsLoadingSlots(true);
@@ -70,7 +62,15 @@ const BookAppointmentDate = ({
     } finally {
       setIsLoadingSlots(false);
     }
-  };
+  }, [date, userId]);
+
+  useEffect(() => {
+    if (date && userId) {
+      fetchTimeSlots();
+    } else {
+      setAvailableSlots([]);
+    }
+  }, [date, userId, fetchTimeSlots]);
 
   return (
     <div className="flex flex-col gap-5 justify-center">

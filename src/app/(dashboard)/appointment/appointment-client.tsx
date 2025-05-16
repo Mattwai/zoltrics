@@ -20,7 +20,42 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DeleteAppointmentDialog } from "@/components/appointment/delete-appointment-dialog";
 import { BookingOptionsDialog } from "@/components/appointment/booking-options-dialog";
-import { formatTimeSlot } from "@/lib/time-slots";
+import { formatTimeSlot, NZ_TIMEZONE } from "@/lib/time-slots";
+
+// Import FullBooking type from booking-options-dialog
+type FullBooking = {
+  id: string;
+  startTime: Date;
+  endTime: Date;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+  userId?: string;
+  customer: {
+    name: string;
+    email: string;
+    userId?: string;
+    domain: {
+      name: string;
+    } | null;
+  } | null;
+  service: {
+    id: string;
+    name: string;
+    pricing?: {
+      price: number;
+      currency: string;
+    } | null;
+  } | null;
+  bookingMetadata: {
+    notes: string | null;
+  } | null;
+  bookingPayment: {
+    amount: number;
+    currency: string;
+    status: string;
+  } | null;
+};
 
 interface AppointmentClientProps {
   initialBookings: Booking[];
@@ -42,6 +77,20 @@ export const AppointmentClient = ({
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  // Format time from UTC to NZT
+  const formatToNZT = (utcTime: string | Date): string => {
+    const date = utcTime instanceof Date ? utcTime : new Date(utcTime);
+    return date.toLocaleString('en-NZ', {
+      timeZone: NZ_TIMEZONE,
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: true,
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
 
   const handleDateChange = (date: Date | undefined) => {
     setSelectedDate(date);
@@ -131,11 +180,12 @@ export const AppointmentClient = ({
     return (
       booking.customer?.name.toLowerCase().includes(query) ||
       booking.customer?.email.toLowerCase().includes(query) ||
-      formatTimeSlot(booking.startTime.toISOString(), 60).toLowerCase().includes(query) ||
-      (booking.customer?.domain?.name || "").toLowerCase().includes(query)
+      formatToNZT(booking.startTime).toLowerCase().includes(query) ||
+      (booking.service?.name || "").toLowerCase().includes(query)
     );
   });
 
+  // Get today's bookings
   const todayBookings = filteredBookings.filter((booking) => {
     const today = new Date();
     const bookingDate = new Date(booking.startTime);
@@ -146,6 +196,73 @@ export const AppointmentClient = ({
     );
   });
 
+  // Get future bookings (after today) sorted by date
+  const futureBookings = filteredBookings
+    .filter((booking) => {
+      const today = new Date();
+      const bookingDate = new Date(booking.startTime);
+      
+      // Set today's date to end of day for comparison
+      today.setHours(23, 59, 59, 999);
+      
+      return bookingDate.getTime() > today.getTime();
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.startTime);
+      const dateB = new Date(b.startTime);
+      return dateA.getTime() - dateB.getTime();
+    });
+
+  // Helper function to format price properly
+  const formatServicePrice = (booking: Booking) => {
+    // Log the booking data for debugging
+    console.log("Booking service data:", booking.service);
+    
+    // First check if service has pricing
+    const serviceData = booking.service as any;
+    if (serviceData?.pricing?.price) {
+      return `$${serviceData.pricing.price}`;
+    }
+    
+    // Then try payment amount
+    if (booking.bookingPayment?.amount) {
+      return `$${booking.bookingPayment.amount}`;
+    }
+    
+    // Default fallback
+    return "$0";
+  };
+
+  // Get next day's bookings if there are any
+  const nextDayBookings: Booking[] = [];
+  
+  if (futureBookings.length > 0 && todayBookings.length === 0) {
+    const firstBookingDate = new Date(futureBookings[0].startTime);
+    futureBookings.forEach(booking => {
+      const bookingDate = new Date(booking.startTime);
+      if (
+        bookingDate.getFullYear() === firstBookingDate.getFullYear() &&
+        bookingDate.getMonth() === firstBookingDate.getMonth() &&
+        bookingDate.getDate() === firstBookingDate.getDate()
+      ) {
+        nextDayBookings.push(booking);
+      }
+    });
+  }
+
+  // Determine which bookings to display in the today section
+  const displayBookings = todayBookings.length > 0 ? todayBookings : nextDayBookings;
+  const todaySectionTitle = todayBookings.length > 0 
+    ? "Today's Appointments" 
+    : nextDayBookings.length > 0 
+      ? "Next Scheduled Appointments" 
+      : "Today's Appointments";
+  const todaySectionMessage = todayBookings.length > 0 
+    ? `You have ${todayBookings.length} appointment(s) today` 
+    : nextDayBookings.length > 0 
+      ? `You have ${nextDayBookings.length} upcoming appointment(s)` 
+      : "No appointments scheduled for today";
+
   const selectedBooking = selectedBookingId 
     ? bookings.find(booking => booking.id === selectedBookingId) || null 
     : null;
@@ -155,17 +272,17 @@ export const AppointmentClient = ({
       {/* Left Column - Today's Bookings */}
       <div className="lg:col-span-1">
         <Section
-          label="Today's Appointments"
-          message={`You have ${todayBookings.length} appointment(s) today`}
+          label={todaySectionTitle}
+          message={todaySectionMessage}
         />
         <div className="space-y-4">
-          {todayBookings.length ? (
-            todayBookings.map((booking) => (
+          {displayBookings.length ? (
+            displayBookings.map((booking) => (
               <Card key={booking.id} className="overflow-hidden">
                 <CardHeader className="bg-orchid/10 pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg font-semibold">
-                      {formatTimeSlot(booking.startTime.toISOString(), 60)}
+                      {formatToNZT(booking.startTime)}
                     </CardTitle>
                   </div>
                 </CardHeader>
@@ -180,9 +297,15 @@ export const AppointmentClient = ({
                       <p className="text-base">{booking.customer?.email}</p>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-500">Booking Type</p>
+                      <p className="text-sm font-medium text-gray-500">Service</p>
                       <p className="text-base">
-                        {booking.customer?.domain?.name || "Direct Booking"}
+                        {booking.service?.name || "Standard Appointment"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Price</p>
+                      <p className="text-base">
+                        {formatServicePrice(booking)}
                       </p>
                     </div>
                     {booking.bookingPayment && (
@@ -209,7 +332,7 @@ export const AppointmentClient = ({
           ) : (
             <Card>
               <CardContent className="py-8 text-center">
-                <p className="text-gray-500">No appointments scheduled for today</p>
+                <p className="text-gray-500">No appointments scheduled</p>
               </CardContent>
             </Card>
           )}
@@ -264,9 +387,9 @@ export const AppointmentClient = ({
         <BookingOptionsDialog
           isOpen={bookingDialogOpen}
           onClose={closeBookingDialog}
-          booking={selectedBooking}
+          booking={selectedBooking as unknown as FullBooking}
           onCancel={openDeleteDialog}
-          onBookingUpdate={handleBookingUpdate}
+          onBookingUpdate={handleBookingUpdate as (updatedBooking: FullBooking) => void}
         />
       )}
 

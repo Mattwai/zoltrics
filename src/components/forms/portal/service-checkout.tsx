@@ -15,6 +15,8 @@ interface ServiceCheckoutProps {
   amount?: number;
   stripeId?: string;
   onNext(): void;
+  onBack(): void;
+  onAmount(amount: number): void;
 }
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -23,6 +25,8 @@ export const ServiceCheckout = ({
   services,
   amount,
   onNext,
+  onBack,
+  onAmount,
 }: ServiceCheckoutProps) => {
   return (
     <Card className="p-6">

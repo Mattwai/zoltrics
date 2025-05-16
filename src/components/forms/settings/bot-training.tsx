@@ -1,14 +1,16 @@
 import TabsMenu from "@/components/tabs/index";
 import { TabsContent } from "@/components/ui/tabs";
 import { HELP_DESK_TABS_MENU } from "@/constants/menu";
+import { Plans } from "@/types/prisma";
 import FilterQuestions from "./filter-questions";
 import HelpDesk from "./help-desk";
 
 type Props = {
   id: string;
+  plan: Plans;
 };
 
-const BotTrainingForm = ({ id }: Props) => {
+const BotTrainingForm = ({ id, plan }: Props) => {
   return (
     <div className="py-5 mb-10 flex flex-col gap-5 items-start">
       <div className="flex flex-col gap-2">
@@ -20,10 +22,10 @@ const BotTrainingForm = ({ id }: Props) => {
       </div>
       <TabsMenu triggers={HELP_DESK_TABS_MENU}>
         <TabsContent value="help desk" className="w-full">
-          <HelpDesk id={id} />
+          <HelpDesk id={id} plan={plan} />
         </TabsContent>
         <TabsContent value="questions">
-          <FilterQuestions id={id} />
+          <FilterQuestions id={id} plan={plan} />
         </TabsContent>
       </TabsMenu>
     </div>

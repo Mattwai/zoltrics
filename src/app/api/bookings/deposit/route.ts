@@ -22,33 +22,50 @@ export async function POST(req: NextRequest) {
     }
 
     // Get the booking and user details
-    const booking = await client.bookings.findUnique({
+    const booking = await client.booking.findUnique({
       where: { id: bookingId },
       include: {
-        Customer: {
-          include: {
-            Domain: {
-              include: {
-                User: {
-                  select: {
-                    stripeId: true,
-                  },
-                },
-              },
-            },
-          },
+        customer: {
+          select: {
+            name: true,
+            email: true
+          }
         },
-      },
+        service: {
+          select: {
+            name: true,
+            pricing: {
+              select: {
+                price: true
+              }
+            },
+            domain: {
+              select: {
+                user: {
+                  select: {
+                    stripeId: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     });
 
     if (!booking) {
-      return NextResponse.json(
-        { error: "Booking not found" },
+      return new NextResponse(
+        JSON.stringify({ error: "Booking not found" }),
         { status: 404 }
       );
     }
 
-    const stripeId = booking.Customer?.Domain?.User?.stripeId;
+    const customerName = booking.customer?.name || "Customer";
+    const customerEmail = booking.customer?.email || "";
+    const serviceName = booking.service?.name || "Service";
+    const servicePrice = booking.service?.pricing?.price || 0;
+    const stripeId = booking.service?.domain?.user?.stripeId;
+
     if (!stripeId) {
       return NextResponse.json(
         { error: "Stripe account not connected" },

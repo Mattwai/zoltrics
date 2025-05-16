@@ -34,38 +34,56 @@ const Layout = ({ children }: Props) => {
   const returnHome = () => {
     router.push("/");
   };
+  
   return (
-    <div className="h-screen flex w-full justify-center">
-      <div className="w-[600px] ld:w-full flex flex-col items-start p-6">
-        <button onClick={returnHome} className="focus:outline-none">
-          <Image
-            src="/images/logo.png"
-            alt="LOGO"
-            width={80}
-            height={80}
-            className="cursor-pointer"
-          />
-        </button>
-        {children}
+    <div className="flex h-screen w-full overflow-hidden bg-white">
+      {/* Left side - Form area */}
+      <div className="relative w-full lg:w-[45%] xl:w-[40%] h-full flex flex-col p-8">
+        <div className="absolute top-8 left-8 z-10">
+          <button 
+            onClick={returnHome} 
+            className="focus:outline-none transition-transform hover:scale-105 flex items-center"
+            aria-label="Return to home page"
+          >
+            <Image
+              src="/images/bookerbuddy-banner.png"
+              alt="BookerBuddy Logo"
+              width={120}
+              height={40}
+              className="object-contain"
+              priority
+            />
+          </button>
+        </div>
+        <div className="flex h-full w-full items-center justify-center pt-20">
+          <div className="w-full max-w-md">
+            {children}
+          </div>
+        </div>
       </div>
-      <div className="hidden lg:flex flex-1 w-full max-h-full max-w-4000px overflow-hidden relative bg-cream  flex-col pt-10 pl-24 gap-3">
-        <h2 className="text-gravel md:text-4xl font-bold">
-          Hi, I’m your AI powered sales assistant, Zoltrics!
-        </h2>
-        <p className="text-iridium md:text-sm mb-10">
-          Zoltrics is capable of capturing lead information without a form...{" "}
-          <br />
-          something never done before 😉
-        </p>
-        <Image
-          src="/images/app-ui.png"
-          alt="app image"
-          loading="lazy"
-          sizes="30"
-          className="absolute shrink-0 !w-[1600px] top-48"
-          width={0}
-          height={0}
-        />
+      
+      {/* Right side - App preview */}
+      <div className="hidden lg:block relative w-[55%] xl:w-[60%] h-full bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/images/grid-pattern.svg')] bg-center opacity-5"></div>
+        <div className="relative flex flex-col h-full px-12 pt-24 z-10">
+          <div className="max-w-2xl">
+            <h2 className="text-gray-900 text-4xl font-bold leading-tight mb-4">
+              Hi, I'm your AI powered sales assistant, BookerBuddy!
+            </h2>
+          </div>
+          <div className="relative mt-6">
+            <div className="absolute -right-64 top-0 w-[900px] h-[600px] drop-shadow-2xl rounded-lg overflow-hidden transform rotate-2">
+              <Image
+                src="/images/app-ui.png"
+                alt="BookerBuddy Application Interface"
+                className="object-cover"
+                fill
+                sizes="(max-width: 1280px) 100vw, 1200px"
+                priority
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

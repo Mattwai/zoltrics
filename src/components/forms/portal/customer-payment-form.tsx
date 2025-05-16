@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { loadStripe } from "@stripe/stripe-js";

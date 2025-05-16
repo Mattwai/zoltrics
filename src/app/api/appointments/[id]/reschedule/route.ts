@@ -24,7 +24,7 @@ export async function PATCH(
     const booking = await prisma.booking.findUnique({
       where: { id: params.id },
       include: {
-        Customer: true
+        customer: true
       }
     });
 
@@ -35,8 +35,8 @@ export async function PATCH(
     // Check if the user has permission to update this booking
     const canUpdate = 
       booking.userId === session.user.id || // Direct booking
-      booking.Customer?.userId === session.user.id || // Customer booking
-      (booking.customerId && !booking.userId && !booking.Customer?.userId); // Customer booking with no user relationships
+      booking.customer?.userId === session.user.id || // Customer booking
+      (booking.customerId && !booking.userId && !booking.customer?.userId); // Customer booking with no user relationships
 
     if (!canUpdate) {
       return new NextResponse("Unauthorized to update this booking", { status: 403 });
@@ -46,8 +46,8 @@ export async function PATCH(
     const updatedBooking = await prisma.booking.update({
       where: { id: params.id },
       data: { 
-        date: new Date(date),
-        slot,
+        startTime: new Date(date + ' ' + slot.startTime), // Combine date and start time
+        endTime: new Date(date + ' ' + slot.endTime),     // Combine date and end time
       },
     });
 

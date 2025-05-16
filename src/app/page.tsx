@@ -8,12 +8,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { pricingCards } from "@/constants/pricing-cards";
 import { services } from "@/constants/landing-page";
 import clsx from "clsx";
-import { Check, Star, ArrowRight, MessageSquare, Calendar, Mail, Zap } from "lucide-react";
+import { Check, Star, ArrowRight, MessageSquare, Calendar, Mail, Zap, Phone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import ContactForm from "@/components/contact-form";
 
 export default async function Home() {
   return (
@@ -25,11 +25,11 @@ export default async function Home() {
         <div className="absolute inset-0 h-full w-full items-center px-5 py-24 [background:radial-gradient(125%_125%_at_50%_10%,#000_35%,#223_100%)]"></div>
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <Image
-            src="/images/zoltrics-logo.png"
-            width={150}
+            src="/images/bookerbuddy-icon.png"
+            width={175}
             height={50}
-            alt="Logo"
-            className="mx-auto mb-8"
+            alt="BookerBuddy Logo"
+            className="mx-auto mb-5"
           />
           <h1 className="text-4xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-white to-neutral-600 mb-6">
             Transform Your Business with AI-Powered Sales & CRM
@@ -39,10 +39,10 @@ export default async function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/dashboard"
+              href="#contact"
               className="px-8 py-4 text-xl rounded-full bg-white text-black hover:bg-neutral-200 transition-all duration-300 flex items-center justify-center gap-2 group"
             >
-              Get Started for Free
+              Contact Sales
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
@@ -141,12 +141,14 @@ export default async function Home() {
               </div>
             </div>
             <div className="relative">
-              <div className="aspect-square rounded-2xl overflow-hidden border border-neutral-800">
+              <div className="rounded-2xl overflow-hidden border border-neutral-800 bg-neutral-900 relative" style={{ aspectRatio: '2618/1616' }}>
                 <Image
-                  src="/images/p2.png"
+                  src="/images/p1.png"
                   alt="AI Chatbot Interface"
                   fill
-                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 1200px"
+                  priority
+                  style={{ objectFit: 'cover', objectPosition: 'center' }}
                 />
               </div>
               <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl"></div>
@@ -160,12 +162,14 @@ export default async function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="order-2 md:order-1 relative">
-              <div className="aspect-square rounded-2xl overflow-hidden border border-neutral-800">
+              <div className="rounded-2xl overflow-hidden border border-neutral-800 bg-neutral-900 relative" style={{ aspectRatio: '2598/1616' }}>
                 <Image
-                  src="/images/p1.png"
+                  src="/images/p2.png"
                   alt="Appointment Booking Interface"
                   fill
-                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 1200px"
+                  priority
+                  style={{ objectFit: 'cover', objectPosition: 'center' }}
                 />
               </div>
               <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl"></div>
@@ -216,56 +220,19 @@ export default async function Home() {
         <HeroParallax services={services} />
       </section>
 
-      {/* Pricing Section */}
-      <section id="pricing" className="py-20">
+      {/* Contact Sales Section */}
+      <section id="contact" className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
-              Simple, Transparent Pricing
+              Get in Touch with Our Sales Team
             </h2>
             <p className="text-xl text-neutral-400 max-w-2xl mx-auto">
-              Choose the perfect plan for your business.
+              Contact us to learn more about how BookerBuddy can help your business grow.
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {pricingCards.map((card) => (
-              <Card
-                key={card.title}
-                className={clsx(
-                  "flex flex-col justify-between border-2 transition-all duration-300 hover:scale-105",
-                  "border-neutral-800 bg-neutral-900"
-                )}
-              >
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-2xl text-white">{card.title}</CardTitle>
-                  <CardDescription className="text-neutral-400">
-                    {card.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-2">
-                    <span className="text-4xl font-bold text-white">{card.price}</span>
-                    <span className="text-neutral-400">/month</span>
-                  </div>
-                  <div className="space-y-3 min-h-[280px]">
-                    {card.features.map((feature) => (
-                      <div key={feature} className="flex items-start gap-2">
-                        <Check className="w-5 h-5 text-white flex-shrink-0 mt-1" />
-                        <p className="text-neutral-400">{feature}</p>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Link
-                    href={`/dashboard?plan=${card.title}`}
-                    className="w-full py-3 rounded-lg text-center font-medium transition-all duration-300 bg-neutral-800 text-white hover:bg-neutral-700"
-                  >
-                    Get Started
-                  </Link>
-                </CardFooter>
-              </Card>
-            ))}
+          <div className="max-w-3xl mx-auto">
+            <ContactForm />
           </div>
         </div>
       </section>
@@ -277,45 +244,85 @@ export default async function Home() {
             Trusted by Businesses Worldwide
           </h2>
           <div className="grid md:grid-cols-3 gap-8">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="p-6 rounded-2xl bg-neutral-800 border border-neutral-700">
-                <div className="flex items-center gap-1 mb-4">
-                  {[...Array(5)].map((_, j) => (
-                    <Star key={j} className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-                  ))}
-                </div>
-                <p className="text-neutral-300 mb-4">
-                  "Zoltrics has transformed how we handle customer interactions. The AI chatbot is incredibly intelligent and has helped us increase our response rate by 300%."
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-neutral-700"></div>
-                  <div>
-                    <div className="font-medium text-white">John Smith</div>
-                    <div className="text-sm text-neutral-400">CEO, TechCorp</div>
-                  </div>
+            <div className="p-6 rounded-2xl bg-neutral-800 border border-neutral-700 flex flex-col">
+              <div className="flex items-center gap-1 mb-4">
+                {[...Array(5)].map((_, j) => (
+                  <Star key={j} className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                ))}
+              </div>
+              <p className="text-neutral-300 mb-6 flex-grow">
+                &quot;BookerBuddy completely transformed how I run my spa. I used to be exhausted juggling all the appointments and follow-ups. Now I finally have time to focus on what I love - actually connecting with my clients and growing my business.&quot;
+              </p>
+              <div className="flex items-center gap-3 mt-auto">
+                <div className="w-3 h-12 bg-purple-500 rounded-l-full"></div>
+                <div>
+                  <div className="font-medium text-white">Sarah Chen</div>
+                  <div className="text-sm text-neutral-400">Owner, Rejuvenate Wellness Spa</div>
                 </div>
               </div>
-            ))}
+            </div>
+            
+            <div className="p-6 rounded-2xl bg-neutral-800 border border-neutral-700 flex flex-col">
+              <div className="flex items-center gap-1 mb-4">
+                {[...Array(5)].map((_, j) => (
+                  <Star key={j} className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                ))}
+              </div>
+              <p className="text-neutral-300 mb-6 flex-grow">
+                &quot;I was constantly missing potential clients because I couldn't respond fast enough. With BookerBuddy, I never miss an opportunity and finally feel like I can compete with the bigger agencies in town. It's been a game-changer for my confidence as a business owner.&quot;
+              </p>
+              <div className="flex items-center gap-3 mt-auto">
+                <div className="w-3 h-12 bg-purple-500 rounded-l-full"></div>
+                <div>
+                  <div className="font-medium text-white">Marcus Johnson</div>
+                  <div className="text-sm text-neutral-400">Broker, Skyline Properties</div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 rounded-2xl bg-neutral-800 border border-neutral-700 flex flex-col">
+              <div className="flex items-center gap-1 mb-4">
+                {[...Array(5)].map((_, j) => (
+                  <Star key={j} className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                ))}
+              </div>
+              <p className="text-neutral-300 mb-6 flex-grow">
+                &quot;Our front desk staff was burning out from the endless phone calls and scheduling chaos. Since using BookerBuddy, I've seen a complete change in our office atmosphere. Everyone is calmer, happier, and actually enjoys coming to work again.&quot;
+              </p>
+              <div className="flex items-center gap-3 mt-auto">
+                <div className="w-3 h-12 bg-purple-500 rounded-l-full"></div>
+                <div>
+                  <div className="font-medium text-white">Dr. Amelia Patel</div>
+                  <div className="text-sm text-neutral-400">Director, Brightsmile Dental</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
       <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
-            Ready to Transform Your Business?
-          </h2>
-          <p className="text-xl text-neutral-400 mb-8 max-w-2xl mx-auto">
-            Join thousands of businesses that trust Zoltrics for their customer engagement needs.
-          </p>
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-2 px-8 py-4 text-xl rounded-full bg-purple-500 text-white hover:bg-purple-600 transition-all duration-300"
-          >
-            Start Your Free Trial
-            <ArrowRight className="w-5 h-5" />
-          </Link>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-gradient-to-r from-purple-900/50 to-indigo-900/50 p-12 rounded-3xl border border-purple-800/30">
+            <div className="text-center">
+              <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
+                Ready to Transform Your Business?
+              </h2>
+              <p className="text-xl text-neutral-300 mb-8 max-w-2xl mx-auto">
+                Contact our sales team today to get a personalised demo and pricing tailored to your business needs.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link
+                  href="#contact"
+                  className="px-8 py-4 text-xl rounded-full bg-purple-600 text-white hover:bg-purple-700 transition-all duration-300 flex items-center justify-center gap-2 group"
+                >
+                  Contact Sales
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </main>

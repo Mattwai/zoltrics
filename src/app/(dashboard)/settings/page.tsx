@@ -5,6 +5,7 @@ import { authConfig } from "@/lib/auth";
 import { onGetUser } from "@/actions/settings";
 import { getServerSession } from "next-auth";
 import { BusinessName } from "../appointment-settings/business-name";
+import { RoleBadge } from "@/components/ui/role-badge";
 
 type Props = {};
 
@@ -20,12 +21,17 @@ const Page = async (props: Props) => {
       <div className="container mx-auto py-4 px-4">
         <InfoBar />
         <div className="flex flex-col gap-10">
-          <BusinessName 
-            userId={session.user.id}
-            initialBusinessName={user?.userBusinessProfile?.businessName || null}
-          />
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-semibold text-gray-900">Account Settings</h2>
+            </div>
+            <BusinessName 
+              userId={session.user.id}
+              initialBusinessName={user?.userBusinessProfile?.businessName || null}
+            />
+          </div>
           <BillingSettings />
-          {/* <DarkModetoggle /> */}
+          <DarkModetoggle />
         </div>
       </div>
     </div>

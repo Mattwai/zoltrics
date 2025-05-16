@@ -18,9 +18,15 @@ export async function PATCH(
       );
     }
 
-    const booking = await client.bookings.update({
+    const booking = await client.booking.update({
       where: { id: params.id },
-      data: { depositPaid },
+      data: { 
+        bookingPayment: {
+          update: {
+            status: depositPaid ? "paid" : "pending"
+          }
+        }
+      },
     });
 
     return NextResponse.json(booking);

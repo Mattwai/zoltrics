@@ -87,8 +87,8 @@ export async function GET(request: NextRequest) {
           
           availableSlots.push({
             slot: startTimeStr,
-            duration: slot.duration || 30,
-            maxSlots: slot.maxSlots || 1,
+            duration: 30, // Default duration since slot.duration doesn't exist
+            maxSlots: 1, // Default maxSlots since slot.maxSlots doesn't exist  
             id: slot.id,
             isCustom: true
           });
@@ -114,8 +114,8 @@ export async function GET(request: NextRequest) {
         id: slot.id,
         startTime: startTimeStr,
         endTime: endTimeStr,
-        duration: slot.duration || 30,
-        maxSlots: slot.maxSlots || 1,
+        duration: Math.round((slot.endTime.getTime() - slot.startTime.getTime()) / (1000 * 60)),
+        maxSlots: 1,
         isCustom: true
       };
     });
@@ -255,9 +255,6 @@ export async function POST(request: NextRequest) {
               data: {
                 startTime,
                 endTime,
-                duration: slot.duration || 30,
-                maxSlots: slot.maxSlots || 1,
-                overrideRegular: slot.overrideRegular || false,
                 user: { connect: { id: userId } }
               },
             });
@@ -267,9 +264,6 @@ export async function POST(request: NextRequest) {
               data: {
                 startTime,
                 endTime,
-                duration: slot.duration || 30,
-                maxSlots: slot.maxSlots || 1,
-                overrideRegular: slot.overrideRegular || false,
                 user: { connect: { id: userId } }
               },
             });

@@ -27,6 +27,7 @@ type PortalFormProps = {
   }[];
   amount?: number;
   stripeId?: string;
+  name?: string;
 };
 
 const PortalForm = ({
@@ -39,6 +40,7 @@ const PortalForm = ({
   email,
   amount,
   stripeId,
+  name,
 }: PortalFormProps) => {
   const {
     step,
@@ -52,13 +54,13 @@ const PortalForm = ({
     onSelectedTimeSlot,
     selectedSlot,
     loading,
-  } = usePortal(customerId, domainid, email);
+  } = usePortal(customerId, domainid, email, name);
 
   useEffect(() => {
     if (questions.every((question) => question.answered)) {
       onNext();
     }
-  }, []);
+  }, [questions, onNext]);
 
   return (
     <form
@@ -82,6 +84,7 @@ const PortalForm = ({
         onBack={onPrev}
         amount={amount}
         stripeId={stripeId}
+        onAmount={(amount) => {/* Handle amount changes */}}
       />
       {(step == 1 || step == 2) && (
         <div className="w-full flex justify-center">

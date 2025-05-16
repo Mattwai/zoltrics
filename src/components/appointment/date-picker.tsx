@@ -3,7 +3,7 @@
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarIcon, X } from "lucide-react";
-import { format } from "date-fns";
+import { format, isBefore, startOfDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
   Popover,
@@ -14,10 +14,16 @@ import { useState } from "react";
 
 interface DatePickerProps {
   onDateChange?: (date: Date | undefined) => void;
+  initialDate?: Date;
+  disablePastDates?: boolean;
 }
 
-export const DatePicker = ({ onDateChange }: DatePickerProps) => {
-  const [date, setDate] = useState<Date | undefined>(new Date());
+export const DatePicker = ({ 
+  onDateChange,
+  initialDate,
+  disablePastDates = true
+}: DatePickerProps) => {
+  const [date, setDate] = useState<Date | undefined>(initialDate || new Date());
 
   const handleDateSelect = (newDate: Date | undefined) => {
     setDate(newDate);
@@ -27,6 +33,18 @@ export const DatePicker = ({ onDateChange }: DatePickerProps) => {
   const handleClear = () => {
     setDate(undefined);
     onDateChange?.(undefined);
+  };
+
+  // Function to disable days in the past and optionally specific dates
+  const isDateDisabled = (date: Date) => {
+    const today = startOfDay(new Date());
+    
+    // Disable past dates if the flag is set
+    if (disablePastDates && isBefore(date, today)) {
+      return true;
+    }
+    
+    return false;
   };
 
   return (
@@ -50,6 +68,7 @@ export const DatePicker = ({ onDateChange }: DatePickerProps) => {
             selected={date}
             onSelect={handleDateSelect}
             initialFocus
+            disabled={isDateDisabled}
           />
         </PopoverContent>
       </Popover>

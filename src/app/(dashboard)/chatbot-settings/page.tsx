@@ -12,7 +12,8 @@ import FilterQuestions from "@/components/forms/settings/filter-questions";
 import KnowledgeBase from "@/components/forms/settings/knowledge-base";
 import { SideSheet } from "@/components/sheet";
 import { Plus } from "lucide-react";
-import { User, Billings, Plans, ChatBot } from "@prisma/client";
+import { User, Billings, ChatBot } from "@prisma/client";
+import { Plans } from "@/types/prisma";
 import { checkChatbotFeature } from "@/lib/subscription-checks";
 
 type UserWithChatBot = User & {
@@ -34,9 +35,9 @@ const Page = async (props: Props) => {
   const plan = user.subscription?.plan || "STANDARD";
 
   // Check feature availability
-  const canCustomiseWelcome = checkChatbotFeature(plan, "welcomeMessage");
-  const canCustomiseAppearance = checkChatbotFeature(plan, "appearance");
-  const canUseAI = checkChatbotFeature(plan, "aiPowered");
+  const canCustomiseWelcome = checkChatbotFeature(plan as Plans, "welcomeMessage");
+  const canCustomiseAppearance = checkChatbotFeature(plan as Plans, "appearance");
+  const canUseAI = checkChatbotFeature(plan as Plans, "aiPowered");
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -45,10 +46,6 @@ const Page = async (props: Props) => {
         <div className="flex flex-col gap-8">
           <div className="flex flex-col gap-3">
             <div className="flex gap-4 items-center">
-              <div className="flex gap-1 bg-cream rounded-full px-3 py-1 text-xs items-center font-bold">
-                <PremiumBadge />
-                {plan.charAt(0) + plan.slice(1).toLowerCase()}
-              </div>
             </div>
             <Separator orientation="horizontal" />
             <div className="w-full">
@@ -115,13 +112,13 @@ const Page = async (props: Props) => {
               triggers={HELP_DESK_TABS_MENU}
             >
               <TabsContent value="help desk" className="w-full">
-                <HelpDesk id={user.id} plan={plan} />
+                <HelpDesk id={user.id} plan={plan as Plans} />
               </TabsContent>
               <TabsContent value="questions">
-                <FilterQuestions id={user.id} plan={plan} />
+                <FilterQuestions id={user.id} plan={plan as Plans} />
               </TabsContent>
               <TabsContent value="knowledge base">
-                <KnowledgeBase id={user.id} plan={plan} />
+                <KnowledgeBase id={user.id} plan={plan as Plans} />
               </TabsContent>
             </TabsMenu>
           </div>

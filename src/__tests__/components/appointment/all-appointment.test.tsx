@@ -2,89 +2,134 @@ import React from 'react';
 import { render } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import AllAppointments from '@/components/appointment/all-appointment';
+import { Booking } from '@/types/booking';
 
 // Mock the components used by AllAppointments
 jest.mock('@/components/table', () => ({
   DataTable: ({ children, headers }: { children: React.ReactNode, headers: any[] }) => (
-    <div data-testid="mock-data-table">
-      <div data-testid="mock-headers">{headers.join(',')}</div>
-      <div data-testid="mock-content">{children}</div>
-    </div>
+    <table data-testid="mock-data-table">
+      <thead>
+        <tr>
+          {headers.map((header, index) => (
+            <th key={index}>{header}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {children}
+      </tbody>
+    </table>
   ),
 }));
 
 jest.mock('@/components/ui/table', () => ({
   TableCell: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="mock-table-cell">{children}</div>
+    <td data-testid="mock-table-cell">{children}</td>
   ),
   TableRow: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="mock-table-row">{children}</div>
+    <tr data-testid="mock-table-row">{children}</tr>
   ),
 }));
 
+jest.mock('@/components/ui/tooltip', () => ({
+  Tooltip: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+  TooltipContent: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+  TooltipProvider: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+  TooltipTrigger: ({ children, asChild }: { children: React.ReactNode, asChild?: boolean }) => <span>{children}</span>
+}));
+
 jest.mock('@/constants/menu', () => ({
-  APPOINTMENT_TABLE_HEADER: ['Name', 'Email', 'Date', 'Created At', 'Booking Type', 'Deposit Paid']
+  APPOINTMENT_TABLE_HEADER: ['Name', 'Email', 'Date', 'Service', 'Actions']
+}));
+
+// This mock fixes the HTML nesting issue
+jest.mock('lucide-react', () => ({
+  ChevronLeft: () => <span>←</span>,
+  ChevronRight: () => <span>→</span>,
+  MoreVertical: () => <span>⋮</span>,
+  StickyNote: () => <span>📝</span>,
+  ArrowDown: () => <span>↓</span>,
+  ArrowUp: () => <span>↑</span>,
 }));
 
 describe('AllAppointments Component', () => {
   const mockDate = new Date('2023-05-15T10:00:00Z');
+  const mockEndDate = new Date('2023-05-15T11:00:00Z');
   
-  const mockBookings = [
+  const mockBookings: Booking[] = [
     {
       id: '1',
-      name: 'John Doe',
-      email: 'john@example.com',
-      date: mockDate,
-      slot: 'Morning',
+      startTime: mockDate,
+      endTime: mockEndDate,
+      status: 'confirmed',
       createdAt: mockDate,
-      domainId: null,
-      Customer: {
-        Domain: null
+      updatedAt: mockDate,
+      customer: {
+        name: 'John Doe',
+        email: 'john@example.com',
+        domain: null
       },
-      source: 'direct_link',
-      depositRequired: false,
-      depositPaid: false,
-      no_show: false,
-      riskScore: 20,
-      updatedAt: mockDate
+      service: {
+        name: 'Consultation'
+      },
+      bookingMetadata: {
+        notes: null
+      },
+      bookingPayment: null
     },
     {
       id: '2',
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      date: mockDate,
-      slot: 'Afternoon',
+      startTime: mockDate,
+      endTime: mockEndDate,
+      status: 'confirmed',
       createdAt: mockDate,
-      domainId: '123',
-      Customer: {
-        Domain: {
+      updatedAt: mockDate,
+      customer: {
+        name: 'Jane Smith',
+        email: 'jane@example.com',
+        domain: {
           name: 'Test Domain'
         }
       },
-      depositRequired: true,
-      depositPaid: true,
-      no_show: false,
-      riskScore: 60,
-      updatedAt: mockDate
+      service: {
+        name: 'Therapy Session'
+      },
+      bookingMetadata: {
+        notes: 'Customer requested a follow-up'
+      },
+      bookingPayment: {
+        amount: 100,
+        currency: 'USD',
+        status: 'paid'
+      }
     }
   ];
 
   it('renders with bookings', () => {
-    const { getByTestId, getAllByTestId } = render(
+    const { getByText, getAllByTestId } = render(
       <AllAppointments bookings={mockBookings} />
     );
     
-    expect(getByTestId('mock-data-table')).toBeInTheDocument();
-    expect(getByTestId('mock-headers')).toHaveTextContent('Name,Email,Date,Created At,Booking Type,Deposit Paid');
+    // Check headers are rendered
+    expect(getByText('Name')).toBeInTheDocument();
+    expect(getByText('Email')).toBeInTheDocument();
+    expect(getByText('Date ↑')).toBeInTheDocument();
+    expect(getByText('Service')).toBeInTheDocument();
     
     // Should have two table rows (one for each booking)
     const tableRows = getAllByTestId('mock-table-row');
     expect(tableRows).toHaveLength(2);
+    
+    // Check for specific content
+    expect(getByText('John Doe')).toBeInTheDocument();
+    expect(getByText('jane@example.com')).toBeInTheDocument();
+    expect(getByText('Consultation')).toBeInTheDocument();
+    expect(getByText('Therapy Session')).toBeInTheDocument();
   });
 
   it('renders a message when no bookings are available', () => {
     const { getByText } = render(
-      <AllAppointments bookings={undefined} />
+      <AllAppointments bookings={undefined as unknown as Booking[]} />
     );
     
     expect(getByText('No Appointments')).toBeInTheDocument();
@@ -95,8 +140,6 @@ describe('AllAppointments Component', () => {
       <AllAppointments bookings={[]} />
     );
     
-    // With an empty array, there should be no table rows
-    // And the component should still render without errors
-    expect(true).toBeTruthy();
+    expect(getByText('No appointments found')).toBeInTheDocument();
   });
 }); 

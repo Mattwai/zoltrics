@@ -4,6 +4,7 @@ import SettingsForm from "@/components/forms/settings/form";
 import InfoBar from "@/components/infobar";
 import ServiceTable from "@/components/forms/services";
 import { redirect } from "next/navigation";
+import { Plans } from "@/types/prisma";
 
 type Props = { params: { domain: string } };
 
@@ -26,7 +27,10 @@ const DomainSettingsPage = async ({ params }: Props) => {
           id={domain.domains[0].id}
           name={domain.domains[0].name}
         />
-        <BotTrainingForm id={domain.domains[0].id} />
+        <BotTrainingForm 
+          id={domain.domains[0].id} 
+          plan={plan as Plans} 
+        />
         <ServiceTable
           id={domain.domains[0].id}
           services={domain.domains[0].services || []}

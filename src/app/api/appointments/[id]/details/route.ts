@@ -17,13 +17,18 @@ export async function GET(
     const booking = await prisma.booking.findUnique({
       where: { id: params.id },
       include: {
-        Customer: {
+        customer: {
           include: {
-            Domain: {
+            domain: {
               select: {
                 name: true
               }
             }
+          }
+        },
+        service: {
+          include: {
+            pricing: true
           }
         },
         bookingMetadata: true,
@@ -38,8 +43,8 @@ export async function GET(
     // Check if the user has permission to view this booking
     const canView = 
       booking.userId === session.user.id || // Direct booking
-      booking.Customer?.userId === session.user.id || // Customer booking
-      (booking.customerId && !booking.userId && !booking.Customer?.userId); // Customer booking with no user relationships
+      booking.customer?.userId === session.user.id || // Customer booking
+      (booking.customerId && !booking.userId && !booking.customer?.userId); // Customer booking with no user relationships
 
     if (!canView) {
       return new NextResponse("Unauthorized to view this booking", { status: 403 });

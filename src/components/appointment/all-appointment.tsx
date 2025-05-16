@@ -6,12 +6,13 @@ import { DataTable } from "../table";
 import { CardDescription } from "../ui/card";
 import { TableCell, TableRow } from "../ui/table";
 import { Button } from "../ui/button";
-import { ChevronLeft, ChevronRight, MoreVertical, StickyNote } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreVertical, StickyNote, ArrowDown, ArrowUp } from "lucide-react";
 import { useState } from "react";
 import { Booking } from "@/types/booking";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
-import { formatTimeSlot } from "@/lib/time-slots";
+import { formatTimeSlot, NZ_TIMEZONE } from "@/lib/time-slots";
+import { toZonedTime } from 'date-fns-tz';
 
 interface Props {
   bookings: Booking[];
@@ -19,31 +20,111 @@ interface Props {
   isDeleting?: string | null;
 }
 
+type SortDirection = 'asc' | 'desc';
+
 const ITEMS_PER_PAGE = 10;
+
+// Create a custom DataTable that allows header click events
+const CustomDataTable = ({ headers, children, onHeaderClick }: {
+  headers: string[];
+  children: React.ReactNode;
+  onHeaderClick?: (index: number) => void;
+}) => {
+  return (
+    <div className="relative rounded-md border">
+      <div className="overflow-auto">
+        <table className="w-full caption-bottom text-sm">
+          <thead className="[&_tr]:border-b">
+            <tr className="border-b transition-colors hover:bg-gray-50 data-[state=selected]:bg-gray-50">
+              {headers.map((header, index) => (
+                <th
+                  key={index}
+                  className={`h-12 px-4 text-left align-middle font-medium text-gray-500 [&:has([role=checkbox])]:pr-0 ${index === 2 ? 'cursor-pointer hover:text-blue-600' : ''}`}
+                  onClick={() => index === 2 && onHeaderClick?.(index)}
+                >
+                  {header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="[&_tr:last-child]:border-0">
+            {children}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
 
 const AllAppointments = ({ bookings, onBookingOptions, isDeleting }: Props) => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   if (!bookings) {
     return <CardDescription>No Appointments</CardDescription>;
   }
 
-  const totalPages = Math.ceil(bookings.length / ITEMS_PER_PAGE);
+  // Sort bookings by date and time
+  const sortedBookings = [...bookings].sort((a, b) => {
+    const dateA = new Date(a.startTime);
+    const dateB = new Date(b.startTime);
+    return sortDirection === 'asc' 
+      ? dateA.getTime() - dateB.getTime() 
+      : dateB.getTime() - dateA.getTime();
+  });
+
+  const totalPages = Math.ceil(sortedBookings.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentBookings = bookings.slice(startIndex, endIndex);
+  const currentBookings = sortedBookings.slice(startIndex, endIndex);
   
-  // Format date to ensure correct month display
+  // Format date to ensure correct month display in NZT
   const formatDate = (date: Date | string) => {
     if (!date) return '';
     const dateObj = typeof date === 'string' ? new Date(date) : date;
     if (isNaN(dateObj.getTime())) return '';
-    return format(dateObj, 'MMMM d, yyyy');
+    
+    // Convert to NZ timezone
+    const nzDate = toZonedTime(dateObj, NZ_TIMEZONE);
+    return format(nzDate, 'MMMM d, yyyy');
+  };
+
+  // Format time in NZ timezone
+  const formatTime = (date: Date | string) => {
+    if (!date) return '';
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) return '';
+    
+    // Convert to NZ timezone
+    const nzDate = toZonedTime(dateObj, NZ_TIMEZONE);
+    return format(nzDate, 'h:mm a');
+  };
+
+  // Toggle sort direction
+  const toggleSortDirection = () => {
+    setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    setCurrentPage(1); // Reset to first page when sorting changes
+  };
+
+  // Handler for header click
+  const handleHeaderClick = (index: number) => {
+    if (index === 2) { // Only respond to Appointment Time header
+      toggleSortDirection();
+    }
   };
 
   return (
     <div className="space-y-4">
-      <DataTable headers={APPOINTMENT_TABLE_HEADER}>
+      <CustomDataTable 
+        headers={[
+          APPOINTMENT_TABLE_HEADER[0], // Name
+          APPOINTMENT_TABLE_HEADER[1], // Email
+          `${APPOINTMENT_TABLE_HEADER[2]} ${sortDirection === 'asc' ? '↑' : '↓'}`, // Appointment Time with sort indicator
+          APPOINTMENT_TABLE_HEADER[3], // Service
+          "", // Empty header for actions column
+        ]}
+        onHeaderClick={handleHeaderClick}
+      >
         {currentBookings.map((booking) => (
           <TableRow key={booking.id}>
             <TableCell>{booking.customer?.name || 'N/A'}</TableCell>
@@ -53,7 +134,7 @@ const AllAppointments = ({ bookings, onBookingOptions, isDeleting }: Props) => {
                 {formatDate(booking.startTime)}
               </div>
               <div className="text-sm text-gray-600">
-                {formatTimeSlot(`${format(booking.startTime, 'HH:mm')}-${format(booking.endTime, 'HH:mm')}`, 60)}
+                {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
               </div>
               {booking.bookingMetadata?.notes && (
                 <div className="mt-1 flex items-center text-xs text-gray-500">
@@ -97,12 +178,12 @@ const AllAppointments = ({ bookings, onBookingOptions, isDeleting }: Props) => {
             </TableCell>
           </TableRow>
         ))}
-      </DataTable>
+      </CustomDataTable>
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-2">
           <div className="text-sm text-gray-500">
-            Showing {startIndex + 1} to {Math.min(endIndex, bookings.length)} of {bookings.length} appointments
+            Showing {startIndex + 1} to {Math.min(endIndex, sortedBookings.length)} of {sortedBookings.length} appointments
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -128,7 +209,7 @@ const AllAppointments = ({ bookings, onBookingOptions, isDeleting }: Props) => {
         </div>
       )}
 
-      {bookings.length === 0 && (
+      {sortedBookings.length === 0 && (
         <div className="text-center py-8 text-gray-500">
           No appointments found
         </div>

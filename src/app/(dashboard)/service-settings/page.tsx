@@ -41,15 +41,8 @@ const Page = (props: Props) => {
   const allServices = user.domains.flatMap((domain: any) => domain.services);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Service Settings</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Manage your services and their settings.
-          </p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto py-4 px-4">
       <InfoBar />
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <ServiceTable 
@@ -58,6 +51,7 @@ const Page = (props: Props) => {
           onServiceAdded={fetchUser}
         />
       </div>
+    </div>
     </div>
   );
 };

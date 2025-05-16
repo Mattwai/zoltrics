@@ -229,7 +229,7 @@ export const BookingCalendarSettings = ({ userId }: BookingCalendarSettingsProps
     };
 
     fetchSettings();
-  }, []);
+  }, [toast]);
 
   const handleDayToggle = (day: string) => {
     setAvailableDays((prev) =>

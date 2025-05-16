@@ -12,8 +12,12 @@ const generateBookingLink = async () => {
 
   while (exists) {
     link = Math.random().toString(36).substring(2, 15);
-    const userProfile = await client.userBusinessProfile.findUnique({
-      where: { bookingLink: link },
+    const userProfile = await client.userBusinessProfile.findFirst({
+      where: { 
+        bookingLink: {
+          link: link
+        } 
+      },
     });
     exists = !!userProfile;
   }
@@ -39,7 +43,11 @@ export const onCompleteUserRegistration = async (
         },
         userBusinessProfile: {
           create: {
-            bookingLink: uniqueBookingLink
+            bookingLink: {
+              create: {
+                link: uniqueBookingLink
+              }
+            }
           }
         }
       },

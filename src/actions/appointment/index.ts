@@ -12,6 +12,7 @@ export const onDomainCustomerResponses = async (customerId: string) => {
       },
       select: {
         email: true,
+        name: true,
         questions: {
           select: {
             id: true,
@@ -144,7 +145,9 @@ export const onGetAllBookingsForCurrentUser = async (id: string) => {
         },
         service: {
           select: {
+            id: true,
             name: true,
+            pricing: true
           },
         },
         bookingMetadata: {
@@ -192,7 +195,9 @@ export const onGetAllBookingsForCurrentUser = async (id: string) => {
         },
         service: {
           select: {
+            id: true,
             name: true,
+            pricing: true
           },
         },
         bookingMetadata: {
@@ -290,5 +295,101 @@ export const onGetUserByBookingLink = async (bookingLink: string) => {
   } catch (error) {
     console.error("Error getting user by booking link:", error);
     return null;
+  }
+};
+
+export const getUpcomingAppointments = async (userId: string, limit = 3) => {
+  try {
+    // Get current date and time
+    const now = new Date();
+    
+    // Fetch upcoming domain bookings
+    const domainBookings = await client.booking.findMany({
+      where: {
+        customer: {
+          domain: {
+            userId: userId,
+          },
+        },
+        startTime: {
+          gte: now,
+        },
+        NOT: {
+          userId: userId // Exclude direct bookings
+        }
+      },
+      select: {
+        id: true,
+        startTime: true,
+        endTime: true,
+        status: true,
+        customer: {
+          select: {
+            name: true,
+            email: true,
+            domain: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+        bookingMetadata: {
+          select: {
+            notes: true,
+          }
+        },
+      },
+      orderBy: {
+        startTime: 'asc',
+      },
+      take: limit,
+    });
+
+    // Fetch upcoming direct bookings
+    const directBookings = await client.booking.findMany({
+      where: {
+        userId: userId,
+        startTime: {
+          gte: now,
+        },
+        customer: {
+          is: {
+            domainId: undefined
+          }
+        }
+      },
+      select: {
+        id: true,
+        startTime: true,
+        endTime: true,
+        status: true,
+        customer: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+        bookingMetadata: {
+          select: {
+            notes: true,
+          }
+        },
+      },
+      orderBy: {
+        startTime: 'asc',
+      },
+      take: limit,
+    });
+
+    // Combine and sort all bookings by startTime
+    const allUpcomingBookings = [...domainBookings, ...directBookings].sort(
+      (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+    ).slice(0, limit);
+
+    return allUpcomingBookings;
+  } catch (error) {
+    console.error("Error fetching upcoming appointments:", error);
+    return [];
   }
 };
