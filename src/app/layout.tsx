@@ -12,8 +12,12 @@ export const metadata: Metadata = {
   title: "BookerBuddy",
   description: "Streamline your scheduling and booking",
   icons: {
-    icon: '/images/bookerbuddy-icon.png',
-    apple: '/images/bookerbuddy-icon.png',
+    icon: [
+      { url: '/favicon.ico?v=1' },
+      { url: '/images/bookerbuddy-icon.png?v=1' }
+    ],
+    apple: '/images/bookerbuddy-icon.png?v=1',
+    shortcut: { url: '/favicon.ico?v=1' },
   },
 };
 
@@ -25,7 +29,10 @@ export default function RootLayout({
   return (
     <NextAuthProvider>
       <html lang="en" suppressHydrationWarning>
-        <head></head>
+        <head>
+          <link rel="icon" href="/favicon.ico?v=1" />
+          <link rel="icon" href="/images/bookerbuddy-icon.png?v=1" type="image/png" />
+        </head>
         <body className={jakarta.className}>
           <ThemeProvider
             attribute="class"
