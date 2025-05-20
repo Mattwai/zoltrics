@@ -18,6 +18,7 @@ export type HelpDeskQuestionsProps = {
 export type AddServiceProps = {
   name: string;
   price: number;
+  duration: number;
 };
 
 export type FilterQuestionsProps = {
@@ -98,4 +99,5 @@ export const FilterQuestionsSchema = z.object({
 export const AddServiceSchema = z.object({
   name: z.string().min(1, "Service name is required"),
   price: z.number().min(0, "Price must be greater than or equal to 0"),
+  duration: z.number().min(1, "Duration must be at least 1 minute"),
 });

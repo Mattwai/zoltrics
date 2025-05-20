@@ -287,7 +287,8 @@ export const useServices = (userId: string) => {
       const result = await onCreateNewDomainService(
         userId,
         values.name,
-        Number(values.price)
+        Number(values.price),
+        Number(values.duration)
       );
 
       if (result?.status === 200) {

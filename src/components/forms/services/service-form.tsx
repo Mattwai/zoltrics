@@ -56,6 +56,18 @@ export const CreateServiceForm = ({
             className="w-full"
             setValueAs={(value) => Number(value)}
           />
+          <FormGenerator
+            inputType="input"
+            register={register}
+            label="Duration (minutes)"
+            name="duration"
+            errors={errors}
+            placeholder="60"
+            type="number"
+            min="1"
+            className="w-full"
+            setValueAs={(value) => Number(value)}
+          />
         </div>
         <Button 
           type="submit" 

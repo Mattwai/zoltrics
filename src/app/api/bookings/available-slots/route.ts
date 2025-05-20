@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const date = searchParams.get("date");
     const userId = searchParams.get("userId");
+    const duration = searchParams.get("duration");
 
     console.log(`Available slots request for date: ${date}, userId: ${userId}`);
 
@@ -204,7 +205,7 @@ export async function GET(request: NextRequest) {
               }
               
               // Generate slots based on the user's settings
-              const interval = daySettings.duration || 30;
+              const slotDuration = duration ? Number(duration) : (daySettings?.duration || 30);
               const maxSlots = daySettings.maxBookings || 1;
               
               // Generate slots from start to end time
@@ -214,12 +215,12 @@ export async function GET(request: NextRequest) {
               const startTotalMinutes = startHour * 60 + startMinute;
               const endTotalMinutes = endHour * 60 + endMinute;
               
-              for (let time = startTotalMinutes; time < endTotalMinutes; time += interval) {
+              for (let time = startTotalMinutes; time < endTotalMinutes; time += slotDuration) {
                 const hour = Math.floor(time / 60);
                 const minute = time % 60;
                 
                 const slotStart = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                const slotEnd = calculateEndTime(slotStart, interval);
+                const slotEnd = calculateEndTime(slotStart, slotDuration);
                 
                 // Skip if slot end time exceeds day end time
                 const slotEndHour = parseInt(slotEnd.split(':')[0]);
@@ -231,7 +232,7 @@ export async function GET(request: NextRequest) {
                     slot: `${slotStart} - ${slotEnd}`,
                     startTime: slotStart,
                     endTime: slotEnd,
-                    duration: interval,
+                    duration: slotDuration,
                     maxSlots: maxSlots,
                     isCustom: false
                   });
@@ -371,7 +372,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(req: Request) {
   try {
-    const { serviceId, date, endDate } = await req.json();
+    const { serviceId, date, endDate, duration } = await req.json();
     
     // Get service details with all required fields
     const service = await client.service.findUnique({
@@ -427,6 +428,9 @@ export async function POST(req: Request) {
     const availableSlots: TimeSlot[] = [];
     let currentDate = startDate;
 
+    // Use the provided duration if available, otherwise use the service's duration
+    const slotDuration = duration ? Number(duration) : service.duration;
+
     while (currentDate <= finalEndDate) {
       const dayOfWeek = format(currentDate, 'EEEE');
       const dayHours = businessHours[dayOfWeek];
@@ -464,8 +468,8 @@ export async function POST(req: Request) {
         } 
         // For regular services, generate slots based on service duration
         else {
-          while (addMinutes(slotStart, service.duration) <= dayEnd) {
-            const slotEnd = addMinutes(slotStart, service.duration);
+          while (addMinutes(slotStart, slotDuration) <= dayEnd) {
+            const slotEnd = addMinutes(slotStart, slotDuration);
             
             const hasConflict = existingBookings.some(booking => {
               const bookingStart = new Date(booking.startTime);
@@ -478,7 +482,7 @@ export async function POST(req: Request) {
                 slot: formatTimeSlot(slotStart),
                 startTime: slotStart.toISOString(),
                 endTime: slotEnd.toISOString(),
-                duration: service.duration,
+                duration: slotDuration,
                 maxSlots: dayHours.maxBookings
               });
             }

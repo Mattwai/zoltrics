@@ -57,6 +57,7 @@ type BookingFormProps = {
     name: string;
     price: number;
     isLive: boolean;
+    duration?: number;
   }[];
 };
 
@@ -76,6 +77,8 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
   const [disabledDates, setDisabledDates] = useState<Date[]>([]);
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [selectedService, setSelectedService] = useState<string>("");
+  const [serviceDuration, setServiceDuration] = useState<number>(30);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -122,7 +125,7 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
       ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
       const response = await fetch(
-        `/api/bookings/available-slots?date=${formattedDate}&userId=${userId}`
+        `/api/bookings/available-slots?date=${formattedDate}&userId=${userId}&duration=${serviceDuration}`
       );
       
       if (!response.ok) {
@@ -164,7 +167,7 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
       console.error("Error fetching time slots:", error);
       throw error;
     }
-  }, []);
+  }, [serviceDuration]);
 
   // Helper function to calculate end time based on start time and duration
   const calculateEndTime = (startTime: string, durationMinutes: number) => {
@@ -409,14 +412,19 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
                 className="w-full h-11 rounded-md border border-input bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
                 {...field}
                 value={field.value || ""}
-                onChange={(e) => field.onChange(e.target.value)}
+                onChange={(e) => {
+                  field.onChange(e.target.value);
+                  setSelectedService(e.target.value);
+                  const selected = services.find(s => s.id === e.target.value);
+                  setServiceDuration(selected?.duration || 30);
+                }}
               >
                 <option value="">Select a service</option>
                 {services
                   .filter((service) => service.isLive)
                   .map((service) => (
                     <option key={service.id} value={service.id}>
-                      {service.name} - ${service.price}
+                      {service.name} - ${service.price} - {service.duration || 30} min
                     </option>
                   ))}
               </select>

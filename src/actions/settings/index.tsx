@@ -525,7 +525,8 @@ export const onGetPaymentConnected = async () => {
 export const onCreateNewDomainService = async (
   userId: string,
   name: string,
-  price: number
+  price: number,
+  duration: number
 ) => {
   try {
     // Check if user has any domains
@@ -542,6 +543,7 @@ export const onCreateNewDomainService = async (
           name,
           userId,
           domainId: existingDomain.id,
+          duration,
           pricing: {
             create: {
               price,
@@ -570,6 +572,7 @@ export const onCreateNewDomainService = async (
           name,
           userId,
           domainId: domain.id,
+          duration,
           pricing: {
             create: {
               price,

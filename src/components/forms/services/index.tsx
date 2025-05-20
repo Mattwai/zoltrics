@@ -23,11 +23,12 @@ type Props = {
     status?: {
       isLive: boolean;
     } | null;
+    duration?: number;
   }[];
   onServiceAdded?: () => void;
 };
 
-const service_header = ["Name", "Price (NZD)", "Status", "Created", "Actions"]
+const service_header = ["Name", "Price (NZD)", "Duration (min)", "Status", "Created", "Actions"]
 
 const ServiceTable = ({ id, services, onServiceAdded }: Props) => {
   const { toast } = useToast();
@@ -162,6 +163,7 @@ const ServiceTable = ({ id, services, onServiceAdded }: Props) => {
                   <TableRow key={service.id} className="hover:bg-gray-50">
                     <TableCell className="font-medium">{service.name}</TableCell>
                     <TableCell>${(service.pricing?.price ?? 0).toFixed(2)}</TableCell>
+                    <TableCell>{service.duration || 60}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Switch
@@ -206,6 +208,7 @@ const ServiceTable = ({ id, services, onServiceAdded }: Props) => {
                   <TableRow key={service.id} className="hover:bg-gray-50">
                     <TableCell className="font-medium">{service.name}</TableCell>
                     <TableCell>${(service.pricing?.price ?? 0).toFixed(2)}</TableCell>
+                    <TableCell>{service.duration || 60}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Switch
@@ -250,6 +253,7 @@ const ServiceTable = ({ id, services, onServiceAdded }: Props) => {
                   <TableRow key={service.id} className="hover:bg-gray-50">
                     <TableCell className="font-medium">{service.name}</TableCell>
                     <TableCell>${(service.pricing?.price ?? 0).toFixed(2)}</TableCell>
+                    <TableCell>{service.duration || 60}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Switch
