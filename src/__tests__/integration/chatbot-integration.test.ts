@@ -19,7 +19,6 @@ jest.mock('@/lib/prisma', () => ({
   }
 }));
 
-import fetch from 'node-fetch';
 import { jest, describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 
 // Mock data for testing
@@ -151,41 +150,42 @@ const aiModelParams = {
 
 describe('Chatbot Integration Test', () => {
   const API_URL = 'http://localhost:3000/api/user/test-user-id/chatbot';
-  
+  let originalFetch: any;
+
   beforeAll(() => {
     // Set environment variables for testing
     process.env.DEEPSEEK_API_KEY = 'test-api-key';
+    originalFetch = global.fetch;
+    global.fetch = jest.fn() as any;
   });
   
   afterAll(() => {
     // Clean up
     jest.restoreAllMocks();
     delete process.env.DEEPSEEK_API_KEY;
+    global.fetch = originalFetch;
   });
   
   beforeEach(() => {
     // Reset fetch mock for each test
-    jest.mocked(fetch).mockReset();
+    (global.fetch as any).mockReset();
   });
   
   // Test that helps verify our API calls correctly include temperature and other parameters
   it('should pass AI parameters to the DeepSeek API for consistent output', async () => {
-    // Mock responses from our API
-    jest.mocked(fetch).mockResolvedValueOnce({
+    (global.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({
-        raw: {
-          // This simulates the raw DeepSeek API response for inspection
-        },
+        raw: {},
         response: {
           role: 'assistant',
           content: 'This is a test response'
         }
       })
-    } as any);
+    });
     
     // Make a request to our chatbot API
-    const response = await fetch(`${API_URL}/assistant`, {
+    const response = await global.fetch(`${API_URL}/assistant`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -218,8 +218,7 @@ describe('Chatbot Integration Test', () => {
     describe(`${category.category} Tests`, () => {
       category.tests.forEach(test => {
         it(`should correctly respond to: "${test.question}"`, async () => {
-          // Mock our API response
-          jest.mocked(fetch).mockResolvedValueOnce({
+          (global.fetch as any).mockResolvedValueOnce({
             ok: true,
             json: () => Promise.resolve({
               response: {
@@ -227,10 +226,10 @@ describe('Chatbot Integration Test', () => {
                 content: `This is a mock response for "${test.question}" that would normally come from ${test.source}`
               }
             })
-          } as any);
+          });
           
           // Make the request to our API
-          const response = await fetch(`${API_URL}/assistant`, {
+          const response = await global.fetch(`${API_URL}/assistant`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -258,8 +257,7 @@ describe('Chatbot Integration Test', () => {
   it('should not use external information not provided in the sources', async () => {
     const externalInfoQuestion = "What's your opinion on the latest fashion trends?";
     
-    // Mock response from our API for this specific test
-    jest.mocked(fetch).mockResolvedValueOnce({
+    (global.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({
         response: {
@@ -267,10 +265,10 @@ describe('Chatbot Integration Test', () => {
           content: "I don't have specific information about fashion trends. I can help with booking appointments, services, and business hours."
         }
       })
-    } as any);
+    });
     
     // Make the request
-    const response = await fetch(`${API_URL}/assistant`, {
+    const response = await global.fetch(`${API_URL}/assistant`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

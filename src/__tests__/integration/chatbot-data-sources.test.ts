@@ -17,7 +17,6 @@ jest.mock('@/lib/prisma', () => ({
   }
 }));
 
-import fetch from 'node-fetch';
 import { jest, describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import { DEFAULT_LLM_PARAMS } from '@/lib/ai-params';
 
@@ -206,7 +205,7 @@ describe('Chatbot Authorized Data Sources Test', () => {
   
   beforeEach(() => {
     // Reset fetch mock for each test
-    jest.mocked(fetch).mockReset();
+    (global.fetch as any).mockReset();
   });
   
   // Function to create a mock response for authorized content
@@ -257,7 +256,7 @@ describe('Chatbot Authorized Data Sources Test', () => {
         
         // For knowledge base and helpdesk, the API should return direct matches
         if (test.expectedSource === 'knowledgeBase' || test.expectedSource === 'helpdesk') {
-          jest.mocked(fetch).mockResolvedValueOnce({
+          (global.fetch as any).mockResolvedValueOnce({
             ok: true,
             json: () => Promise.resolve({
               response: {
@@ -265,11 +264,11 @@ describe('Chatbot Authorized Data Sources Test', () => {
                 content: mockContent
               }
             })
-          } as any);
+          });
         } else {
           // For other sources, the API will call DeepSeek
           // Use mockResolvedValueOnce first for our immediate call
-          jest.mocked(fetch).mockResolvedValueOnce({
+          (global.fetch as any).mockResolvedValueOnce({
             ok: true,
             json: () => Promise.resolve({
               response: {
@@ -277,11 +276,11 @@ describe('Chatbot Authorized Data Sources Test', () => {
                 content: mockContent
               }
             })
-          } as any);
+          });
         }
         
         // Make the request to our chatbot API
-        const response = await fetch(ASSISTANT_URL, {
+        const response = await global.fetch(ASSISTANT_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -328,7 +327,7 @@ describe('Chatbot Authorized Data Sources Test', () => {
         const mockContent = "I don't have specific information about that. I can help with booking appointments, services, and business hours.";
         
         // Mock the response for the API call
-        jest.mocked(fetch).mockResolvedValueOnce({
+        (global.fetch as any).mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve({
             response: {
@@ -336,9 +335,9 @@ describe('Chatbot Authorized Data Sources Test', () => {
               content: mockContent
             }
           })
-        } as any);
+        });
         
-        const response = await fetch(ASSISTANT_URL, {
+        const response = await global.fetch(ASSISTANT_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -376,7 +375,7 @@ describe('Chatbot Authorized Data Sources Test', () => {
   // Test that parameters are correctly sent to our API
   it('should send correct parameters to the API', async () => {
     // Create a mock response
-    jest.mocked(fetch).mockResolvedValueOnce({
+    (global.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({
         response: {
@@ -384,7 +383,7 @@ describe('Chatbot Authorized Data Sources Test', () => {
           content: "This is a test response"
         }
       })
-    } as any);
+    });
     
     // Make a request to our chatbot API with specific parameters
     const testMessage = "Test message";
@@ -394,7 +393,7 @@ describe('Chatbot Authorized Data Sources Test', () => {
       ...DEFAULT_LLM_PARAMS
     };
     
-    const response = await fetch(ASSISTANT_URL, {
+    const response = await global.fetch(ASSISTANT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)

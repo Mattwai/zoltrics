@@ -9,7 +9,6 @@ jest.mock('@/lib/prisma', () => ({
   }
 }));
 
-import fetch from 'node-fetch';
 import { expect, describe, it, beforeAll, afterAll, jest } from '@jest/globals';
 
 // Mock data for testing
@@ -96,6 +95,7 @@ describe('Chatbot Information Source Tests', () => {
   
   beforeAll(() => {
     // Set up global fetch mock
+    global.fetch = jest.fn() as any;
     jest.spyOn(console, 'warn').mockImplementation(() => {});
   });
   
@@ -110,14 +110,14 @@ describe('Chatbot Information Source Tests', () => {
     const testMessage = "What are your opening hours?";
     
     // Setup mock implementation for this specific test
-    jest.mocked(fetch).mockResolvedValueOnce({
+    (global.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({
         response: "We are open Monday to Friday from 9 AM to 7 PM, and Saturday from 10 AM to 5 PM."
       })
-    } as any);
+    });
     
-    const response = await fetch(`${API_URL}`, {
+    const response = await global.fetch(`${API_URL}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: testMessage })
@@ -133,14 +133,14 @@ describe('Chatbot Information Source Tests', () => {
     const testMessage = "What is your cancellation policy?";
     
     // Setup mock implementation for this specific test
-    jest.mocked(fetch).mockResolvedValueOnce({
+    (global.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({
         response: "Cancellations must be made at least 24 hours in advance to avoid a cancellation fee of 50% of the service price."
       })
-    } as any);
+    });
     
-    const response = await fetch(`${API_URL}`, {
+    const response = await global.fetch(`${API_URL}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: testMessage })
@@ -156,7 +156,7 @@ describe('Chatbot Information Source Tests', () => {
     const testMessage = "How much does a haircut cost?";
     
     // Setup mock implementation for this specific test
-    jest.mocked(fetch).mockResolvedValueOnce({
+    (global.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({
         response: { 
@@ -164,9 +164,9 @@ describe('Chatbot Information Source Tests', () => {
           content: "A haircut costs $30."
         }
       })
-    } as any);
+    });
     
-    const response = await fetch(`${API_URL}/assistant`, {
+    const response = await global.fetch(`${API_URL}/assistant`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -186,7 +186,7 @@ describe('Chatbot Information Source Tests', () => {
     const testMessage = "Can I book an appointment on Sunday?";
     
     // Setup mock implementation for this specific test
-    jest.mocked(fetch).mockResolvedValueOnce({
+    (global.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({
         response: { 
@@ -194,9 +194,9 @@ describe('Chatbot Information Source Tests', () => {
           content: "I'm sorry, we are not open on Sundays. We are open Monday to Friday from 9 AM to 7 PM, and Saturday from 10 AM to 5 PM."
         }
       })
-    } as any);
+    });
     
-    const response = await fetch(`${API_URL}/assistant`, {
+    const response = await global.fetch(`${API_URL}/assistant`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -216,7 +216,7 @@ describe('Chatbot Information Source Tests', () => {
     const testMessage = "How long has your business been operating?";
     
     // Setup mock implementation for this specific test
-    jest.mocked(fetch).mockResolvedValueOnce({
+    (global.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({
         response: { 
@@ -224,9 +224,9 @@ describe('Chatbot Information Source Tests', () => {
           content: "I don't have specific information about how long the business has been operating. If you'd like to know more about our services or hours, I'd be happy to help with that information."
         }
       })
-    } as any);
+    });
     
-    const response = await fetch(`${API_URL}/assistant`, {
+    const response = await global.fetch(`${API_URL}/assistant`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
