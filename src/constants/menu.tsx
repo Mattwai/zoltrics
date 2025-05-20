@@ -6,6 +6,7 @@ import HelpDeskIcon from "@/icons/help-desk-icon";
 import IntegrationsIcon from "@/icons/integrations-icon";
 import StarIcon from "@/icons/star-icon";
 import TimerIcon from "@/icons/timer-icon";
+import PersonIcon from "@/icons/person-icon";
 import { JSX } from "react";
 
 type SIDE_BAR_MENU_PROPS = {
@@ -29,6 +30,11 @@ export const SIDE_BAR_MENU: SIDE_BAR_MENU_PROPS[] = [
     label: "Appointments",
     icon: <CalIcon />,
     path: "appointment",
+  },
+  {
+    label: "Clients",
+    icon: <PersonIcon />,
+    path: "clients",
   },
   {
     label: "Integrations",
