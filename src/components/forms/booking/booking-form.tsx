@@ -71,6 +71,7 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
   >([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryDate, setRetryDate] = useState<Date | null>(null);
   const { data: session, status } = useSession();
   const [isGuest, setIsGuest] = useState(false);
   const [disabledDates, setDisabledDates] = useState<Date[]>([]);
@@ -98,7 +99,7 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
     if (date) {
       setIsLoading(true);
       try {
-        const slots = await fetchAvailableTimeSlots(date, userId);
+        const slots = await fetchAvailableTimeSlots(date, userId, form.getValues("productId"));
         setAvailableTimeSlots(slots);
         if (selectedTime && !slots.some((slot: AppointmentTimeSlots) => slot.slot === selectedTime)) {
           setSelectedTime(null);
@@ -114,60 +115,77 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
     }
   };
 
-  const fetchAvailableTimeSlots = useCallback(async (date: Date, userId: string) => {
-    try {
-      // Try AI endpoint first
-      const aiResponse = await fetch("/api/ai/booking", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "suggestTime",
-          data: {
-            preferredTime: null, // You can enhance this with user preferences
-            serviceDuration: null, // You can enhance this with selected service duration
-          },
-        }),
-      });
-      if (aiResponse.ok) {
-        const aiData = await aiResponse.json();
-        if (aiData.result && Array.isArray(aiData.result)) {
-          return aiData.result;
+  const fetchAvailableTimeSlots = useCallback(
+    async (
+      date: Date,
+      userId: string,
+      selectedServiceId?: string
+    ) => {
+      try {
+        // Find the selected service object
+        const selectedService = services.find((s) => s.id === selectedServiceId);
+        // Prepare user context
+        const userContext = session?.user
+          ? { name: session.user.name, email: session.user.email }
+          : null;
+        // Try AI endpoint first with full context
+        const aiResponse = await fetch("/api/ai/booking", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "suggestTime",
+            data: {
+              date,
+              service: selectedService,
+              user: userContext,
+            },
+          }),
+        });
+        if (aiResponse.ok) {
+          const aiData = await aiResponse.json();
+          if (aiData.result && Array.isArray(aiData.result)) {
+            setError(null);
+            return aiData.result;
+          }
         }
-      }
-      // Fallback to original endpoint
-      const formattedDate = `${date.getFullYear()}-${String(
-        date.getMonth() + 1
-      ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-      const response = await fetch(
-        `/api/bookings/available-slots?date=${formattedDate}&userId=${userId}`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch available time slots");
-      }
-      const data = await response.json();
-      if (!data.slots || data.slots.length === 0) {
+        // Fallback to original endpoint
+        const formattedDate = `${date.getFullYear()}-${String(
+          date.getMonth() + 1
+        ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+        const response = await fetch(
+          `/api/bookings/available-slots?date=${formattedDate}&userId=${userId}`
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch available time slots");
+        }
+        const data = await response.json();
+        if (!data.slots || data.slots.length === 0) {
+          setError("No available time slots for this date.");
+          return [];
+        }
+        setError(null);
+        const processedSlots = data.slots.map((slot: AppointmentTimeSlots) => {
+          const endTimeValue =
+            slot.endTime || calculateEndTime(slot.slot, slot.duration || 30);
+          const formattedDuration = `${slot.duration || 30} mins`;
+          const slotsRemaining = slot.maxSlots || 1;
+          return {
+            ...slot,
+            startTime: slot.startTime || slot.slot,
+            endTime: endTimeValue,
+            formattedDuration: formattedDuration,
+            slotsRemaining: slotsRemaining,
+            isCustom: Boolean(slot.isCustom),
+          };
+        });
+        return processedSlots as AppointmentTimeSlots[];
+      } catch (error) {
+        setError("Could not load available time slots. Please try again.");
+        setRetryDate(date);
+        console.error("Error fetching time slots:", error);
         return [];
       }
-      const processedSlots = data.slots.map((slot: AppointmentTimeSlots) => {
-        const endTimeValue =
-          slot.endTime || calculateEndTime(slot.slot, slot.duration || 30);
-        const formattedDuration = `${slot.duration || 30} mins`;
-        const slotsRemaining = slot.maxSlots || 1;
-        return {
-          ...slot,
-          startTime: slot.startTime || slot.slot,
-          endTime: endTimeValue,
-          formattedDuration: formattedDuration,
-          slotsRemaining: slotsRemaining,
-          isCustom: Boolean(slot.isCustom),
-        };
-      });
-      return processedSlots as AppointmentTimeSlots[];
-    } catch (error) {
-      console.error("Error fetching time slots:", error);
-      throw error;
-    }
-  }, []);
+    }, [services, session]);
 
   // Helper function to calculate end time based on start time and duration
   const calculateEndTime = (startTime: string, durationMinutes: number) => {
@@ -186,7 +204,7 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
     if (selectedDate) {
       setIsLoading(true);
       setError(null);
-      fetchAvailableTimeSlots(selectedDate, userId)
+      fetchAvailableTimeSlots(selectedDate, userId, form.getValues("productId"))
         .then((slots) => {
           setAvailableTimeSlots(slots);
           setError(null);
@@ -201,7 +219,7 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
     } else {
       setAvailableTimeSlots([]);
     }
-  }, [selectedDate, userId, fetchAvailableTimeSlots]);
+  }, [selectedDate, userId, fetchAvailableTimeSlots, form]);
 
   const handleTimeSlotClick = (slot: AppointmentTimeSlots) => {
     setSelectedTime(slot.slot);
@@ -570,6 +588,35 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
             </div>
           </div>
         </div>
+
+        {error && (
+          <div className="text-red-600 text-center my-4">
+            {error}
+            {retryDate && (
+              <button
+                type="button"
+                className="ml-2 underline text-blue-600"
+                onClick={() => {
+                  setError(null);
+                  setIsLoading(true);
+                  fetchAvailableTimeSlots(retryDate, userId, form.getValues("productId"))
+                    .then((slots) => {
+                      setAvailableTimeSlots(slots);
+                      setError(null);
+                    })
+                    .catch((err) => {
+                      setError("Could not load available time slots. Please try again.");
+                    })
+                    .finally(() => {
+                      setIsLoading(false);
+                    });
+                }}
+              >
+                Retry
+              </button>
+            )}
+          </div>
+        )}
       </form>
     </Form>
   );

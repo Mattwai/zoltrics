@@ -27,13 +27,18 @@ export interface Service {
   name: string;
   price: number;
   duration?: number;
+  isLive?: boolean;
 }
 
 export class BookingAssistant {
   // Suggest optimal time slots for a booking
-  async suggestOptimalTime(userPreferences: UserPreferences): Promise<TimeSlot[]> {
-    const systemPrompt = `You are an expert business assistant. Given user booking preferences, suggest the top 3 optimal time slots for an appointment. Respond as a JSON array of objects with 'slot' (e.g. '09:00') and 'available' (boolean).`;
-    const userPrompt = `Preferences: ${JSON.stringify(userPreferences)}`;
+  async suggestOptimalTime(context: {
+    date: Date;
+    service?: Service;
+    user?: { name?: string; email?: string } | null;
+  }): Promise<TimeSlot[]> {
+    const systemPrompt = `You are an expert business assistant. Given the booking date, selected service, and user info, suggest the top 3 optimal time slots for an appointment. Respond as a JSON array of objects with 'slot' (e.g. '09:00') and 'available' (boolean).`;
+    const userPrompt = `Context: ${JSON.stringify(context)}`;
     const messages: DeepSeekMessage[] = [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },

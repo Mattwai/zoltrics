@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { BookingAssistant, UserPreferences, BookingData, UserHistory } from "@/lib/ai/booking-assistant";
+import { BookingAssistant, UserPreferences, BookingData, UserHistory, Service } from "@/lib/ai/booking-assistant";
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
 
     switch (action) {
       case "suggestTime":
-        result = await assistant.suggestOptimalTime(data as UserPreferences);
+        result = await assistant.suggestOptimalTime(data as { date: Date; service?: Service; user?: { name?: string; email?: string } });
         break;
       case "predictNoShow":
         result = await assistant.predictNoShow(data as BookingData);
