@@ -206,11 +206,35 @@ export const useChatBot = (userId?: string, initialChatBot?: {
     setOnAiTyping(true);
 
     try {
+      // Try new AI endpoint first
+      const aiResponse = await fetch("/api/ai/chatbot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "generateContextualResponse",
+          data: {
+            query: values.content,
+            businessContext: {
+              businessName: currentBot?.name || "Business",
+              services: [], // Optionally fill with available services
+            },
+          },
+        }),
+      });
+      if (aiResponse.ok) {
+        const aiData = await aiResponse.json();
+        if (aiData.result) {
+          setOnChats((prev) => [
+            ...prev,
+            { role: "assistant", content: aiData.result },
+          ]);
+          setOnAiTyping(false);
+          return;
+        }
+      }
+      // Fallback to original logic
       let response;
-      
       if (userId) {
-        // If we have a userId, use the user-specific chatbot assistant API
-        console.log("Sending message to assistant:", values.content);
         const userAssistantResponse = await fetch(`/api/user/${userId}/chatbot/assistant`, {
           method: 'POST',
           headers: {
@@ -221,18 +245,13 @@ export const useChatBot = (userId?: string, initialChatBot?: {
             chat: onChats,
           }),
         });
-
         const data = await userAssistantResponse.json();
-        console.log("Received assistant response:", data);
-
         if (!userAssistantResponse.ok) {
           throw new Error(data.error || "Failed to get response from assistant");
         }
-
         if (data.error) {
           throw new Error(data.error);
         }
-
         response = {
           response: {
             role: "assistant" as const,
@@ -240,7 +259,6 @@ export const useChatBot = (userId?: string, initialChatBot?: {
           }
         };
       } else if (currentBotId) {
-        // Otherwise use the domain-based chatbot API
         response = await onAiChatBotAssistant(
           currentBotId,
           onChats,
@@ -248,16 +266,12 @@ export const useChatBot = (userId?: string, initialChatBot?: {
           values.content
         );
       }
-
       setOnAiTyping(false);
-      
       if (response) {
         setOnChats((prev) => [...prev, response.response]);
       }
     } catch (error) {
-      console.error("Error in chatbot interaction:", error);
       setOnAiTyping(false);
-      // Add error message to chat
       setOnChats((prev) => [
         ...prev,
         {

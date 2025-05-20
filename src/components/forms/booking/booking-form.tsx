@@ -21,11 +21,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { CalendarIcon, CheckCircle } from "lucide-react";
 import { signIn, useSession } from "next-auth/react";
-import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { DepositPayment } from "./deposit-payment-form";
-import Image from "next/image";
 
 // Define the AppointmentTimeSlots interface
 interface AppointmentTimeSlots {
@@ -72,6 +72,7 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
   >([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryDate, setRetryDate] = useState<Date | null>(null);
   const { data: session, status } = useSession();
   const [isGuest, setIsGuest] = useState(false);
   const [disabledDates, setDisabledDates] = useState<Date[]>([]);
@@ -101,9 +102,18 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
     if (date) {
       setIsLoading(true);
       try {
-        const slots = await fetchAvailableTimeSlots(date, userId);
+        const slots = await fetchAvailableTimeSlots(
+          date,
+          userId,
+          form.getValues("productId")
+        );
         setAvailableTimeSlots(slots);
-        if (selectedTime && !slots.some((slot) => slot.slot === selectedTime)) {
+        if (
+          selectedTime &&
+          !slots.some(
+            (slot: AppointmentTimeSlots) => slot.slot === selectedTime
+          )
+        ) {
           setSelectedTime(null);
           form.setValue("time", "");
         }
@@ -117,57 +127,77 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
     }
   };
 
-  const fetchAvailableTimeSlots = useCallback(async (date: Date, userId: string) => {
-    try {
-      // Format the date in YYYY-MM-DD format to preserve the selected date regardless of timezone
-      const formattedDate = `${date.getFullYear()}-${String(
-        date.getMonth() + 1
-      ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-
-      const response = await fetch(
-        `/api/bookings/available-slots?date=${formattedDate}&userId=${userId}&duration=${serviceDuration}`
-      );
-      
-      if (!response.ok) {
-        throw new Error("Failed to fetch available time slots");
-      }
-      
-      const data = await response.json();
-
-      // If no slots are returned, the date might be blocked
-      if (!data.slots || data.slots.length === 0) {
+  const fetchAvailableTimeSlots = useCallback(
+    async (date: Date, userId: string, selectedServiceId?: string) => {
+      try {
+        // Find the selected service object
+        const selectedService = services.find(
+          (s) => s.id === selectedServiceId
+        );
+        // Prepare user context
+        const userContext = session?.user
+          ? { name: session.user.name, email: session.user.email }
+          : null;
+        // Try AI endpoint first with full context
+        const aiResponse = await fetch("/api/ai/booking", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "suggestTime",
+            data: {
+              date,
+              service: selectedService,
+              user: userContext,
+            },
+          }),
+        });
+        if (aiResponse.ok) {
+          const aiData = await aiResponse.json();
+          if (aiData.result && Array.isArray(aiData.result)) {
+            setError(null);
+            return aiData.result;
+          }
+        }
+        // Fallback to original endpoint
+        const formattedDate = `${date.getFullYear()}-${String(
+          date.getMonth() + 1
+        ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+        const response = await fetch(
+          `/api/bookings/available-slots?date=${formattedDate}&userId=${userId}`
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch available time slots");
+        }
+        const data = await response.json();
+        if (!data.slots || data.slots.length === 0) {
+          setError("No available time slots for this date.");
+          return [];
+        }
+        setError(null);
+        const processedSlots = data.slots.map((slot: AppointmentTimeSlots) => {
+          const endTimeValue =
+            slot.endTime || calculateEndTime(slot.slot, slot.duration || 30);
+          const formattedDuration = `${slot.duration || 30} mins`;
+          const slotsRemaining = slot.maxSlots || 1;
+          return {
+            ...slot,
+            startTime: slot.startTime || slot.slot,
+            endTime: endTimeValue,
+            formattedDuration: formattedDuration,
+            slotsRemaining: slotsRemaining,
+            isCustom: Boolean(slot.isCustom),
+          };
+        });
+        return processedSlots as AppointmentTimeSlots[];
+      } catch (error) {
+        setError("Could not load available time slots. Please try again.");
+        setRetryDate(date);
+        console.error("Error fetching time slots:", error);
         return [];
       }
-
-      // Process the slots to include formatted duration and calculate slots remaining
-      const processedSlots = data.slots.map((slot: AppointmentTimeSlots) => {
-        // Calculate end time if not provided
-        const endTimeValue =
-          slot.endTime || calculateEndTime(slot.slot, slot.duration || 30);
-
-        // Format duration for display (e.g., "30 mins")
-        const formattedDuration = `${slot.duration || 30} mins`;
-
-        // Calculate slots remaining if maxSlots is provided
-        const slotsRemaining = slot.maxSlots || 1;
-
-        // Make sure to preserve the isCustom property exactly as it comes from the API
-        return {
-          ...slot,
-          startTime: slot.startTime || slot.slot,
-          endTime: endTimeValue,
-          formattedDuration: formattedDuration,
-          slotsRemaining: slotsRemaining,
-          isCustom: Boolean(slot.isCustom), // Ensure isCustom is a boolean
-        };
-      });
-
-      return processedSlots as AppointmentTimeSlots[];
-    } catch (error) {
-      console.error("Error fetching time slots:", error);
-      throw error;
-    }
-  }, [serviceDuration]);
+    },
+    [services, session]
+  );
 
   // Helper function to calculate end time based on start time and duration
   const calculateEndTime = (startTime: string, durationMinutes: number) => {
@@ -186,7 +216,7 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
     if (selectedDate) {
       setIsLoading(true);
       setError(null);
-      fetchAvailableTimeSlots(selectedDate, userId)
+      fetchAvailableTimeSlots(selectedDate, userId, form.getValues("productId"))
         .then((slots) => {
           setAvailableTimeSlots(slots);
           setError(null);
@@ -201,7 +231,7 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
     } else {
       setAvailableTimeSlots([]);
     }
-  }, [selectedDate, userId, fetchAvailableTimeSlots]);
+  }, [selectedDate, userId, fetchAvailableTimeSlots, form]);
 
   const handleTimeSlotClick = (slot: AppointmentTimeSlots) => {
     setSelectedTime(slot.slot);
@@ -372,11 +402,7 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
               <FormItem>
                 <FormLabel className="text-base">Name</FormLabel>
                 <FormControl>
-                  <Input 
-                    placeholder="Your name" 
-                    {...field} 
-                    className="h-11"
-                  />
+                  <Input placeholder="Your name" {...field} className="h-11" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -390,11 +416,7 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
               <FormItem>
                 <FormLabel className="text-base">Email</FormLabel>
                 <FormControl>
-                  <Input 
-                    placeholder="Your email" 
-                    {...field} 
-                    className="h-11"
-                  />
+                  <Input placeholder="Your email" {...field} className="h-11" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -415,7 +437,9 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
                 onChange={(e) => {
                   field.onChange(e.target.value);
                   setSelectedService(e.target.value);
-                  const selected = services.find(s => s.id === e.target.value);
+                  const selected = services.find(
+                    (s) => s.id === e.target.value
+                  );
                   setServiceDuration(selected?.duration || 30);
                 }}
               >
@@ -424,7 +448,8 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
                   .filter((service) => service.isLive)
                   .map((service) => (
                     <option key={service.id} value={service.id}>
-                      {service.name} - ${service.price} - {service.duration || 30} min
+                      {service.name} - ${service.price} -{" "}
+                      {service.duration || 30} min
                     </option>
                   ))}
               </select>
@@ -470,7 +495,9 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
                       disabled={(date) =>
                         date < new Date(new Date().setHours(0, 0, 0, 0)) ||
                         date >
-                          new Date(new Date().setMonth(new Date().getMonth() + 3))
+                          new Date(
+                            new Date().setMonth(new Date().getMonth() + 3)
+                          )
                       }
                       initialFocus
                     />
@@ -532,7 +559,8 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
                           {slot.slotsRemaining !== undefined && (
                             <span className="ml-auto">
                               {slot.slotsRemaining}{" "}
-                              {slot.slotsRemaining === 1 ? "slot" : "slots"} left
+                              {slot.slotsRemaining === 1 ? "slot" : "slots"}{" "}
+                              left
                             </span>
                           )}
                         </div>
@@ -559,7 +587,7 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
         >
           {isLoading ? "Booking..." : "Book Appointment"}
         </Button>
-        
+
         <div className="flex justify-center items-center text-sm text-gray-500 pt-3 mt-2 border-t">
           <div className="flex items-center gap-2">
             <span className="font-medium">Powered by</span>
@@ -575,6 +603,41 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
             </div>
           </div>
         </div>
+
+        {error && (
+          <div className="text-red-600 text-center my-4">
+            {error}
+            {retryDate && (
+              <button
+                type="button"
+                className="ml-2 underline text-blue-600"
+                onClick={() => {
+                  setError(null);
+                  setIsLoading(true);
+                  fetchAvailableTimeSlots(
+                    retryDate,
+                    userId,
+                    form.getValues("productId")
+                  )
+                    .then((slots) => {
+                      setAvailableTimeSlots(slots);
+                      setError(null);
+                    })
+                    .catch((err) => {
+                      setError(
+                        "Could not load available time slots. Please try again."
+                      );
+                    })
+                    .finally(() => {
+                      setIsLoading(false);
+                    });
+                }}
+              >
+                Retry
+              </button>
+            )}
+          </div>
+        )}
       </form>
     </Form>
   );

@@ -1,3 +1,26 @@
+// Polyfill ReadableStream/WritableStream for Node.js test environment
+try {
+  const streams = require('web-streams-polyfill/ponyfill');
+  if (!global.ReadableStream) global.ReadableStream = streams.ReadableStream;
+  if (!global.WritableStream) global.WritableStream = streams.WritableStream;
+} catch {}
+
+// Polyfill TextEncoder/TextDecoder for Node.js test environment
+try {
+  const { TextEncoder, TextDecoder } = require('util');
+  if (!global.TextEncoder) global.TextEncoder = TextEncoder;
+  if (!global.TextDecoder) global.TextDecoder = TextDecoder;
+} catch {}
+
+// Polyfill fetch, Request, Response, Headers for Node.js test environment
+try {
+  const { fetch, Request, Response, Headers } = require('undici');
+  if (!global.fetch) global.fetch = fetch;
+  if (!global.Request) global.Request = Request;
+  if (!global.Response) global.Response = Response;
+  if (!global.Headers) global.Headers = Headers;
+} catch {}
+
 // Learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
 
