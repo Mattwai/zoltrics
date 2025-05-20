@@ -100,7 +100,7 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
       try {
         const slots = await fetchAvailableTimeSlots(date, userId);
         setAvailableTimeSlots(slots);
-        if (selectedTime && !slots.some((slot) => slot.slot === selectedTime)) {
+        if (selectedTime && !slots.some((slot: AppointmentTimeSlots) => slot.slot === selectedTime)) {
           setSelectedTime(null);
           form.setValue("time", "");
         }
@@ -116,49 +116,52 @@ const BookingForm = ({ userId, services }: BookingFormProps) => {
 
   const fetchAvailableTimeSlots = useCallback(async (date: Date, userId: string) => {
     try {
-      // Format the date in YYYY-MM-DD format to preserve the selected date regardless of timezone
+      // Try AI endpoint first
+      const aiResponse = await fetch("/api/ai/booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "suggestTime",
+          data: {
+            preferredTime: null, // You can enhance this with user preferences
+            serviceDuration: null, // You can enhance this with selected service duration
+          },
+        }),
+      });
+      if (aiResponse.ok) {
+        const aiData = await aiResponse.json();
+        if (aiData.result && Array.isArray(aiData.result)) {
+          return aiData.result;
+        }
+      }
+      // Fallback to original endpoint
       const formattedDate = `${date.getFullYear()}-${String(
         date.getMonth() + 1
       ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-
       const response = await fetch(
         `/api/bookings/available-slots?date=${formattedDate}&userId=${userId}`
       );
-      
       if (!response.ok) {
         throw new Error("Failed to fetch available time slots");
       }
-      
       const data = await response.json();
-
-      // If no slots are returned, the date might be blocked
       if (!data.slots || data.slots.length === 0) {
         return [];
       }
-
-      // Process the slots to include formatted duration and calculate slots remaining
       const processedSlots = data.slots.map((slot: AppointmentTimeSlots) => {
-        // Calculate end time if not provided
         const endTimeValue =
           slot.endTime || calculateEndTime(slot.slot, slot.duration || 30);
-
-        // Format duration for display (e.g., "30 mins")
         const formattedDuration = `${slot.duration || 30} mins`;
-
-        // Calculate slots remaining if maxSlots is provided
         const slotsRemaining = slot.maxSlots || 1;
-
-        // Make sure to preserve the isCustom property exactly as it comes from the API
         return {
           ...slot,
           startTime: slot.startTime || slot.slot,
           endTime: endTimeValue,
           formattedDuration: formattedDuration,
           slotsRemaining: slotsRemaining,
-          isCustom: Boolean(slot.isCustom), // Ensure isCustom is a boolean
+          isCustom: Boolean(slot.isCustom),
         };
       });
-
       return processedSlots as AppointmentTimeSlots[];
     } catch (error) {
       console.error("Error fetching time slots:", error);
