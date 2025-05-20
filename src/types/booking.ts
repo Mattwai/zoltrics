@@ -13,7 +13,16 @@ export interface Booking {
     } | null;
   } | null;
   service: {
+    id: string;
     name: string;
+    duration: number;
+    isMultiDay: boolean;
+    minDays: number | null;
+    maxDays: number | null;
+    pricing: {
+      price: number;
+      currency: string;
+    } | null;
   } | null;
   bookingMetadata: {
     notes: string | null;

@@ -147,7 +147,16 @@ export const onGetAllBookingsForCurrentUser = async (id: string) => {
           select: {
             id: true,
             name: true,
-            pricing: true
+            duration: true,
+            isMultiDay: true,
+            minDays: true,
+            maxDays: true,
+            pricing: {
+              select: {
+                price: true,
+                currency: true
+              }
+            }
           },
         },
         bookingMetadata: {
@@ -197,7 +206,16 @@ export const onGetAllBookingsForCurrentUser = async (id: string) => {
           select: {
             id: true,
             name: true,
-            pricing: true
+            duration: true,
+            isMultiDay: true,
+            minDays: true,
+            maxDays: true,
+            pricing: {
+              select: {
+                price: true,
+                currency: true
+              }
+            }
           },
         },
         bookingMetadata: {

@@ -148,17 +148,21 @@ model Domain {
 }
 
 model Service {
-  id        String          @id @default(uuid()) @db.Uuid
-  name      String
-  domainId  String          @db.Uuid
-  userId    String          @db.Uuid
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-  bookings  Booking[]
-  domain    Domain          @relation(fields: [domainId], references: [id], onDelete: Cascade)
-  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  pricing   ServicePricing?
-  status    ServiceStatus?
+  id          String          @id @default(uuid()) @db.Uuid
+  name        String
+  domainId    String          @db.Uuid
+  userId      String          @db.Uuid
+  duration    Int             @default(60)         // Duration in minutes
+  isMultiDay  Boolean         @default(false)      // Whether service can span multiple days
+  minDays     Int?                                 // Minimum days required (for multi-day services)
+  maxDays     Int?                                 // Maximum days allowed (for multi-day services)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  bookings    Booking[]
+  domain      Domain          @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pricing     ServicePricing?
+  status      ServiceStatus?
 
   @@index([domainId])
   @@index([userId])

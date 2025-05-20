@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { generateTimeSlots, formatTimeSlot } from "@/lib/time-slots";
 import { format } from "date-fns";
+import { client } from "@/lib/prisma";
+import { addDays, startOfDay, endOfDay, addMinutes } from "date-fns";
+import { getBusinessHours } from "@/lib/business-hours";
 
 interface CustomTimeSlot {
   startTime: string;
@@ -12,12 +15,31 @@ interface CustomTimeSlot {
 
 interface TimeSlot {
   slot: string;
-  startTime?: string;
-  endTime?: string;
+  startTime: string;
+  endTime: string;
   duration: number;
   maxSlots: number;
   id?: string;
   isCustom?: boolean;
+}
+
+interface ServiceWithRelations {
+  id: string;
+  name: string;
+  userId: string;
+  duration: number;
+  isMultiDay: boolean;
+  minDays?: number | null;
+  maxDays?: number | null;
+  pricing: {
+    id: string;
+    price: number;
+    currency: string;
+  } | null;
+  status: {
+    id: string;
+    isLive: boolean;
+  } | null;
 }
 
 function isOverlapping(startTime1: Date, endTime1: Date, startTime2: Date, endTime2: Date): boolean {
@@ -345,4 +367,176 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function POST(req: Request) {
+  try {
+    const { serviceId, date, endDate } = await req.json();
+    
+    // Get service details with all required fields
+    const service = await client.service.findUnique({
+      where: { id: serviceId },
+      include: {
+        pricing: true,
+        status: true
+      }
+    }) as ServiceWithRelations | null;
+    
+    if (!service) {
+      return NextResponse.json({ error: 'Service not found' }, { status: 404 });
+    }
+
+    const startDate = new Date(date);
+    const finalEndDate = service.isMultiDay && endDate ? new Date(endDate) : startDate;
+
+    // For multi-day services, validate the date range
+    if (service.isMultiDay) {
+      const daysDiff = Math.ceil((finalEndDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (service.minDays && daysDiff < service.minDays) {
+        return NextResponse.json({ 
+          error: `This service requires a minimum of ${service.minDays} days` 
+        }, { status: 400 });
+      }
+      
+      if (service.maxDays && daysDiff > service.maxDays) {
+        return NextResponse.json({ 
+          error: `This service cannot exceed ${service.maxDays} days` 
+        }, { status: 400 });
+      }
+    }
+    
+    // Get existing bookings for the date range
+    const existingBookings = await client.booking.findMany({
+      where: {
+        serviceId,
+        startTime: {
+          gte: startOfDay(startDate),
+          lte: endOfDay(finalEndDate)
+        }
+      }
+    });
+
+    // Get business hours
+    const businessHours = await getBusinessHours(service.userId);
+    if (!businessHours) {
+      return NextResponse.json({ error: 'Business hours not found' }, { status: 404 });
+    }
+
+    // Generate available slots
+    const availableSlots: TimeSlot[] = [];
+    let currentDate = startDate;
+
+    while (currentDate <= finalEndDate) {
+      const dayOfWeek = format(currentDate, 'EEEE');
+      const dayHours = businessHours[dayOfWeek];
+
+      if (dayHours && dayHours.startTime && dayHours.endTime) {
+        const [startHour, startMinute] = dayHours.startTime.split(':').map(Number);
+        const [endHour, endMinute] = dayHours.endTime.split(':').map(Number);
+
+        let slotStart = new Date(currentDate);
+        slotStart.setHours(startHour, startMinute, 0, 0);
+
+        const dayEnd = new Date(currentDate);
+        dayEnd.setHours(endHour, endMinute, 0, 0);
+
+        // For multi-day services, we only need one slot per day
+        if (service.isMultiDay) {
+          const hasConflict = existingBookings.some(booking => {
+            const bookingStart = new Date(booking.startTime);
+            const bookingEnd = new Date(booking.endTime);
+            const slotEnd = new Date(slotStart);
+            slotEnd.setHours(endHour, endMinute, 0, 0);
+            
+            return isOverlapping(slotStart, slotEnd, bookingStart, bookingEnd);
+          });
+
+          if (!hasConflict) {
+            availableSlots.push({
+              slot: `${format(currentDate, 'MMM d')} ${dayHours.startTime} - ${dayHours.endTime}`,
+              startTime: slotStart.toISOString(),
+              endTime: dayEnd.toISOString(),
+              duration: (endHour * 60 + endMinute) - (startHour * 60 + startMinute),
+              maxSlots: dayHours.maxBookings
+            });
+          }
+        } 
+        // For regular services, generate slots based on service duration
+        else {
+          while (addMinutes(slotStart, service.duration) <= dayEnd) {
+            const slotEnd = addMinutes(slotStart, service.duration);
+            
+            const hasConflict = existingBookings.some(booking => {
+              const bookingStart = new Date(booking.startTime);
+              const bookingEnd = new Date(booking.endTime);
+              return isOverlapping(slotStart, slotEnd, bookingStart, bookingEnd);
+            });
+
+            if (!hasConflict) {
+              availableSlots.push({
+                slot: formatTimeSlot(slotStart),
+                startTime: slotStart.toISOString(),
+                endTime: slotEnd.toISOString(),
+                duration: service.duration,
+                maxSlots: dayHours.maxBookings
+              });
+            }
+
+            slotStart = addMinutes(slotStart, dayHours.duration);
+          }
+        }
+      }
+
+      currentDate = addDays(currentDate, 1);
+    }
+
+    // For multi-day services, ensure we have enough consecutive available days
+    if (service.isMultiDay && service.minDays) {
+      const consecutiveSlots = findConsecutiveSlots(availableSlots, service.minDays);
+      return NextResponse.json(consecutiveSlots);
+    }
+
+    return NextResponse.json(availableSlots);
+  } catch (error) {
+    console.error('Error getting available slots:', error);
+    return NextResponse.json(
+      { error: 'Error getting available slots' },
+      { status: 500 }
+    );
+  }
+}
+
+function findConsecutiveSlots(slots: TimeSlot[], requiredDays: number): TimeSlot[] {
+  const sortedSlots = slots.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  const consecutiveGroups: TimeSlot[][] = [];
+  let currentGroup: TimeSlot[] = [];
+
+  for (let i = 0; i < sortedSlots.length; i++) {
+    const currentSlot = sortedSlots[i];
+    const currentDate = new Date(currentSlot.startTime);
+    
+    if (currentGroup.length === 0) {
+      currentGroup.push(currentSlot);
+    } else {
+      const lastSlot = currentGroup[currentGroup.length - 1];
+      const lastDate = new Date(lastSlot.startTime);
+      const dayDiff = Math.floor((currentDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (dayDiff === 1) {
+        currentGroup.push(currentSlot);
+      } else {
+        if (currentGroup.length >= requiredDays) {
+          consecutiveGroups.push([...currentGroup]);
+        }
+        currentGroup = [currentSlot];
+      }
+    }
+  }
+
+  if (currentGroup.length >= requiredDays) {
+    consecutiveGroups.push(currentGroup);
+  }
+
+  return consecutiveGroups.flatMap(group => group);
 }
