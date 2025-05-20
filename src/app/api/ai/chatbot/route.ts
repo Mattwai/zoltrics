@@ -22,6 +22,11 @@ export async function POST(req: NextRequest) {
     }
     return new Response(JSON.stringify({ result }), { status: 200 });
   } catch (error) {
+    // Log error with context
+    try {
+      const { action, data } = await req.json();
+      console.error("[AI Chatbot API Error]", { action, data, error: (error as Error).message });
+    } catch {}
     return new Response(JSON.stringify({ error: (error as Error).message }), { status: 500 });
   }
 } 
