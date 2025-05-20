@@ -6,9 +6,7 @@ import ServiceTable from "@/components/forms/services";
 import { redirect } from "next/navigation";
 import { Plans } from "@/types/prisma";
 
-type Props = { params: { domain: string } };
-
-const DomainSettingsPage = async ({ params }: Props) => {
+export default async function Page({ params }: { params: { domain: string } }) {
   const domain = await onGetCurrentDomainInfo(params.domain);
   if (!domain) redirect("/dashboard");
 
@@ -38,6 +36,4 @@ const DomainSettingsPage = async ({ params }: Props) => {
       </div>
     </>
   );
-};
-
-export default DomainSettingsPage;
+}
